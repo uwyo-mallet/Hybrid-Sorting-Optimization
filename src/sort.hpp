@@ -1,19 +1,20 @@
 #pragma once
-#ifndef _SORT_HPP
-#define _SORT_HPP
+#ifndef SORT_HPP_
+#define SORT_HPP_
 
 #include <cstddef>
 
-/* Discontinue quicksort when the partition gets below this size */
-#define MAX_QSORT_THRESH 4
+typedef int (*compar_d_fn_t) (const void*, const void*);
 
 template <typename T>
 bool is_sorted(T input[], const size_t &len);
 
 template <typename T>
-void quick_sort(T input[], const size_t &len);
+size_t vanilla_quicksort(T input[], const size_t &len);
 
 template <typename T>
 void insertion_sort(T input[], const size_t &len);
+
+void optimized_quicksort(void* const pbase, size_t total_elems, size_t size, compar_d_fn_t cmp);
 
 #endif /* _SORT_HPP */
