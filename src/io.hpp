@@ -7,12 +7,12 @@
 #include <vector>
 
 template <typename T>
-void print(const std::vector<T>& arr);
+void print(const std::vector<T> &arr);
 
-void gen_random(std::vector<int>& res, const size_t num_elements, long long min,
+void gen_random(std::vector<int> &res, const size_t num_elements, long long min,
                 long long max);
 
-void to_disk(const std::vector<int>& vec, std::string filename);
-void from_disk(std::vector<int>& vec, std::string filename);
+void to_disk(const std::vector<int> &vec, std::string filename);
+void from_disk(std::vector<int> &vec, std::string filename);
 
 #endif /* _IO_HPP */

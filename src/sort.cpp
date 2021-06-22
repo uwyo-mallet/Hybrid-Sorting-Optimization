@@ -1,7 +1,7 @@
-#include "sort.hpp"
-
-#include <iostream>
 #include <algorithm>
+#include <iostream>
+
+#include "sort.hpp"
 
 /*
 	Determine if an array is sorted by checking every value.
@@ -11,7 +11,7 @@
 	@return: Whether or not the array is sorted.
 */
 template <typename T>
-bool is_sorted(T input[], const size_t& len)
+bool is_sorted(T input[], const size_t &len)
 {
 	for (size_t i = 0; i < len - 1; i++)
 	{
@@ -28,7 +28,7 @@ bool is_sorted(T input[], const size_t& len)
 	Swap two values in-place
 */
 template <typename T>
-void swap(T* a, T* b)
+void swap(T *a, T *b)
 {
 	T tmp = *a;
 	*a = *b;
@@ -42,7 +42,7 @@ void swap(T* a, T* b)
 	@return: Pointer to median value (b)
 */
 template <typename T>
-T* median_of_three(T* a, T* b, T* c)
+T *median_of_three(T *a, T *b, T *c)
 {
 	if (*a > *c)
 	{
@@ -61,13 +61,13 @@ T* median_of_three(T* a, T* b, T* c)
 }
 
 /*
-	Iterative implmentation of insertion sort
+	Iterative implementation of insertion sort
 
 	@param input: Input array to sort.
 	@param len: Length of input array.
 */
 template <typename T>
-void insertion_sort(T input[], const size_t& len)
+void insertion_sort(T input[], const size_t &len)
 {
 	for (size_t i = 1; i < len; i++)
 	{
@@ -94,8 +94,10 @@ size_t vanilla_partition(T input[], size_t lo, size_t hi)
 	size_t p = lo;
 	T pivot_val = input[p];
 
-	for (size_t i = lo + 1; i <= hi; i++) {
-		if (input[i] <= pivot_val) {
+	for (size_t i = lo + 1; i <= hi; i++)
+	{
+		if (input[i] <= pivot_val)
+		{
 			p++;
 			swap(&input[i], &input[p]);
 		}
@@ -118,7 +120,8 @@ template <typename T>
 size_t vanilla_quicksort(T input[], int lo, int hi)
 {
 	size_t num_calls = 1;
-	if (lo < hi) {
+	if (lo < hi)
+	{
 		size_t pivot_index = vanilla_partition(input, lo, hi);
 		num_calls += vanilla_quicksort(input, lo, pivot_index - 1);
 		num_calls += vanilla_quicksort(input, pivot_index + 1, hi);
@@ -136,7 +139,7 @@ size_t vanilla_quicksort(T input[], int lo, int hi)
 	@return: Number of recursive calls.
 */
 template <typename T>
-size_t vanilla_quicksort(T input[], const size_t& len)
+size_t vanilla_quicksort(T input[], const size_t &len)
 {
 	return vanilla_quicksort(input, 0, len - 1);
 }
@@ -147,32 +150,32 @@ size_t vanilla_quicksort(T input[], const size_t& len)
 /* Stack node declarations used to store unfulfilled partition obligations. */
 typedef struct
 {
-	char* lo;
-	char* hi;
+	char *lo;
+	char *hi;
 } stack_node;
 
 /* The next 4 #defines implement a very fast in-line stack abstraction. */
 /* The stack needs log(total_elements) entries (we could even subtract
    log(QSORT_MAX_THRESH)). Since total_elements has type size_t, we get as
    upper bound for log(total_elements): bits per byte (CHAR_BIT) * sizeof(size_t).  */
-#define STACK_SIZE	(CHAR_BIT * sizeof(size_t))
-#define PUSH(low, high)	((void) ((top->lo = (low)), (top->hi = (high)), ++top))
-#define	POP(low, high)	((void) (--top, (low = top->lo), (high = top->hi)))
-#define	STACK_NOT_EMPTY	(stack < top)
+#define STACK_SIZE (CHAR_BIT * sizeof(size_t))
+#define PUSH(low, high) ((void)((top->lo = (low)), (top->hi = (high)), ++top))
+#define POP(low, high) ((void)(--top, (low = top->lo), (high = top->hi)))
+#define STACK_NOT_EMPTY (stack < top)
 
-   /* Byte-wise swap two items of size SIZE. */
+/* Byte-wise swap two items of size SIZE. */
 #define SWAP(a, b, size)             \
-    do                               \
-    {                                \
-        size_t __size = (size);      \
-        char *__a = (a), *__b = (b); \
-        do                           \
-        {                            \
-            char __tmp = *__a;       \
-            *__a++ = *__b;           \
-            *__b++ = __tmp;          \
-        } while (--__size > 0);      \
-    } while (0)
+	do                               \
+	{                                \
+		size_t __size = (size);      \
+		char *__a = (a), *__b = (b); \
+		do                           \
+		{                            \
+			char __tmp = *__a;       \
+			*__a++ = *__b;           \
+			*__b++ = __tmp;          \
+		} while (--__size > 0);      \
+	} while (0)
 
 /*
 	Iterative, extremely optimized implementation of quicksort.
@@ -201,34 +204,37 @@ typedef struct
 	   smaller partition.  This *guarantees* no more than log (total_elems)
 	   stack size is needed (actually O(1) in this case)!
 
-	@param input: Input array to sort.
-	@param len: Length of input array.
+	@param pbase: Pointer to start of array to sort.
+	@param total_elems: Total number of elements in array.
+	@param size: Size of element in array.
+	@param cmp: Comparator function (https://www.cplusplus.com/reference/cstdlib/qsort/)
 */
-void optimized_quicksort(void* const pbase, size_t total_elems, size_t size, compar_d_fn_t cmp)
+void qsort_c(void *const pbase, size_t total_elems, size_t size, compar_d_fn_t cmp)
 {
-	char* base_ptr = (char*)pbase;
+	char *base_ptr = (char *)pbase;
 
 	const size_t max_thresh = QSORT_MAX_THRESH * size;
 
-	if (total_elems == 0) {
+	if (total_elems == 0)
+	{
 		/* Avoid lossage with unsigned arithmetic below. */
 		return;
 	}
 
 	if (total_elems > QSORT_MAX_THRESH)
 	{
-		char* lo = base_ptr;
-		char* hi = &lo[size * (total_elems - 1)];
+		char *lo = base_ptr;
+		char *hi = &lo[size * (total_elems - 1)];
 
 		stack_node stack[STACK_SIZE];
-		stack_node* top = stack;
+		stack_node *top = stack;
 
 		PUSH(NULL, NULL);
 
 		while (STACK_NOT_EMPTY)
 		{
-			char* left_ptr;
-			char* right_ptr;
+			char *left_ptr;
+			char *right_ptr;
 
 			/*
 				Select median value from among LO, MID, and HI. Rearrange
@@ -238,13 +244,13 @@ void optimized_quicksort(void* const pbase, size_t total_elems, size_t size, com
 				the while loops.
 			*/
 
-			char* mid = lo + size * ((hi - lo) / size >> 1);
+			char *mid = lo + size * ((hi - lo) / size >> 1);
 
-			if ((*cmp) ((void*)mid, (void*)lo) < 0)
+			if ((*cmp)((void *)mid, (void *)lo) < 0)
 			{
 				SWAP(mid, lo, size);
 			}
-			if ((*cmp) ((void*)hi, (void*)mid) < 0)
+			if ((*cmp)((void *)hi, (void *)mid) < 0)
 			{
 				SWAP(mid, hi, size);
 			}
@@ -252,7 +258,7 @@ void optimized_quicksort(void* const pbase, size_t total_elems, size_t size, com
 			{
 				goto jump_over;
 			}
-			if ((*cmp) ((void*)mid, (void*)lo) < 0)
+			if ((*cmp)((void *)mid, (void *)lo) < 0)
 			{
 				SWAP(mid, lo, size);
 			}
@@ -268,22 +274,25 @@ void optimized_quicksort(void* const pbase, size_t total_elems, size_t size, com
 			*/
 			do
 			{
-				while ((*cmp) ((void*)left_ptr, (void*)mid) < 0)
+				while ((*cmp)((void *)left_ptr, (void *)mid) < 0)
 				{
 					left_ptr += size;
 				}
 
-				while ((*cmp) ((void*)mid, (void*)right_ptr) < 0) {
+				while ((*cmp)((void *)mid, (void *)right_ptr) < 0)
+				{
 					right_ptr -= size;
 				}
 
 				if (left_ptr < right_ptr)
 				{
 					SWAP(left_ptr, right_ptr, size);
-					if (mid == left_ptr) {
+					if (mid == left_ptr)
+					{
 						mid = right_ptr;
 					}
-					else if (mid == right_ptr) {
+					else if (mid == right_ptr)
+					{
 						mid = left_ptr;
 					}
 
@@ -306,16 +315,19 @@ void optimized_quicksort(void* const pbase, size_t total_elems, size_t size, com
 			*/
 			if ((size_t)(right_ptr - lo) <= max_thresh)
 			{
-				if ((size_t)(hi - left_ptr) <= max_thresh) {
+				if ((size_t)(hi - left_ptr) <= max_thresh)
+				{
 					/* Ignore both small partitions. */
 					POP(lo, hi);
 				}
-				else {
+				else
+				{
 					/* Ignore small left partition. */
 					lo = left_ptr;
 				}
 			}
-			else if ((size_t)(hi - left_ptr) <= max_thresh) {
+			else if ((size_t)(hi - left_ptr) <= max_thresh)
+			{
 				/* Ignore small right partition. */
 				hi = right_ptr;
 			}
@@ -345,21 +357,23 @@ void optimized_quicksort(void* const pbase, size_t total_elems, size_t size, com
 #define min(x, y) ((x) < (y) ? (x) : (y))
 
 	{
-		char* const end_ptr = &base_ptr[size * (total_elems - 1)];
-		char* tmp_ptr = base_ptr;
-		char* thresh = min(end_ptr, base_ptr + max_thresh);
-		char* run_ptr;
+		char *const end_ptr = &base_ptr[size * (total_elems - 1)];
+		char *tmp_ptr = base_ptr;
+		char *thresh = min(end_ptr, base_ptr + max_thresh);
+		char *run_ptr;
 
 		/* Find smallest element in first threshold and place it at the
 		   array's beginning.  This is the smallest array element,
 		   and the operation speeds up insertion sort's inner loop. */
 
 		for (run_ptr = tmp_ptr + size; run_ptr <= thresh; run_ptr += size)
-			if ((*cmp) ((void*)run_ptr, (void*)tmp_ptr) < 0) {
+			if ((*cmp)((void *)run_ptr, (void *)tmp_ptr) < 0)
+			{
 				tmp_ptr = run_ptr;
 			}
 
-		if (tmp_ptr != base_ptr) {
+		if (tmp_ptr != base_ptr)
+		{
 			SWAP(tmp_ptr, base_ptr, size);
 		}
 
@@ -369,22 +383,24 @@ void optimized_quicksort(void* const pbase, size_t total_elems, size_t size, com
 		while ((run_ptr += size) <= end_ptr)
 		{
 			tmp_ptr = run_ptr - size;
-			while ((*cmp) ((void*)run_ptr, (void*)tmp_ptr) < 0) {
+			while ((*cmp)((void *)run_ptr, (void *)tmp_ptr) < 0)
+			{
 				tmp_ptr -= size;
 			}
 
 			tmp_ptr += size;
 			if (tmp_ptr != run_ptr)
 			{
-				char* trav;
+				char *trav;
 
 				trav = run_ptr + size;
 				while (--trav >= run_ptr)
 				{
 					char c = *trav;
-					char* hi, * lo;
+					char *hi, *lo;
 
-					for (hi = lo = trav; (lo -= size) >= tmp_ptr; hi = lo) {
+					for (hi = lo = trav; (lo -= size) >= tmp_ptr; hi = lo)
+					{
 						*hi = *lo;
 					}
 					*hi = c;
@@ -395,18 +411,18 @@ void optimized_quicksort(void* const pbase, size_t total_elems, size_t size, com
 }
 
 // Template forward decleration to fix linker issues
-template bool is_sorted<int>(int input[], const size_t& len);
-template bool is_sorted<float>(float input[], const size_t& len);
+template bool is_sorted<int>(int input[], const size_t &len);
+template bool is_sorted<float>(float input[], const size_t &len);
 
-template void swap<int>(int* a, int* b);
-template void swap<float>(float* a, float* b);
-template void swap<size_t>(size_t* a, size_t* b);
+template void swap<int>(int *a, int *b);
+template void swap<float>(float *a, float *b);
+template void swap<size_t>(size_t *a, size_t *b);
 
-template int* median_of_three<int>(int* a, int* b, int* c);
-template float* median_of_three<float>(float* a, float* b, float* c);
+template int *median_of_three<int>(int *a, int *b, int *c);
+template float *median_of_three<float>(float *a, float *b, float *c);
 
-template void insertion_sort<int>(int input[], const size_t& len);
-template void insertion_sort<float>(float input[], const size_t& len);
+template void insertion_sort<int>(int input[], const size_t &len);
+template void insertion_sort<float>(float input[], const size_t &len);
 
 // Partition
 template size_t vanilla_partition<int>(int input[], size_t low, size_t high);
@@ -417,5 +433,5 @@ template size_t vanilla_quicksort<int>(int input[], int low, int high);
 template size_t vanilla_quicksort<float>(float input[], int low, int high);
 
 // User calls
-template size_t vanilla_quicksort<int>(int input[], const size_t& len);
-template size_t vanilla_quicksort<float>(float input[], const size_t& len);
+template size_t vanilla_quicksort<int>(int input[], const size_t &len);
+template size_t vanilla_quicksort<float>(float input[], const size_t &len);

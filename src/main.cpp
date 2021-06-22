@@ -1,54 +1,51 @@
+#include <algorithm>
+#include <chrono>
 #include <iostream>
 
 #include "io.hpp"
 #include "sort.hpp"
-#include <chrono>
 
-/*
- * TODO
- * Implement iterative insertion sort                            ✓
- * Implement vanilla recursive quicksort.                        ✓
- * Implement iterative optimized quicksort.                      ✓
- * Reference glibc qsort.                                        ✓
- * Glibc qsort switches to insertion sort at subarray length 4   ✓
- * Generate inputs of varying sizes, disparity, etc.
- * Benchmark all sorts and STL qsort.
- */
-
-int compareInt(const void* a, const void* b);
-
-#define NUM_RANDOM 1000000
-#define	MIN_RANDOM 0
-#define MAX_RANDOM 100
-#define MAX_PRINT 25;
+int compareInt(const void *a, const void *b);
 
 int main()
 {
-	std::vector<int> random;
-	gen_random(random, NUM_RANDOM, MIN_RANDOM, MAX_RANDOM);
-#if NUM_RANDOM < MAX_PRINT
-	print(random);
-#endif
-	std::cout << "Sorted: " << is_sorted(random.data(), random.size()) << std::endl;
+	constexpr size_t NUM_ELEMENTS = 1000000;
+	constexpr size_t NUM_TESTS = 1000;
+	constexpr size_t MIN_RANDOM = 0;
+	constexpr size_t MAX_RANDOM = 1000;
+	constexpr size_t MAX_PRINT = 25;
 
-	auto start_time = std::chrono::high_resolution_clock::now();
-	// optimized_quicksort(random.data(), random.size(), sizeof(*random.data()), compareInt);
-	size_t num_calls = vanilla_quicksort(random.data(), random.size());
-	std::cout << "Number of recursive calls: " << num_calls << std::endl;
-	auto end_time = std::chrono::high_resolution_clock::now();
+	std::vector<int> qsort_c_set;
+	std::vector<int> validate_set;
 
-#if NUM_RANDOM < MAX_PRINT
-	print(random);
-#endif
-	std::cout << "Sorted: " << is_sorted(random.data(), random.size()) << std::endl;
-	
-	/* Getting number of milliseconds as an integer. */
-	std::chrono::duration<double, std::milli> ms_double = end_time - start_time;
-	std::cout << "Execution time " << ms_double.count() << "ms" << std::endl;
+	for (size_t i = 0; i < NUM_TESTS; i++)
+	{
 
+		gen_random(qsort_c_set, NUM_ELEMENTS, MIN_RANDOM, MAX_RANDOM);
+		validate_set = qsort_c_set; // Deep copy random into validate_set
+
+		qsort_c(qsort_c_set.data(), qsort_c_set.size(), sizeof(int), compareInt);
+		std::sort(validate_set.begin(), validate_set.end());
+
+		if (!(qsort_c_set == validate_set))
+		{
+			std::cout << "ERROR" << std::endl;
+			print(qsort_c_set);
+			return 1;
+		}
+		else
+		{
+			std::cout << "PASSED: " << i << " / " << NUM_TESTS << std::endl;
+		}
+
+		qsort_c_set.clear();
+		validate_set.clear();
+	}
 	return 0;
 }
 
-int compareInt(const void* a, const void* b) {
-	return (*(int*)a - *(int*)b);
+/* Comparator for qsort_c */
+int compareInt(const void *a, const void *b)
+{
+	return (*(int *)a - *(int *)b);
 }
