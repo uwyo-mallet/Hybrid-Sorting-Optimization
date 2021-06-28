@@ -11,7 +11,6 @@
 module load python/3.7.6
 module load miniconda3/4.3.30
 
-NOW=$(date +"%Y-%m-%d_%H-%M-%S")
 WORKING_DIR="/project/mallet/jarulsam/quicksort-tuning/"
 cd "$WORKING_DIR" || exit 1
 source activate /project/mallet/jarulsam/job_py

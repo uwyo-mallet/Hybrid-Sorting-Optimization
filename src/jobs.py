@@ -8,10 +8,10 @@ Usage:
 
 Options:
     -h, --help                      Show this help.
-    -e, --exec                      Path to executable QST.
+    -e EXEC, --exec=EXEC            Path to executable QST.
     -f, --force                     Overwrite existing.
     -j N, --jobs=N                  Do N jobs in parallel.
-    -m METHODS, --methods METHODS   Comma seperated list of methods to use for sorters.
+    -m METHODS, --methods=METHODS   Comma seperated list of methods to use for sorters.
     -o FILE, --output=FILE          Output to save data.
     -t THRESH, --threshold THRESH   Comma seperated range for threshold (min,max) including both endpoints, or a single value.
 """
