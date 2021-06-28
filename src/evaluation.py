@@ -7,10 +7,11 @@ Usage:
     evaluation.py [-o OUTPUT_DIR | --output OUTPUT_DIR]
 """
 
-from docopt import docopt
 import random
 from datetime import datetime
 from pathlib import Path
+
+from docopt import docopt
 
 INCREMENT = 50_000
 MIN_ELEMENTS = INCREMENT
@@ -37,6 +38,10 @@ def sorted_(num_elements):
         sorted_cache = sorted_cache[:num_elements].extend(rest)
 
     return sorted_cache[:num_elements]
+
+
+def reverse_sorted(num_elements):
+    return reversed(sorted_(num_elements))
 
 
 def unsorted(num_elements):
@@ -79,13 +84,9 @@ if __name__ == "__main__":
 
     DIRS = {
         "sorted": sorted_,
+        "reverse_sorted": reverse_sorted,
         "unsorted": unsorted,
         "uniform": uniform,
-        # "lognorm_variate": lognorm_variate,
-        # "normal_variate": normal_variate,
-        # "gamma_variate": gamma_variate,
-        # "expo_variate": expo_variate,
-        # "gauss": gauss,
     }
     random.seed()
 
