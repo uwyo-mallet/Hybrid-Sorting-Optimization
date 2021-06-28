@@ -19,6 +19,6 @@ void insertion_sort(T input[], const size_t &len);
 /*              compar_d_fn_t cmp); */
 
 template <typename T>
-void qsort_c(T input[], const size_t &len);
+void qsort_c(T input[], const size_t &len, const size_t &thresh);
 
 #endif /* SORT_HPP_ */

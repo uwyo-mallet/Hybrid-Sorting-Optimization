@@ -23,6 +23,7 @@ static char args_doc[] = "INPUT";
 static struct argp_option options[] = {
     {"method", 'm', "METHOD", 0, "Sorting method"},
     {"output", 'o', "FILE", 0, "Output to FILE instead of STDOUT"},
+    {"threshold", 't', "THRESH", 0, "Threshold to switch to insertion sort."},
     {0},
 };
 
@@ -31,14 +32,12 @@ struct arguments
   std::string in_file;
   std::string method;
   std::string out_file;
+  int threshold;
 };
 
 // Option parser
 static error_t parse_opt(int key, char* arg, struct argp_state* state);
 static struct argp argp = {options, parse_opt, args_doc, doc};
-
-// Sort function type
-typedef void (*srt_func)(int[], const size_t&);
 
 int main(int argc, char** argv)
 {
@@ -47,26 +46,15 @@ int main(int argc, char** argv)
   // Default CLI options
   arguments.method = "vanilla_quicksort";
   arguments.out_file = "-";
+  arguments.threshold = 4;
 
-  argp_parse(&argp, argc, argv, 0, 0, &arguments);
+  // Threshold is only used for supported sorting methods.
 
-  srt_func method;
-  // Map str name of function to actual function
-  if (arguments.method == "vanilla_quicksort")
+  // Ensure no parsing errors occured
+  // The assumption is that argp_parse correctly alerts the user
+  // as to what broke.
+  if (argp_parse(&argp, argc, argv, 0, 0, &arguments) != 0)
   {
-    method = vanilla_quicksort;
-  }
-  else if (arguments.method == "insertion_sort")
-  {
-    method = insertion_sort;
-  }
-  else if (arguments.method == "qsort_c")
-  {
-    method = qsort_c;
-  }
-  else
-  {
-    std::cerr << "Invalid method selected." << std::endl;
     return EXIT_FAILURE;
   }
 
@@ -87,8 +75,24 @@ int main(int argc, char** argv)
 
   // Timing
   auto start_time = std::chrono::high_resolution_clock::now();
-
-  method(data.data(), data.size());
+  // Map str name of function to actual function
+  if (arguments.method == "vanilla_quicksort")
+  {
+    vanilla_quicksort(data.data(), data.size());
+  }
+  else if (arguments.method == "insertion_sort")
+  {
+    insertion_sort(data.data(), data.size());
+  }
+  else if (arguments.method == "qsort_c")
+  {
+    qsort_c(data.data(), data.size(), arguments.threshold);
+  }
+  else
+  {
+    std::cerr << "Invalid method selected." << std::endl;
+    return EXIT_FAILURE;
+  }
 
   auto end_time = std::chrono::high_resolution_clock::now();
   auto elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -102,10 +106,11 @@ int main(int argc, char** argv)
   {
     std::cout << "Method: " << arguments.method << std::endl;
     std::cout << "Input: " << arguments.in_file << std::endl;
-    std::cout << "Length: " << data.size() << std::endl;
+    std::cout << "Size: " << data.size() << std::endl;
     std::cout << "Elapsed Time (microseconds): " << elapsed_time.count()
               << std::endl;
 
+    std::cout << "Threshold: " << arguments.threshold << std::endl;
     std::cout << "Valid: " << (valid ? "True" : "False") << std::endl;
   }
   else
@@ -124,13 +129,15 @@ int main(int argc, char** argv)
     if (out_file.tellg() == 0)
     {
       out_file.clear();
-      out_file << "Method,Input,Length,Elapsed Time (microseconds),Valid"
-               << std::endl;
+      out_file
+          << "Method,Input,Size,Elapsed Time (microseconds),Threshold,Valid"
+          << std::endl;
     }
 
     out_file << arguments.method << "," << arguments.in_file << ","
              << data.size() << "," << elapsed_time.count() << ","
-             << (valid ? "True" : "False") << std::endl;
+             << arguments.threshold << "," << (valid ? "True" : "False")
+             << std::endl;
 
     out_file.close();
   }
@@ -151,6 +158,24 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
 
     case 'o':
       args->out_file = std::string(arg);
+      break;
+
+    case 't':
+      try
+      {
+        args->threshold = std::stoi(std::string(arg));
+      }
+      catch (std::invalid_argument)
+      {
+        std::cerr << "Invalid threshold: " << arg << std::endl;
+        return 1;
+      }
+      // Ensure the threshold is > 0
+      if (args->threshold <= 0)
+      {
+        std::cerr << "Invalid threshold: " << arg << std::endl;
+        return 1;
+      }
       break;
 
     case ARGP_KEY_ARG:
@@ -176,44 +201,3 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
 
   return 0;
 }
-// int compareInt(const void *a, const void *b);
-//
-// int main()
-// {
-//   constexpr size_t NUM_ELEMENTS = 1000000;
-//   constexpr size_t NUM_TESTS = 1000;
-//   constexpr size_t MIN_RANDOM = 0;
-//   constexpr size_t MAX_RANDOM = 1000;
-//   constexpr size_t MAX_PRINT = 25;
-//
-//   std::vector<int> qsort_c_set;
-//   std::vector<int> validate_set;
-//
-//   for (size_t i = 0; i < NUM_TESTS; i++)
-//   {
-//     gen_random(qsort_c_set, NUM_ELEMENTS, MIN_RANDOM, MAX_RANDOM);
-//     validate_set = qsort_c_set;  // Deep copy random into validate_set
-//
-//     qsort_c(qsort_c_set.data(), qsort_c_set.size(), sizeof(int), compareInt);
-//     std::sort(validate_set.begin(), validate_set.end());
-//
-//     if (!(qsort_c_set == validate_set))
-//     {
-//       std::cout << "ERROR" << std::endl;
-//       print(qsort_c_set);
-//       return 1;
-//     }
-//     else
-//     {
-//       std::cout << "PASSED: " << i << " / " << NUM_TESTS << std::endl;
-//     }
-//
-//     qsort_c_set.clear();
-//     validate_set.clear();
-//   }
-//   return 0;
-// }
-//
-// /* Comparator for qsort_c */
-// int compareInt(const void *a, const void *b) { return (*(int *)a - *(int
-// *)b); }

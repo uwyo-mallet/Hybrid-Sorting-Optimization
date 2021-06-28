@@ -211,11 +211,11 @@ typedef struct
   (https://www.cplusplus.com/reference/cstdlib/qsort/)
 */
 void qsort_c(void *const pbase, size_t total_elems, size_t size,
-             compar_d_fn_t cmp)
+             compar_d_fn_t cmp, const size_t &thresh)
 {
   char *base_ptr = (char *)pbase;
 
-  const size_t max_thresh = QSORT_MAX_THRESH * size;
+  const size_t max_thresh = thresh * size;
 
   if (total_elems == 0)
   {
@@ -223,7 +223,7 @@ void qsort_c(void *const pbase, size_t total_elems, size_t size,
     return;
   }
 
-  if (total_elems > QSORT_MAX_THRESH)
+  if (total_elems > thresh)
   {
     char *lo = base_ptr;
     char *hi = &lo[size * (total_elems - 1)];
@@ -418,9 +418,9 @@ void qsort_c(void *const pbase, size_t total_elems, size_t size,
 // TODO: this may have a performance impact in the real world, investigate.
 int compare(const void *a, const void *b) { return (*(int *)a - *(int *)b); }
 template <typename T>
-void qsort_c(T input[], const size_t &len)
+void qsort_c(T input[], const size_t &len, const size_t &thresh)
 {
-  qsort_c(input, len, sizeof(T), compare);
+  qsort_c(input, len, sizeof(T), compare, thresh);
 }
 
 /* void qsort_c(void *const pbase, size_t total_elems, size_t size, */
@@ -453,5 +453,7 @@ template void vanilla_quicksort<float>(float input[], int low, int high);
 template void vanilla_quicksort<int>(int input[], const size_t &len);
 template void vanilla_quicksort<float>(float input[], const size_t &len);
 
-template void qsort_c<int>(int input[], const size_t &len);
-template void qsort_c<float>(float input[], const size_t &len);
+template void qsort_c<int>(int input[], const size_t &len,
+                           const size_t &thresh);
+template void qsort_c<float>(float input[], const size_t &len,
+                             const size_t &thresh);
