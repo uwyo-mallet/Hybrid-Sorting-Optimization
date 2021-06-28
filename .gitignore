@@ -3,6 +3,8 @@
 .vscode/
 out/
 build/
+.cache/
+compile_commands.json
 
 # Prerequisites
 *.d
