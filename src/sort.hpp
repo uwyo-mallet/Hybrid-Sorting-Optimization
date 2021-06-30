@@ -15,9 +15,6 @@ void vanilla_quicksort(T input[], const size_t &len);
 template <typename T>
 void insertion_sort(T input[], const size_t &len);
 
-/* void qsort_c(void *const pbase, size_t total_elems, size_t size, */
-/*              compar_d_fn_t cmp); */
-
 template <typename T>
 void qsort_c(T input[], const size_t &len, const size_t &thresh);
 

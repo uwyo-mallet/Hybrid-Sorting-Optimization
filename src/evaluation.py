@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
 Plot statistics about the tests, optionally generate new data.
-TODO: This needs to be heavily documented. Most of it is obscure.
 
 Usage:
-    evaluation.py evaluate FILE [options]
-    evaluation.py generate [options]
-    evaluation.py -h | --help
+    data.py evaluate FILE [options]
+    data.py generate [options]
+    data.py -h | --help
 
 Options:
     -h, --help            Show this help.
@@ -18,8 +17,6 @@ Commands:
     generate              Generate testing data.
 """
 
-# TODO: Probably rename this whole file to something more logical
-
 import csv
 import random
 import shutil
@@ -29,6 +26,7 @@ from pathlib import Path
 
 from docopt import docopt
 
+# Linear increase in number of numbers
 INCREMENT = 50_000
 MIN_ELEMENTS = INCREMENT
 MAX_ELEMENTS = 1_000_000
@@ -39,6 +37,7 @@ sorted_cache = list(range(0, MAX_ELEMENTS))
 
 
 def create_dirs(base_path, dirs):
+    """Create all the directories for output files."""
     base_path.mkdir(parents=True, exist_ok=True)
     for dir in dirs:
         real_path = Path(base_path, dir)
@@ -46,6 +45,7 @@ def create_dirs(base_path, dirs):
 
 
 def sorted_(num_elements):
+    """Return a list of sorted numbers from 0 to num_elements."""
     global sorted_cache
     cache_len = len(sorted_cache)
 
@@ -57,10 +57,12 @@ def sorted_(num_elements):
 
 
 def reverse_sorted(num_elements):
+    """Return the reverse of sorted_."""
     return reversed(sorted_(num_elements))
 
 
 def unsorted(num_elements):
+    """Generate num_elements random numbers in a list."""
     ret = []
     for _ in range(num_elements):
         ret.append(random.randint(0, num_elements))
@@ -69,11 +71,17 @@ def unsorted(num_elements):
 
 
 def uniform(num_elements):
+    """Generate num_elements random numbers with a uniform distribution."""
     ret = []
     for _ in range(num_elements):
         ret.append(int(random.uniform(0, num_elements)))
 
     return tuple(ret)
+
+
+def single_num(num_elements):
+    """Return a list of num_elements where every element is 42."""
+    return [42] * num_elements
 
 
 def evaluate(in_file):
@@ -92,6 +100,7 @@ def evaluate(in_file):
 
 
 def generate(output, force=False):
+    """Generate all random data and write to output folder."""
     DIRS = {
         "sorted": sorted_,
         "reverse_sorted": reverse_sorted,

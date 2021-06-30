@@ -2,6 +2,9 @@
 """
 Automatically dispatch sort jobs of varying inputs, methods, and threshold values.
 
+This essentially serves as a job scheduler, so it is not best suited
+for slurm. Instead, use this when running on a single multi-cored machine.
+
 Usage:
     jobs.py DATA_DIR [options]
     jobs.py -h | --help
@@ -37,25 +40,31 @@ class Job:
     threshold: int
     output: Path
 
+    def run(self, quiet=False):
+        """Call the subprocess and run the job."""
+        to_run = [
+            str(self.exec_path.absolute()),
+            str(self.infile_path.absolute()),
+            "--description",
+            str(self.description),
+            "--method",
+            str(self.method),
+            "--output",
+            str(self.output.absolute()),
+            "--threshold",
+            str(self.threshold),
+        ]
+        if not quiet:
+            print(to_run)
+
+        p = subprocess.Popen(to_run)
+        p.wait()
+
 
 def worker():
     while not queue.empty():
         job = queue.get()
-        to_run = [
-            str(job.exec_path.absolute()),
-            str(job.infile_path.absolute()),
-            "--description",
-            str(job.description),
-            "--method",
-            str(job.method),
-            "--output",
-            str(job.output.absolute()),
-            "--threshold",
-            str(job.threshold),
-        ]
-        print(to_run)
-        p = subprocess.Popen(to_run)
-        p.wait()
+        job.run()
 
 
 if __name__ == "__main__":
@@ -133,7 +142,8 @@ if __name__ == "__main__":
                 break
 
         for method in METHODS:
-            # Only qsort_c cares about thresh (for now). For the others, we can use just one dummy value.
+            # Only qsort_c cares about thresh (for now).
+            # For the others, we can use just one dummy value.
             if method == "qsort_c":
                 for thresh in THRESHOLDS:
                     queue.put(Job(QST_PATH, file, desc, method, thresh, OUTPUT_PATH))
