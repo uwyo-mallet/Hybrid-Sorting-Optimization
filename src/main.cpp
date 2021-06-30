@@ -21,6 +21,7 @@ static char args_doc[] = "INPUT";
 
 // Accepted methods
 static struct argp_option options[] = {
+    {"description", 'd', "DESCRIP", 0, "Short description of input data."},
     {"method", 'm', "METHOD", 0, "Sorting method"},
     {"output", 'o', "FILE", 0, "Output to FILE instead of STDOUT"},
     {"threshold", 't', "THRESH", 0, "Threshold to switch to insertion sort."},
@@ -29,6 +30,7 @@ static struct argp_option options[] = {
 
 struct arguments
 {
+  std::string description;
   std::string in_file;
   std::string method;
   std::string out_file;
@@ -44,6 +46,7 @@ int main(int argc, char** argv)
   struct arguments arguments;
 
   // Default CLI options
+  arguments.description = "N/A";
   arguments.method = "vanilla_quicksort";
   arguments.out_file = "-";
   arguments.threshold = 4;
@@ -106,6 +109,7 @@ int main(int argc, char** argv)
   {
     std::cout << "Method: " << arguments.method << std::endl;
     std::cout << "Input: " << arguments.in_file << std::endl;
+    std::cout << "Description: " << arguments.description << std::endl;
     std::cout << "Size: " << data.size() << std::endl;
     std::cout << "Elapsed Time (microseconds): " << elapsed_time.count()
               << std::endl;
@@ -129,15 +133,15 @@ int main(int argc, char** argv)
     if (out_file.tellg() == 0)
     {
       out_file.clear();
-      out_file
-          << "Method,Input,Size,Elapsed Time (microseconds),Threshold,Valid"
-          << std::endl;
+      out_file << "Method,Input,Description,Size,Elapsed Time "
+                  "(microseconds),Threshold,Valid"
+               << std::endl;
     }
 
     out_file << arguments.method << "," << arguments.in_file << ","
-             << data.size() << "," << elapsed_time.count() << ","
-             << arguments.threshold << "," << (valid ? "True" : "False")
-             << std::endl;
+             << arguments.description << "," << data.size() << ","
+             << elapsed_time.count() << "," << arguments.threshold << ","
+             << (valid ? "True" : "False") << std::endl;
 
     out_file.close();
   }
@@ -152,6 +156,10 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
 
   switch (key)
   {
+    case 'd':
+      args->description = std::string(arg);
+      break;
+
     case 'm':
       args->method = std::string(arg);
       break;

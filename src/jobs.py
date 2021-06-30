@@ -22,8 +22,7 @@ import subprocess
 import threading
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path, PosixPath
-from pprint import pprint
+from pathlib import Path
 from queue import Queue
 
 from docopt import docopt
@@ -33,6 +32,7 @@ from docopt import docopt
 class Job:
     exec_path: Path
     infile_path: Path
+    description: str
     method: str
     threshold: int
     output: Path
@@ -41,10 +41,11 @@ class Job:
 def worker():
     while not queue.empty():
         job = queue.get()
-        print(job)
         to_run = [
             str(job.exec_path.absolute()),
             str(job.infile_path.absolute()),
+            "--description",
+            str(job.description),
             "--method",
             str(job.method),
             "--output",
@@ -52,6 +53,7 @@ def worker():
             "--threshold",
             str(job.threshold),
         ]
+        print(to_run)
         p = subprocess.Popen(to_run)
         p.wait()
 
@@ -65,6 +67,7 @@ if __name__ == "__main__":
     args["--output"] = args.get("--output") or f"./output_{now}.csv"
 
     VALID_METHODS = ("vanilla_quicksort", "qsort_c", "insertion_sort")
+    DATA_TYPES = ("reverse_sorted", "sorted", "unsorted", "uniform")
 
     DATA_DIR = Path(args.get("DATA_DIR"))
     OUTPUT_PATH = Path(args.get("--output"))
@@ -119,15 +122,23 @@ if __name__ == "__main__":
 
     # Create all the jobs to run
     files = list(DATA_DIR.glob("**/*.dat"))
-    queue = Queue()
+    queue: "Queue[Job]" = Queue()
+
     for file in files:
+        # Determine the type of each input data file
+        desc = "N/A"
+        for t in DATA_TYPES:
+            if t in str(file):
+                desc = t
+                break
+
         for method in METHODS:
-            # Only qsort_c cares about thresh. For the others, we can use a dummy value.
+            # Only qsort_c cares about thresh (for now). For the others, we can use just one dummy value.
             if method == "qsort_c":
                 for thresh in THRESHOLDS:
-                    queue.put(Job(QST_PATH, file, method, thresh, OUTPUT_PATH))
+                    queue.put(Job(QST_PATH, file, desc, method, thresh, OUTPUT_PATH))
             else:
-                queue.put(Job(QST_PATH, file, method, 1, OUTPUT_PATH))
+                queue.put(Job(QST_PATH, file, desc, method, 1, OUTPUT_PATH))
 
     # Create my own process group and start all the jobs in parrallel
     os.setpgrp()
@@ -136,8 +147,9 @@ if __name__ == "__main__":
         # Start each thread and wait till they all complete
         for thread in threads:
             thread.start()
+        # Wait till all are started before waiting
         for thread in threads:
             thread.join()
     except KeyboardInterrupt:
-        # Kill all processes in my group
+        # Kill all processes in my group if stopped early.
         os.killpg(0, signal.SIGKILL)

@@ -20,8 +20,10 @@ Commands:
 
 # TODO: Probably rename this whole file to something more logical
 
+import csv
 import random
 import shutil
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
@@ -38,7 +40,6 @@ sorted_cache = list(range(0, MAX_ELEMENTS))
 
 def create_dirs(base_path, dirs):
     base_path.mkdir(parents=True, exist_ok=True)
-
     for dir in dirs:
         real_path = Path(base_path, dir)
         real_path.mkdir()
@@ -77,6 +78,17 @@ def uniform(num_elements):
 
 def evaluate(in_file):
     pass
+    # with open(in_file, "r") as csv_file:
+    #     csv_reader = csv.DictReader(csv_file)
+    #     contents = list(csv_reader)
+
+    # methods_and_type = defaultdict(defaultdict(list))
+    # for row in contents:
+    #     methods_and_type[row["Method"]].append(row)
+
+    # from pprint import pprint
+
+    # pprint(methods)
 
 
 def generate(output, force=False):
@@ -104,6 +116,7 @@ def generate(output, force=False):
         dest_folder = Path(base_path, k)
         for i, num_elements in enumerate(range(MIN_ELEMENTS, MAX_ELEMENTS, INCREMENT)):
             dest_filename = Path(dest_folder, f"{i}.dat")
+
             f = open(dest_filename, "w")
             for row in v(num_elements):
                 f.write(str(row) + "\n")
