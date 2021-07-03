@@ -106,6 +106,7 @@ def generate(output, force=False):
         "reverse_sorted": reverse_sorted,
         "unsorted": unsorted,
         "uniform": uniform,
+        "single_num": single_num,
     }
     random.seed()
 
