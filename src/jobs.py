@@ -16,6 +16,7 @@ Options:
     -j N, --jobs=N                  Do N jobs in parallel.
     -m METHODS, --methods=METHODS   Comma seperated list of methods to use for sorters.
     -o FILE, --output=FILE          Output to save data.
+    -s=SLURM, --slurm=SLURM         Generate a slurm job data file.
     -t THRESH, --threshold THRESH   Comma seperated range for threshold (min,max) including both endpoints, or a single value.
 """
 
@@ -40,9 +41,9 @@ class Job:
     threshold: int
     output: Path
 
-    def run(self, quiet=False):
-        """Call the subprocess and run the job."""
-        to_run = [
+    @property
+    def command(self):
+        return [
             str(self.exec_path.absolute()),
             str(self.infile_path.absolute()),
             "--description",
@@ -50,10 +51,18 @@ class Job:
             "--method",
             str(self.method),
             "--output",
-            str(self.output.absolute()),
+            str(self.output),
             "--threshold",
             str(self.threshold),
         ]
+
+    @property
+    def cli(self):
+        return " ".join(self.command)
+
+    def run(self, quiet=False):
+        """Call the subprocess and run the job."""
+        to_run = self.command
         if not quiet:
             print(to_run)
 
@@ -133,6 +142,7 @@ if __name__ == "__main__":
     files = list(DATA_DIR.glob("**/*.dat"))
     queue: "Queue[Job]" = Queue()
 
+    # Generate the jobs
     for file in files:
         # Determine the type of each input data file
         desc = "N/A"
@@ -150,16 +160,22 @@ if __name__ == "__main__":
             else:
                 queue.put(Job(QST_PATH, file, desc, method, 1, OUTPUT_PATH))
 
-    # Create my own process group and start all the jobs in parrallel
-    os.setpgrp()
-    try:
-        threads = [threading.Thread(target=worker) for _ in range(NUM_JOBS)]
-        # Start each thread and wait till they all complete
-        for thread in threads:
-            thread.start()
-        # Wait till all are started before waiting
-        for thread in threads:
-            thread.join()
-    except KeyboardInterrupt:
-        # Kill all processes in my group if stopped early.
-        os.killpg(0, signal.SIGKILL)
+    if not args.get("--slurm"):
+        # Create my own process group and start all the jobs in parrallel
+        os.setpgrp()
+        try:
+            threads = [threading.Thread(target=worker) for _ in range(NUM_JOBS)]
+            # Start each thread and wait till they all complete
+            for thread in threads:
+                thread.start()
+            # Wait till all are started before waiting
+            for thread in threads:
+                thread.join()
+        except KeyboardInterrupt:
+            # Kill all processes in my group if stopped early.
+            os.killpg(0, signal.SIGKILL)
+    else:
+        with open(Path(args.get("--slurm")), "w") as slurm_file:
+            while not queue.empty():
+                job = queue.get()
+                slurm_file.write(job.cli + "\n")
