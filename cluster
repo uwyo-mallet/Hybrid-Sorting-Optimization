@@ -27,12 +27,12 @@ clean() {
 
 # Send to remote
 to() {
-    rsync -auve 'ssh -o StrictHostKeyChecking=no' --delete --exclude="${EXCLUDE}" "${CWD}" "${REMOTE_DIR}"
+    rsync -auvz --progress -e 'ssh -o StrictHostKeyChecking=no' --delete --exclude="${EXCLUDE}" "${CWD}" "${REMOTE_DIR}"
 }
 
 # Pull from remote
 from() {
-    rsync -auve 'ssh -o StrictHostKeyChecking=no' --delete --exclude="${EXCLUDE}" "${REMOTE_DIR}" "${CWD}"
+    rsync -auvz --progress -e 'ssh -o StrictHostKeyChecking=no' --delete --exclude="${EXCLUDE}" "${REMOTE_DIR}" "${CWD}"
 }
 
 # More safety, by turning some bugs into errors.

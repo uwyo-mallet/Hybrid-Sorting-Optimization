@@ -21,4 +21,4 @@ NUM_JOBS="$(wc -l <$INPUT)"
 mkdir -p "$RESULTS_DIR"
 cd "$RESULTS_DIR" || exit 1
 
-sbatch --array "0-$NUM_JOBS" --output="${RESULTS_DIR}/output.%A_%a.out" --error="${RESULTS_DIR}/error.%A_%a.err" "${CWD}/job.sbatch"
+sbatch --array "0-$NUM_JOBS" --output="${RESULTS_DIR}/output.%A_%a.out" "${CWD}/job.sbatch" "$INPUT"
