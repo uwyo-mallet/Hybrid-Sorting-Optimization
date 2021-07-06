@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+
+VERSION="1.0.0"
+
+# Ensure that this does have a trailing slash
+REMOTE_DIR="jarulsam@teton.arcc.uwyo.edu:/project/mallet/jarulsam/quicksort-tuning/"
+CWD="$(pwd -P)"
+CWD="${CWD}/"
+EXCLUDE="*build/*"
+
+show_help() {
+    printf "Usage: cluster [OPTION...] to\n"
+    printf "       cluster [OPTION...] from\n"
+
+    printf "\n"
+
+    printf "Options:\n"
+    printf "\t-h, --help                 Give this help list\n"
+    printf "\t-V, --version              Print program version\n"
+}
+
+# Remove temporary files
+clean() {
+    find "${CWD}" -name '*.pyc' -exec rm -f {} \;
+    find "${CWD}" -name '*.pyo' -exec rm -f {} \;
+}
+
+# Send to remote
+to() {
+    rsync -auve 'ssh -o StrictHostKeyChecking=no' --delete --exclude="${EXCLUDE}" "${CWD}" "${REMOTE_DIR}"
+}
+
+# Pull from remote
+from() {
+    rsync -auve 'ssh -o StrictHostKeyChecking=no' --delete --exclude="${EXCLUDE}" "${REMOTE_DIR}" "${CWD}"
+}
+
+# More safety, by turning some bugs into errors.
+# Without `errexit` you don’t need ! and can replace
+# PIPESTATUS with a simple $?, but I don’t do that.
+set -o errexit -o pipefail -o noclobber -o nounset
+
+# -allow a command to fail with !’s side effect on errexit
+# -use return value from ${PIPESTATUS[0]}, because ! hosed $?
+! getopt --test >/dev/null
+if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
+    echo 'Getopt --test failed in this environment.'
+    exit 1
+fi
+
+OPTIONS=h,V
+LONGOPTS=help,version
+
+# -regarding ! and PIPESTATUS see above
+# -temporarily store output to be able to check for errors
+# -activate quoting/enhanced mode (e.g. by writing out “--options”)
+# -pass arguments only via   -- "$@"   to separate them correctly
+! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
+if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+    # e.g. return value is 1
+    #  then getopt has complained about wrong arguments to stdout
+    exit 2
+fi
+# read getopt’s output this way to handle the quoting right:
+eval set -- "$PARSED"
+
+# now enjoy the options in order and nicely split until we see --
+while true; do
+    case "$1" in
+    -h | --help)
+        show_help
+        exit 0
+        ;;
+    -V | --version)
+        echo "$VERSION"
+        exit 0
+        ;;
+    --)
+        shift
+        break
+        ;;
+    *)
+        echo "Error"
+        exit 3
+        ;;
+    esac
+done
+
+# Handle non-option arguments
+if [[ $# -ne 1 ]]; then
+    show_help
+    exit 1
+else
+    op="$1"
+fi
+
+# Use the CLI stuff
+if [ "$op" == "to" ]; then
+    to
+elif [ "$op" == "from" ]; then
+    from
+else
+    show_help
+    exit 5
+fi
