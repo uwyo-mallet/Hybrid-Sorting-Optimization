@@ -1,6 +1,7 @@
 # Project specific
 data/
 *.csv
+*.dat
 
 # VS
 .vs/
