@@ -31,6 +31,9 @@ INCREMENT = 50_000
 MIN_ELEMENTS = INCREMENT
 MAX_ELEMENTS = 1_000_000
 
+# Number of repeated lists for unsorted and uniform.
+NUM_REPEATS = 10
+
 
 # Cache sorted values, since there are so many to be made each time
 sorted_cache = list(range(0, MAX_ELEMENTS))

@@ -1,10 +1,15 @@
 #!/bin/bash
 
-echoerr() { printf "%s\n" "$*" >&2; }
+# Determine the correct number of jobs to submit,
+# create a results directory, then submit all the jobs as an sbatch job array.
+# DO NOT EDIT job.sbatch!
+# Instead, edit the following variables, then run with ./run_job.sh
 
 CWD="/project/mallet/jarulsam/quicksort-tuning"
 INPUT="${CWD}/slurm.dat"
-RESULTS_DIR="/project/mallet/jarulsam/results/$(date +"%Y-%m-%d_%H-%M-%S")"
+RESULTS_DIR="${CWD}/results/$(date +"%Y-%m-%d_%H-%M-%S")"
+
+echoerr() { printf "%s\n" "$*" >&2; }
 
 if ! [ -f "$INPUT" ]; then
   echoerr "Cannot open $INPUT"
@@ -12,8 +17,8 @@ if ! [ -f "$INPUT" ]; then
 fi
 
 NUM_JOBS="$(wc -l <$INPUT)"
-mkdir -p "$RESULTS_DIR"
 
+mkdir -p "$RESULTS_DIR"
 cd "$RESULTS_DIR" || exit 1
 
 sbatch --array "0-$NUM_JOBS" --output="${RESULTS_DIR}/output.%A_%a.out" --error="${RESULTS_DIR}/error.%A_%a.err" "${CWD}/job.sbatch"
