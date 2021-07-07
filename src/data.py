@@ -23,8 +23,11 @@ import shutil
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
+# REMOVE ME
+from pprint import pprint
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import numpy as np
 from docopt import docopt
 
@@ -91,8 +94,6 @@ def single_num(num_elements):
 
 
 def evaluate(in_file):
-    from pprint import pprint
-
     # Given a method and a type of a input data how does the runtime
     # scale as the input size increases?
     # Also, does this runtime change as the threshold value changes?
@@ -101,67 +102,40 @@ def evaluate(in_file):
         csv_reader = csv.DictReader(csv_file)
         contents = list(csv_reader)
 
-    methods_and_type = {}
+    data = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    # data = { method: { input_type: { threshold: { [pt1, pt2,...] }}}}
     for row in contents:
-        if row["Method"] not in methods_and_type.keys():
-            methods_and_type[row["Method"]] = defaultdict(list)
+        data[row["Method"]][row["Description"]][row["Threshold"]].append(
+            (row["Size"], row["Elapsed Time (microseconds)"])
+        )
 
-        # We care about: method, type (descrip), size, thresh, and runtime.
-        # Size, runtime, threshold if present otherwise None.
-        if row["Method"] == "qsort_c":
-            pt = (
-                int(row["Size"]),
-                int(row["Elapsed Time (microseconds)"]),
-                int(row["Threshold"]),
-            )
-        else:
-            pt = (row["Size"], row["Elapsed Time (microseconds)"], None)
-        methods_and_type[row["Method"]][row["Description"]].append(pt)
+    for method in data:
+        for descrip in data[method]:
+            thresh_text = ""
+            for thresh in data[method][descrip]:
+                if method == "qsort_c":
+                    thresh_text = thresh
 
-    # Plotting
-    for method in methods_and_type.keys():
-        # Additionally group by threshold
-        if method == "qsort_c":
-            for input_type in methods_and_type[method]:
-                data = defaultdict(list)
-                for i in methods_and_type[method][input_type]:
-                    data[i[2]].append(i[:2])
+                dat = np.asarray(data[method][descrip][thresh])
+                dat = dat.astype(int)
+                x, y = dat.T
+                # Convert from microseconds to milliseconds
+                y = y / 1000
 
-                for thresh in data.keys():
-                    dat = np.asarray(data[thresh])
-                    pprint(dat)
-                    x, y = dat.T
-
-                    fig, ax = plt.subplots()
-                    ax.scatter(x, y)
-
-                    ax.set(
-                        xlabel="Input Size",
-                        ylabel="Runtime (microseconds)",
-                        title=f"Method: {method} Input Type: {input_type}\nThresh:{thresh}",
-                    )
-                    ax.grid()
-                    plt.show()
-
-        else:
-            for input_type in methods_and_type[method]:
-                pts = [i[:2] for i in methods_and_type[method][input_type]]
-                pts = np.asarray(pts)
-
-                x, y = pts.T
                 fig, ax = plt.subplots()
                 ax.scatter(x, y)
+                ax.plot(x, y)
 
                 ax.set(
                     xlabel="Input Size",
-                    ylabel="Runtime (microseconds)",
-                    title=f"{method} {input_type}",
+                    ylabel="Runtime (milliseconds)",
+                    title=f"Method: {method} Input Type: {descrip}\nThresh:{thresh_text}",
                 )
                 ax.grid()
 
-                print()
-                pprint(pts)
-                print()
+                ax.xaxis.get_major_formatter().set_useOffset(True)
+                ax.xaxis.get_major_formatter().set_scientific(True)
+                plt.xticks(rotation=30)
 
                 plt.show()
 
