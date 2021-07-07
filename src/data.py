@@ -13,7 +13,7 @@ Options:
     -o DIR, --output=DIR  Output to save data (default: ./data/).
 
 Commands:
-    evaluate              Evaluate an output CSV from QST.
+    evaluate              Evaluate an output CSV from QST run(s).
     generate              Generate testing data.
 """
 
@@ -24,6 +24,8 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
 from docopt import docopt
 
 # Linear increase in number of numbers
@@ -32,6 +34,7 @@ MIN_ELEMENTS = INCREMENT
 MAX_ELEMENTS = 1_000_000
 
 # Number of repeated lists for unsorted and uniform.
+# TODO: Greatly increase the number of samples I am testing.
 NUM_REPEATS = 10
 
 
@@ -88,18 +91,79 @@ def single_num(num_elements):
 
 
 def evaluate(in_file):
-    pass
-    # with open(in_file, "r") as csv_file:
-    #     csv_reader = csv.DictReader(csv_file)
-    #     contents = list(csv_reader)
+    from pprint import pprint
 
-    # methods_and_type = defaultdict(defaultdict(list))
-    # for row in contents:
-    #     methods_and_type[row["Method"]].append(row)
+    # Given a method and a type of a input data how does the runtime
+    # scale as the input size increases?
+    # Also, does this runtime change as the threshold value changes?
+    # Data preprocess / cleanup
+    with open(in_file, "r") as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        contents = list(csv_reader)
 
-    # from pprint import pprint
+    methods_and_type = {}
+    for row in contents:
+        if row["Method"] not in methods_and_type.keys():
+            methods_and_type[row["Method"]] = defaultdict(list)
 
-    # pprint(methods)
+        # We care about: method, type (descrip), size, thresh, and runtime.
+        # Size, runtime, threshold if present otherwise None.
+        if row["Method"] == "qsort_c":
+            pt = (
+                int(row["Size"]),
+                int(row["Elapsed Time (microseconds)"]),
+                int(row["Threshold"]),
+            )
+        else:
+            pt = (row["Size"], row["Elapsed Time (microseconds)"], None)
+        methods_and_type[row["Method"]][row["Description"]].append(pt)
+
+    # Plotting
+    for method in methods_and_type.keys():
+        # Additionally group by threshold
+        if method == "qsort_c":
+            for input_type in methods_and_type[method]:
+                data = defaultdict(list)
+                for i in methods_and_type[method][input_type]:
+                    data[i[2]].append(i[:2])
+
+                for thresh in data.keys():
+                    dat = np.asarray(data[thresh])
+                    pprint(dat)
+                    x, y = dat.T
+
+                    fig, ax = plt.subplots()
+                    ax.scatter(x, y)
+
+                    ax.set(
+                        xlabel="Input Size",
+                        ylabel="Runtime (microseconds)",
+                        title=f"Method: {method} Input Type: {input_type}\nThresh:{thresh}",
+                    )
+                    ax.grid()
+                    plt.show()
+
+        else:
+            for input_type in methods_and_type[method]:
+                pts = [i[:2] for i in methods_and_type[method][input_type]]
+                pts = np.asarray(pts)
+
+                x, y = pts.T
+                fig, ax = plt.subplots()
+                ax.scatter(x, y)
+
+                ax.set(
+                    xlabel="Input Size",
+                    ylabel="Runtime (microseconds)",
+                    title=f"{method} {input_type}",
+                )
+                ax.grid()
+
+                print()
+                pprint(pts)
+                print()
+
+                plt.show()
 
 
 def generate(output, force=False):
