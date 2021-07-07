@@ -85,7 +85,7 @@ if __name__ == "__main__":
     args["--output"] = args.get("--output") or f"./output_{now}.csv"
 
     VALID_METHODS = ("vanilla_quicksort", "qsort_c", "insertion_sort")
-    DATA_TYPES = ("reverse_sorted", "sorted", "unsorted", "uniform")
+    DATA_TYPES = ("reverse_sorted", "single_num", "sorted", "uniform", "unsorted")
 
     DATA_DIR = Path(args.get("DATA_DIR"))
     OUTPUT_PATH = Path(args.get("--output"))
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         # Determine the type of each input data file
         desc = "N/A"
         for t in DATA_TYPES:
-            if t in str(file):
+            if f"/{t}" in str(file):
                 desc = t
                 break
 
