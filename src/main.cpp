@@ -12,11 +12,11 @@
 #include "sort.hpp"
 
 // Argument Parsing
-const char* argp_program_version = "1.0.0";
-const char* argp_program_bug_address = "jarulsam@uwyo.edu";
+const char* argp_program_version = "1.0.1";
+const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 
 // Documentation
-static char doc[] = "TODO";
+static char doc[] = "A simple CLI app to save the runtime of sorting using various methods.";
 static char args_doc[] = "INPUT";
 
 // Accepted methods
