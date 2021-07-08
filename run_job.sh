@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Determine the correct number of jobs to submit,
-# create a results directory, then submit all the jobs as an sbatch job array.
+# Determine the correct number of jobs to submit, # create a results directory,
+# then submit all the jobs as an sbatch job array.
+
 # DO NOT EDIT job.sbatch!
 # Instead, edit the following variables, then run with ./run_job.sh
 
@@ -20,5 +21,7 @@ NUM_JOBS="$(wc -l <$INPUT)"
 
 mkdir -p "$RESULTS_DIR"
 cd "$RESULTS_DIR" || exit 1
+
+echo "NUMBER OF JOBS: $NUM_JOBS"
 
 sbatch --array "0-$NUM_JOBS" --output="${RESULTS_DIR}/output.%A_%a.out" "${CWD}/job.sbatch" "$INPUT"
