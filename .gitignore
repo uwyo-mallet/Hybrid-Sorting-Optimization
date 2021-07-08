@@ -3,6 +3,9 @@ data/
 *.csv
 *.dat
 
+# Jupyter notebook
+.ipynb_checkpoints/
+
 # VS
 .vs/
 .vscode/
