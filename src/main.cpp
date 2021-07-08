@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 
   // Default CLI options
   arguments.description = "N/A";
-  arguments.method = "vanilla_quicksort";
+  arguments.method = "qsort_c";
   arguments.out_file = "-";
   arguments.threshold = 4;
 
@@ -59,6 +59,12 @@ int main(int argc, char** argv)
   if (argp_parse(&argp, argc, argv, 0, 0, &arguments) != 0)
   {
     return EXIT_FAILURE;
+  }
+
+  // The only sort with a supported threshold is qsort_c,
+  // so otherwise, just set to 0.
+  if (arguments.method != "qsort_c") {
+    arguments.threshold = 0;
   }
 
   // Load the data
