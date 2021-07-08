@@ -97,6 +97,15 @@ def evaluate(in_file):
     # Given a method and a type of a input data how does the runtime
     # scale as the input size increases?
     # Also, does this runtime change as the threshold value changes?
+
+    # TODO: Overlay plots
+
+    """
+    Plots that we care about:
+        1. How does runtime scale generally as the input size increases dramatically?
+        2. How does threshold value affect runtime as the input size increases?
+    """
+
     # Data preprocess / cleanup
     with open(in_file, "r") as csv_file:
         csv_reader = csv.DictReader(csv_file)
@@ -109,6 +118,7 @@ def evaluate(in_file):
             (row["Size"], row["Elapsed Time (microseconds)"])
         )
 
+    # Addresses plot #1
     for method in data:
         for descrip in data[method]:
             thresh_text = ""
@@ -118,8 +128,12 @@ def evaluate(in_file):
 
                 dat = np.asarray(data[method][descrip][thresh])
                 dat = dat.astype(int)
+                # Sort to ensure line plots look nice
+                dat = np.sort(dat, axis=0)
+
                 x, y = dat.T
                 # Convert from microseconds to milliseconds
+                # TODO: At somepoint decide to use seconds?
                 y = y / 1000
 
                 fig, ax = plt.subplots()
@@ -132,11 +146,11 @@ def evaluate(in_file):
                     title=f"Method: {method} Input Type: {descrip}\nThresh:{thresh_text}",
                 )
                 ax.grid()
+                ax.get_xaxis().set_major_formatter(
+                    mtick.FuncFormatter(lambda x, p: format(int(x), ","))
+                )
 
-                ax.xaxis.get_major_formatter().set_useOffset(True)
-                ax.xaxis.get_major_formatter().set_scientific(True)
-                plt.xticks(rotation=30)
-
+                fig.autofmt_xdate()
                 plt.show()
 
 
