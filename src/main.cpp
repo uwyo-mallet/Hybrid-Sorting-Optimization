@@ -2,13 +2,12 @@
 
 #include <algorithm>
 #include <chrono>
+#include <csignal>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <string>
 #include <thread>
-
-#include <csignal>
 
 #include "config.hpp"
 #include "io.hpp"
@@ -19,7 +18,8 @@ const char* argp_program_version = QST_VERSION;
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 
 // Documentation
-static char doc[] = "A simple CLI app to save the runtime of sorting using various methods.";
+static char doc[] =
+    "A simple CLI app to save the runtime of sorting using various methods.";
 static char args_doc[] = "INPUT";
 
 // Accepted methods
@@ -43,18 +43,22 @@ struct arguments
 // Option parser
 static error_t parse_opt(int key, char* arg, struct argp_state* state);
 static struct argp argp = {options, parse_opt, args_doc, doc};
+void signal_handler(int signum);
+void write(struct arguments args, size_t size, std::string time, bool valid);
+
+struct arguments arguments;
+bool valid = false;
+std::string elapsed_time = "dnf";
+size_t size = 0;
 
 int main(int argc, char** argv)
 {
-  struct arguments arguments;
-
   // Default CLI options
   arguments.description = "N/A";
   arguments.method = "qsort_c";
   arguments.out_file = "-";
-  arguments.threshold = 4;
-
   // Threshold is only used for supported sorting methods.
+  arguments.threshold = 4;
 
   // Ensure no parsing errors occured
   // The assumption is that argp_parse correctly alerts the user
@@ -66,7 +70,8 @@ int main(int argc, char** argv)
 
   // The only sort with a supported threshold is qsort_c,
   // so otherwise, just set to 0.
-  if (arguments.method != "qsort_c") {
+  if (arguments.method != "qsort_c")
+  {
     arguments.threshold = 0;
   }
 
@@ -81,9 +86,11 @@ int main(int argc, char** argv)
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
   }
+  size = data.size();
 
-  // Ensure the output is sorted
-  bool valid = false;
+  // Signal handler
+  signal(SIGINT, signal_handler);
+  signal(SIGTERM, signal_handler);
 
   // Timing
   auto start_time = std::chrono::high_resolution_clock::now();
@@ -107,52 +114,23 @@ int main(int argc, char** argv)
   }
 
   auto end_time = std::chrono::high_resolution_clock::now();
-  auto elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(
+  auto runtime = std::chrono::duration_cast<std::chrono::microseconds>(
       end_time - start_time);
+
+  // Convert runtime to string
+  elapsed_time = std::to_string((size_t)runtime.count());
 
   // Ensure the data is actually sorted correctly
   valid = is_sorted(data.data(), data.size());
 
   // Output
-  if (arguments.out_file == "-")
+  try
   {
-    std::cout << "Method: " << arguments.method << std::endl;
-    std::cout << "Input: " << arguments.in_file << std::endl;
-    std::cout << "Description: " << arguments.description << std::endl;
-    std::cout << "Size: " << data.size() << std::endl;
-    std::cout << "Elapsed Time (microseconds): " << elapsed_time.count()
-              << std::endl;
-
-    std::cout << "Threshold: " << arguments.threshold << std::endl;
-    std::cout << "Valid: " << (valid ? "True" : "False") << std::endl;
+    write(arguments, data.size(), elapsed_time, valid);
   }
-  else
+  catch (std::ios_base::failure& e)
   {
-    // Open and verify
-    std::fstream out_file(arguments.out_file,
-                          std::ios::in | std::ios::out | std::ios::app);
-    if (!out_file)
-    {
-      std::cerr << "Couldn't open destination file!" << std::endl;
-      return EXIT_FAILURE;
-    }
-
-    // Check if file is empty, if so, add the CSV header.
-    out_file.seekg(0, std::ios::end);
-    if (out_file.tellg() == 0)
-    {
-      out_file.clear();
-      out_file << "Method,Input,Description,Size,Elapsed Time "
-                  "(microseconds),Threshold,Valid"
-               << std::endl;
-    }
-
-    out_file << arguments.method << "," << arguments.in_file << ","
-             << arguments.description << "," << data.size() << ","
-             << elapsed_time.count() << "," << arguments.threshold << ","
-             << (valid ? "True" : "False") << std::endl;
-
-    out_file.close();
+    std::cerr << e.what() << std::endl;
   }
 
   return EXIT_SUCCESS;
@@ -217,4 +195,60 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
   }
 
   return 0;
+}
+
+void signal_handler(int signum)
+{
+  // Try to write the output on failure.
+  try
+  {
+    write(arguments, size, elapsed_time, valid);
+  }
+  catch (std::ios_base::failure& e)
+  {
+    std::cerr << e.what() << std::endl;
+  }
+  exit(EXIT_FAILURE);
+}
+
+void write(struct arguments args, size_t size, std::string time, bool valid)
+{
+  if (args.out_file == "-")
+  {
+    std::cout << "Method: " << args.method << std::endl;
+    std::cout << "Input: " << args.in_file << std::endl;
+    std::cout << "Description: " << args.description << std::endl;
+    std::cout << "Size: " << size << std::endl;
+    std::cout << "Elapsed Time (microseconds): " << elapsed_time << std::endl;
+
+    std::cout << "Threshold: " << args.threshold << std::endl;
+    std::cout << "Valid: " << (valid ? "True" : "False") << std::endl;
+  }
+  else
+  {
+    // Open and verify
+    std::fstream out_file(args.out_file,
+                          std::ios::in | std::ios::out | std::ios::app);
+    if (!out_file)
+    {
+      throw std::ios_base::failure("Couldn't open destination file!");
+    }
+
+    // Check if file is empty, if so, add the CSV header.
+    out_file.seekg(0, std::ios::end);
+    if (out_file.tellg() == 0)
+    {
+      out_file.clear();
+      out_file << "Method,Input,Description,Size,Elapsed Time "
+                  "(microseconds),Threshold,Valid"
+               << std::endl;
+    }
+
+    // Write the actual data
+    out_file << args.method << "," << args.in_file << "," << args.description
+             << "," << size << "," << time << "," << args.threshold << ","
+             << (valid ? "True" : "False") << std::endl;
+
+    out_file.close();
+  }
 }
