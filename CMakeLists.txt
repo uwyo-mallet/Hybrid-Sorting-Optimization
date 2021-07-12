@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
-  QuickSort-Tuning
-  VERSION 0.2
+  QST
+  VERSION 1.0.2
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES CXX)
+configure_file(src/config.h.in config.hpp)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)

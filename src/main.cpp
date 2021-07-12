@@ -8,11 +8,14 @@
 #include <string>
 #include <thread>
 
+#include <csignal>
+
+#include "config.hpp"
 #include "io.hpp"
 #include "sort.hpp"
 
 // Argument Parsing
-const char* argp_program_version = "1.0.1";
+const char* argp_program_version = QST_VERSION;
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 
 // Documentation
