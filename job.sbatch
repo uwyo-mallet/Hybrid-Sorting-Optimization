@@ -8,13 +8,14 @@
 #SBATCH --time=01:00:00
 #SBATCH --nodes=1
 #SBATCH --mem=1G
-#SBATCH --mail-type=ALL
-#SBATCH --mail-user=jarulsam@uwyo.edu
+#SBATCH --signal=TERM@300
 
+echo "- - - - - - - - - - - - - - - - - - - - -"
 echo "SLURM_JOB_ID: $SLURM_JOB_ID"
 echo "SLURM_JOB_NAME: $SLURM_JOB_NAME"
 echo "SLURM_JOB_NODELIST: $SLURM_JOB_NODELIST"
 echo "SLURM_ARRAY_TASK_ID: $SLURM_ARRAY_TASK_ID"
+echo "- - - - - - - - - - - - - - - - - - - - -"
 
 INPUT_DATA="$1"
 mapfile -t commands <"$INPUT_DATA"
