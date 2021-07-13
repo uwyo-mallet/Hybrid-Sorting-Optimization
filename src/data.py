@@ -53,7 +53,7 @@ def create_dirs(base_path, dirs):
         real_path.mkdir()
 
 
-def sorted_(num_elements):
+def ascending(num_elements):
     """Return a list of sorted numbers from 0 to num_elements."""
     global sorted_cache
     cache_len = len(sorted_cache)
@@ -65,12 +65,12 @@ def sorted_(num_elements):
     return sorted_cache[:num_elements]
 
 
-def reverse_sorted(num_elements):
+def descending(num_elements):
     """Return the reverse of sorted_."""
-    return reversed(sorted_(num_elements))
+    return reversed(ascending(num_elements))
 
 
-def unsorted(num_elements):
+def random_nums(num_elements):
     """Generate num_elements random numbers in a list."""
     ret = []
     for _ in range(num_elements):
@@ -157,10 +157,9 @@ def evaluate(in_file):
 def generate(output, force=False):
     """Generate all random data and write to output folder."""
     DIRS = {
-        "sorted": sorted_,
-        "reverse_sorted": reverse_sorted,
-        "unsorted": unsorted,
-        "uniform": uniform,
+        "ascending": ascending,
+        "descending": descending,
+        "random": random_nums,
         "single_num": single_num,
     }
     random.seed()

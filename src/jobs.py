@@ -84,8 +84,8 @@ if __name__ == "__main__":
     args["--exec"] = args.get("--exec") or "./build/QST"
     args["--output"] = args.get("--output") or f"./output_{now}.csv"
 
-    VALID_METHODS = ("vanilla_quicksort", "qsort_c", "insertion_sort")
-    DATA_TYPES = ("reverse_sorted", "single_num", "sorted", "uniform", "unsorted")
+    VALID_METHODS = {"vanilla_quicksort", "qsort_c", "insertion_sort"}
+    DATA_TYPES = {"ascending", "descending", "random", "single_num"}
 
     DATA_DIR = Path(args.get("DATA_DIR"))
     OUTPUT_PATH = Path(args.get("--output"))
@@ -154,6 +154,7 @@ if __name__ == "__main__":
         for method in METHODS:
             # Only qsort_c cares about thresh (for now).
             # For the others, we can use just one dummy value.
+            # QST corrects this to 0 on the CSV output.
             if method == "qsort_c":
                 for thresh in THRESHOLDS:
                     queue.put(Job(QST_PATH, file, desc, method, thresh, OUTPUT_PATH))
