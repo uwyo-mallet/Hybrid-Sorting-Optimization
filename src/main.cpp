@@ -14,7 +14,10 @@
 #include "sort.hpp"
 
 // Argument Parsing
-const char* argp_program_version = QST_VERSION;
+#define VERSION \
+  QST_VERSION "\nCompiled with: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION
+
+const char* argp_program_version = VERSION;
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 
 // Documentation

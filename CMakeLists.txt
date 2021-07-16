@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.0.2
+  VERSION 1.0.3
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES CXX)
 configure_file(src/config.h.in config.hpp)
