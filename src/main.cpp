@@ -110,6 +110,10 @@ int main(int argc, char** argv)
   {
     qsort_c(data.data(), data.size(), arguments.threshold);
   }
+  else if (arguments.method == "std")
+  {
+    std::sort(data.begin(), data.end());
+  }
   else
   {
     std::cerr << "Invalid method selected." << std::endl;
@@ -163,7 +167,7 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
       {
         args->threshold = std::stoi(std::string(arg));
       }
-      catch (std::invalid_argument)
+      catch (std::invalid_argument&)
       {
         std::cerr << "Invalid threshold: " << arg << std::endl;
         return 1;

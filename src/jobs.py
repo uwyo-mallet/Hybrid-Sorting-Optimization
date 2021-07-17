@@ -84,7 +84,7 @@ if __name__ == "__main__":
     args["--exec"] = args.get("--exec") or "./build/QST"
     args["--output"] = args.get("--output") or f"./output_{now}.csv"
 
-    VALID_METHODS = {"vanilla_quicksort", "qsort_c", "insertion_sort"}
+    VALID_METHODS = {"vanilla_quicksort", "qsort_c", "insertion_sort", "std"}
     DATA_TYPES = {"ascending", "descending", "random", "single_num"}
 
     DATA_DIR = Path(args.get("DATA_DIR"))
