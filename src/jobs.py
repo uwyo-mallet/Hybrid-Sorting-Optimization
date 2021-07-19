@@ -2,22 +2,24 @@
 """
 Automatically dispatch sort jobs of varying inputs, methods, and threshold values.
 
-This essentially serves as a job scheduler, so it is not best suited
-for slurm. Instead, use this when running on a single multi-cored machine.
+This essentially serves as a job scheduler, with optional features to easily
+dispatch slurm job array batches. Only use the native scheduling features if
+running on a local multi-core machine.
 
 Usage:
     jobs.py DATA_DIR [options]
     jobs.py -h | --help
 
 Options:
-    -h, --help                      Show this help.
-    -e EXEC, --exec=EXEC            Path to executable QST.
-    -f, --force                     Overwrite existing.
-    -j N, --jobs=N                  Do N jobs in parallel.
-    -m METHODS, --methods=METHODS   Comma seperated list of methods to use for sorters.
-    -o FILE, --output=FILE          Output to save data.
-    -s=SLURM, --slurm=SLURM         Generate a slurm job data file.
-    -t THRESH, --threshold THRESH   Comma seperated range for threshold (min,max) including both endpoints, or a single value.
+    -h, --help               Show this help.
+    -e, --exec=EXEC          Path to QST executable.
+    -f, --force              Overwrite existing if applicable.
+    -j, --jobs=N             Do N jobs in parallel.
+    -m, --methods=METHODS    Comma seperated list of methods to use for sorters.
+    -o, --output=FILE        Output to save results from QST.
+    -s, --slurm=SLURM        Generate a slurm job data file and save to SLURM.
+    -t, --threshold=THRESH   Comma seperated range for threshold (min,max)
+                             including both endpoints, or a single value.
 """
 
 import os
@@ -82,10 +84,9 @@ if __name__ == "__main__":
 
     # Cleanup CLI inputs
     args["--exec"] = args.get("--exec") or "./build/QST"
-    args["--output"] = args.get("--output") or f"./output_{now}.csv"
 
-    VALID_METHODS = {"vanilla_quicksort", "qsort_c", "insertion_sort", "std"}
-    DATA_TYPES = {"ascending", "descending", "random", "single_num"}
+    VALID_METHODS = ("vanilla_quicksort", "qsort_c", "insertion_sort", "std")
+    DATA_TYPES = ("ascending", "descending", "random", "single_num")
 
     DATA_DIR = Path(args.get("DATA_DIR"))
     OUTPUT_PATH = Path(args.get("--output"))
@@ -115,15 +116,21 @@ if __name__ == "__main__":
                 if len(buf) != 2:
                     raise ValueError
                 THRESH_RANGE = [int(i) for i in buf]
-            except ValueError:
-                raise ValueError(f"Invalid threshold: {buf}")
+            except ValueError as e:
+                raise ValueError(f"Invalid threshold: {buf}") from e
     if (
         THRESH_RANGE[1] < THRESH_RANGE[0]
         or THRESH_RANGE[0] <= 0
         or THRESH_RANGE[1] <= 0
     ):
-        raise ValueError(f"Invalid threshold: {THRESH_RANGE}")
+        raise ValueError(f"Invalid threshold range: {THRESH_RANGE}")
     THRESHOLDS = list(range(THRESH_RANGE[0], THRESH_RANGE[1] + 1))
+
+    # Create default output path if no override
+    if OUTPUT_PATH is None:
+        output_folder = Path(f"./results/{now}/")
+        output_folder.mkdir(exist_ok=True)
+        OUTPUT_PATH = Path(output_folder, f"./output_{now}.csv")
 
     # Error check CLI args
     if not QST_PATH.is_file():
