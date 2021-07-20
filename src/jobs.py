@@ -89,7 +89,7 @@ if __name__ == "__main__":
     DATA_TYPES = ("ascending", "descending", "random", "single_num")
 
     DATA_DIR = Path(args.get("DATA_DIR"))
-    OUTPUT_PATH = Path(args.get("--output"))
+    OUTPUT_PATH = args.get("--output")
     QST_PATH = Path(args.get("--exec"))
     NUM_JOBS = args.get("--jobs") or 1
     NUM_JOBS = int(NUM_JOBS)
@@ -128,9 +128,15 @@ if __name__ == "__main__":
 
     # Create default output path if no override
     if OUTPUT_PATH is None:
-        output_folder = Path(f"./results/{now}/")
-        output_folder.mkdir(exist_ok=True)
-        OUTPUT_PATH = Path(output_folder, f"./output_{now}.csv")
+        if args.get("--slurm") is not None:
+            # Don't create an output folder if using slurm,
+            # that is the shell script's responsibility.
+            # Assume that the output should be in the folder I'm in.
+            OUTPUT_PATH = Path(f"./output_{now}.csv")
+        else:
+            output_folder = Path(f"./results/{now}/")
+            output_folder.mkdir(exist_ok=True)
+            OUTPUT_PATH = Path(output_folder, f"./output_{now}.csv")
 
     # Error check CLI args
     if not QST_PATH.is_file():
@@ -168,7 +174,7 @@ if __name__ == "__main__":
             else:
                 queue.put(Job(QST_PATH, file, desc, method, 1, OUTPUT_PATH))
 
-    if not args.get("--slurm"):
+    if args.get("--slurm") is None:
         # Create my own process group and start all the jobs in parrallel
         os.setpgrp()
         try:
