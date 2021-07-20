@@ -82,7 +82,7 @@ int main(int argc, char** argv)
   std::vector<int> data;
   try
   {
-    from_disk(data, arguments.in_file);
+    from_disk_gz(data, arguments.in_file);
   }
   catch (std::ios_base::failure& e)
   {
