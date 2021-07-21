@@ -14,7 +14,7 @@ message("CXX Compiler Path: " ${CMAKE_CXX_COMPILER})
 message("CXX Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
 
 # Boost
-find_package(Boost 1.67.0 REQUIRED COMPONENTS iostreams filesystem)
+find_package(Boost 1.67.0 REQUIRED COMPONENTS iostreams)
 include_directories(${BOOST_INCLUDE_DIRS})
 
 # Add src files
@@ -29,7 +29,7 @@ add_executable(${EXECUTABLE_NAME} ${SRC_FILES})
 target_include_directories(${EXECUTABLE_NAME} PRIVATE ${PROJECT_BINARY_DIR})
 
 # Linking
-target_link_libraries(${EXECUTABLE_NAME} Boost::iostreams Boost::filesystem)
+target_link_libraries(${EXECUTABLE_NAME} Boost::iostreams)
 
 # Compiler warnings, platform specific.
 add_compile_options("$<$<CONFIG:RELEASE>:-W;-Wall;-O3;-pedantic>")
