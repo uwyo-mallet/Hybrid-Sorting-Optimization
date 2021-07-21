@@ -152,7 +152,7 @@ if __name__ == "__main__":
         OUTPUT_PATH.unlink(missing_ok=True)
 
     # Create all the jobs to run
-    files = list(DATA_DIR.glob("**/*.dat"))
+    files = list(DATA_DIR.glob("**/*.gz"))
     queue: "Queue[Job]" = Queue()
 
     # Generate the jobs

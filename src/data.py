@@ -24,18 +24,13 @@ from pathlib import Path
 import numpy as np
 from docopt import docopt
 
+
 # Linear increase in number of numbers
-INCREMENT = 50_000
+INCREMENT = 500_000
 MIN_ELEMENTS = INCREMENT
-MAX_ELEMENTS = 1_000_000
+MAX_ELEMENTS = 20_000_000
 
-# Number of repeated lists for unsorted and uniform.
-# TODO: Greatly increase the number of samples I am testing.
-NUM_REPEATS = 10
-
-
-# Cache sorted values, since there are so many to be made each time
-sorted_cache = list(range(0, MAX_ELEMENTS))
+cache = np.arange(0, MAX_ELEMENTS, 1, dtype=np.int64)
 
 
 def create_dirs(base_path, dirs):
@@ -48,12 +43,12 @@ def create_dirs(base_path, dirs):
 
 def ascending(num_elements):
     """Return an array of ascending numbers from 0 to num_elements."""
-    return np.arange(0, num_elements, 1)
+    return cache[:num_elements]
 
 
 def descending(num_elements):
     """Return the reverse of ascending."""
-    return reversed(ascending(num_elements))
+    return np.flip(ascending(num_elements))
 
 
 def random_nums(num_elements):
@@ -62,12 +57,12 @@ def random_nums(num_elements):
     for _ in range(num_elements):
         ret.append(random.randint(0, num_elements))
 
-    return tuple(ret)
+    return np.asarray(ret, dtype=np.int64)
 
 
 def single_num(num_elements):
     """Return an array of length num_elements where every element is 42."""
-    arr = np.empty(num_elements)
+    arr = np.empty(num_elements, dtype=np.int64)
     arr.fill(42)
     return arr
 
@@ -95,18 +90,27 @@ def generate(output, force=False):
         raise Exception("Output requires a directory, not a file")
 
     if force:
-        shutil.rmtree(base_path)
+        shutil.rmtree(base_path, ignore_errors=True)
 
     create_dirs(base_path, DIRS.keys())
     for k, v in DIRS.items():
         dest_folder = Path(base_path, k)
-        for i, num_elements in enumerate(range(MIN_ELEMENTS, MAX_ELEMENTS, INCREMENT)):
-            dest_filename = Path(dest_folder, f"{i}.dat")
+        for i, num_elements in enumerate(
+            range(MIN_ELEMENTS, MAX_ELEMENTS + INCREMENT, INCREMENT)
+        ):
+            dest_filename = Path(dest_folder, f"{i}.dat.gz")
+            np.savetxt(
+                dest_filename,
+                v(num_elements),
+                fmt="%d",
+                delimiter="\n",
+                comments="",
+            )
 
-            f = open(dest_filename, "w")
-            for row in v(num_elements):
-                f.write(str(row) + "\n")
-            f.close()
+    with open(Path(base_path, "details.txt"), "w") as f:
+        f.write(
+            f"MIN_ELEMENTS: {MIN_ELEMENTS}\nMAX_ELEMENTS: {MAX_ELEMENTS}\nINCREMENT: {INCREMENT}"
+        )
 
 
 if __name__ == "__main__":
