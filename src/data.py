@@ -24,7 +24,6 @@ from pathlib import Path
 import numpy as np
 from docopt import docopt
 
-
 # Linear increase in number of numbers
 INCREMENT = 500_000
 MIN_ELEMENTS = INCREMENT
