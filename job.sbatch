@@ -5,6 +5,7 @@
 
 #SBATCH --job-name=Quicksort-Tuning
 #SBATCH --account=mallet
+#SBATCH --partition=teton
 #SBATCH --time=05:00:00
 #SBATCH --nodes=1
 #SBATCH --mem=2G
