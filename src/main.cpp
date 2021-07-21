@@ -51,7 +51,7 @@ void write(struct arguments args, size_t size, std::string time, bool valid);
 
 struct arguments arguments;
 bool valid = false;
-std::string elapsed_time = "dnf";
+std::string elapsed_time = "-1";
 size_t size = 0;
 
 int main(int argc, char** argv)
