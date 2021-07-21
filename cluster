@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION="1.0.0"
+VERSION="1.1.0"
 
 # Ensure that this does have a trailing slash
 REMOTE_DIR="jarulsam@teton.arcc.uwyo.edu:/project/mallet/jarulsam/quicksort-tuning/"
@@ -11,6 +11,7 @@ EXCLUDE="*build/*"
 show_help() {
     printf "Usage: cluster [OPTION...] to\n"
     printf "       cluster [OPTION...] from\n"
+    printf "       cluster [OPTION...] build\n"
 
     printf "\n"
 
@@ -33,6 +34,21 @@ to() {
 # Pull from remote
 from() {
     rsync -auvz --progress -e 'ssh -o StrictHostKeyChecking=no' --delete --exclude="${EXCLUDE}" "${REMOTE_DIR}" "${CWD}"
+}
+
+# Activate the required modules and build QST
+build() {
+    module load gcc
+    module load swset
+    module load boost/1.67.0
+    module load cmake/3.16.5
+    module load miniconda3
+
+    rm -r build/
+    mkdir ./build/
+    cd ./build/ || exit 1
+    cmake .. -DCMAKE_BUILD_TYPE=RELEASE
+    make -j
 }
 
 # More safety, by turning some bugs into errors.
@@ -99,7 +115,10 @@ if [ "$op" == "to" ]; then
     to
 elif [ "$op" == "from" ]; then
     from
+elif [ "$op" == "build" ]; then
+    build
 else
+    echo "$op"
     show_help
     exit 5
 fi
