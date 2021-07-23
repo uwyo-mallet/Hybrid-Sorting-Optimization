@@ -1,6 +1,10 @@
 #include <argp.h>
 
 #include <algorithm>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/directory.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <chrono>
 #include <csignal>
 #include <fstream>
@@ -12,6 +16,9 @@
 #include "config.hpp"
 #include "io.hpp"
 #include "sort.hpp"
+
+namespace fs = boost::filesystem;
+namespace mp = boost::multiprecision;
 
 // Argument Parsing
 #define VERSION \
@@ -37,15 +44,16 @@ static struct argp_option options[] = {
 struct arguments
 {
   std::string description;
-  std::string in_file;
+  fs::path in_file;
   std::string method;
-  std::string out_file;
+  fs::path out_file;
   int threshold;
 };
 
 // Option parser
 static error_t parse_opt(int key, char* arg, struct argp_state* state);
 static struct argp argp = {options, parse_opt, args_doc, doc};
+
 void signal_handler(int signum);
 void write(struct arguments args, size_t size, std::string time, bool valid);
 
@@ -79,7 +87,7 @@ int main(int argc, char** argv)
   }
 
   // Load the data
-  std::vector<int> data;
+  std::vector<mp::cpp_int> data;
   try
   {
     from_disk_gz(data, arguments.in_file);
@@ -234,7 +242,7 @@ void write(struct arguments args, size_t size, std::string time, bool valid)
   else
   {
     // Open and verify
-    std::fstream out_file(args.out_file,
+    std::fstream out_file(args.out_file.string(),
                           std::ios::in | std::ios::out | std::ios::app);
     if (!out_file)
     {

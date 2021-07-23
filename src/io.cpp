@@ -5,10 +5,14 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <random>
+
+namespace fs = boost::filesystem;
+namespace mp = boost::multiprecision;
 
 template <typename T>
 void print(const std::vector<T> &arr)
@@ -23,9 +27,9 @@ void print(const std::vector<T> &arr)
 template void print(const std::vector<int> &arr);
 template void print(const std::vector<float> &arr);
 
-void from_disk_txt(std::vector<int> &vec, std::string filename)
+void from_disk_txt(std::vector<mp::cpp_int> &vec, fs::path filename)
 {
-  std::ifstream in_file(filename);
+  std::ifstream in_file(filename.string());
 
   if (!in_file.is_open() || !in_file.good())
   {
@@ -33,18 +37,19 @@ void from_disk_txt(std::vector<int> &vec, std::string filename)
   }
 
   // Handle reading floats, but just cast them into ints
-  float buffer;
+  mp::cpp_int buffer;
   while (in_file >> buffer)
   {
-    vec.push_back((int)buffer);
+    vec.push_back(buffer);
   }
 
   in_file.close();
 }
 
-void from_disk_gz(std::vector<int> &vec, std::string filename)
+void from_disk_gz(std::vector<mp::cpp_int> &vec, fs::path filename)
 {
-  std::ifstream in_file(filename, std::ios_base::in | std::ios_base::binary);
+  std::ifstream in_file(filename.string(),
+                        std::ios_base::in | std::ios_base::binary);
   if (!in_file.is_open() || !in_file.good())
   {
     throw std::ios_base::failure("Couldn't open input file");
@@ -58,11 +63,11 @@ void from_disk_gz(std::vector<int> &vec, std::string filename)
   // Convert streambuf to istream
   std::istream instream(&inbuf);
 
-  // Handle reading floats, but just cast them into ints
-  float line;
+  // TODO: Handle floats here.
+  mp::cpp_int line;
   while (instream >> line)
   {
-    vec.push_back((int)line);
+    vec.push_back(line);
   }
   // Cleanup
   in_file.close();
