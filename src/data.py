@@ -8,9 +8,12 @@ Usage:
     data.py -h | --help
 
 Options:
-    -h, --help          Show this help.
-    -f, --force         Overwrite existing.
-    -o, --output=DIR    Output to save data (default: ./data/).
+    -h, --help               Show this help.
+    -f, --force              Overwrite existing.
+    -o, --output=DIR         Output to save data (default: ./data/).
+    -t, --threshold=THRESH   Comma seperated range for output data.
+                             If no increment is specified, the minimum
+                             value is used. Example: 500000,20000000,500000
 
 Commands:
     evaluate            Evaluate an output CSV from QST run(s).
@@ -24,12 +27,12 @@ from pathlib import Path
 import numpy as np
 from docopt import docopt
 
-# Linear increase in number of numbers
-INCREMENT = 500_000
-MIN_ELEMENTS = INCREMENT
-MAX_ELEMENTS = 20_000_000
+import sys
 
-cache = np.arange(0, MAX_ELEMENTS, 1, dtype=np.int64)
+# Default thresholds
+INCREMENT = 100_000
+MIN_ELEMENTS = INCREMENT
+MAX_ELEMENTS = 1_000_000
 
 
 def create_dirs(base_path, dirs):
@@ -70,7 +73,13 @@ def evaluate(in_file):
     print("Use the evaluate.ipynb notebook instead, at least for now...")
 
 
-def generate(output, force=False):
+def generate(
+    output,
+    minimum,
+    maximum,
+    increment,
+    force=False,
+):
     """Generate all random data and write to output folder."""
     DIRS = {
         "ascending": ascending,
@@ -95,13 +104,13 @@ def generate(output, force=False):
     for k, v in DIRS.items():
         dest_folder = Path(base_path, k)
         for i, num_elements in enumerate(
-            range(MIN_ELEMENTS, MAX_ELEMENTS + INCREMENT, INCREMENT)
+            range(minimum, maximum + increment, increment)
         ):
             dest_filename = Path(dest_folder, f"{i}.dat.gz")
             np.savetxt(
                 dest_filename,
                 v(num_elements),
-                fmt="%d",
+                fmt="%u",
                 delimiter="\n",
                 comments="",
             )
@@ -117,4 +126,34 @@ if __name__ == "__main__":
     if args.get("evaluate"):
         evaluate(args.get("FILE"))
     elif args.get("generate"):
-        generate(args.get("--output"), args.get("--force"))
+        # Parse threshold and validate
+        if args.get("--threshold") is not None:
+            try:
+                buf = args.get("--threshold").rsplit(",")
+                if len(buf) != 2 and len(buf) != 3:
+                    raise ValueError
+                buf = [int(i) for i in buf]
+
+                minimum = buf[0]
+                maximum = buf[1]
+                try:
+                    increment = buf[3]
+                except IndexError:
+                    increment = minimum
+            except ValueError as e:
+                raise ValueError(f"Invalid threshold: {buf}") from e
+        else:
+            minimum = MIN_ELEMENTS
+            maximum = MAX_ELEMENTS
+            increment = INCREMENT
+
+        if maximum <= minimum or minimum < 0 or maximum < 0 or increment < 0:
+            raise ValueError("Invalid threshold range")
+
+        print("Generating data...", file=sys.stderr)
+        print(f"Minimum: {minimum:,}", file=sys.stderr)
+        print(f"Maximum: {maximum:,}", file=sys.stderr)
+        print(f"Increment: {increment:,}", file=sys.stderr)
+
+        cache = np.arange(0, maximum, 1, dtype=np.int64)
+        generate(args.get("--output"), minimum, maximum, increment, args.get("--force"))
