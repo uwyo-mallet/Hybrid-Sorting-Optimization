@@ -25,6 +25,7 @@ Options:
 """
 
 import os
+import platform
 import signal
 import subprocess
 import threading
@@ -78,6 +79,23 @@ def worker():
     while not queue.empty():
         job = queue.get()
         job.run()
+
+
+def write_info(output_folder):
+    info = {
+        "Architecture": platform.architecture(),
+        "Machine": platform.machine(),
+        "Platform": platform.platform(),
+        "Processor": platform.processor(),
+        "Release": platform.release(),
+        "System": platform.system(),
+        "Uname": platform.uname(),
+        "Version": platform.version(),
+    }
+
+    with open(Path(output_folder, "system_details.txt"), "w") as f:
+        for i in info.keys():
+            f.write(f"{i}: {str(info[i])}\n")
 
 
 if __name__ == "__main__":
@@ -181,6 +199,9 @@ if __name__ == "__main__":
                 queue.put(Job(QST_PATH, file, desc, method, 1, OUTPUT_PATH))
 
     if args.get("--slurm") is None:
+        # Save some deatils about what platform we are running on.
+        write_info(OUTPUT_PATH.parent)
+
         for i in range(NUM_REPEATS):
             # Create my own process group and start all the jobs in parrallel
             os.setpgrp()
