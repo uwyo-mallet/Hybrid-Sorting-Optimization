@@ -1,5 +1,6 @@
 PyQt5==5.15.4
 docopt==0.6.2
+ipympl==0.7.0
 ipywidgets==7.6.3
 jupyter==1.0.0
 matplotlib==3.4.2
