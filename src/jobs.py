@@ -17,7 +17,7 @@ Options:
     -j, --jobs=N             Do N jobs in parallel.
     -m, --methods=METHODS    Comma seperated list of methods to use for sorters.
     -o, --output=FILE        Output to save results from QST.
-    -r, --repeats=N          Number of times to repeat the experiments.
+    -r, --runs=N             Number of times to run the same input data.
                              This option and -s are mutually exclusive.
     -s, --slurm=SLURM        Generate a slurm job data file and save to SLURM.
     -t, --threshold=THRESH   Comma seperated range for threshold (min,max)
@@ -36,6 +36,11 @@ from queue import Queue
 from docopt import docopt
 
 from info import write_info
+import shutil
+
+# Maximum array index supported by slurm
+# https://slurm.schedmd.com/job_array.html
+MAX_BATCH = 4_500
 
 
 @dataclass
@@ -201,7 +206,18 @@ if __name__ == "__main__":
                 # Kill all processes in my group if stopped early.
                 os.killpg(0, signal.SIGKILL)
     else:
-        with open(Path(args.get("--slurm")), "w") as slurm_file:
-            while not queue.empty():
-                job = queue.get()
-                slurm_file.write(job.cli + "\n")
+        SLURM_DIR = Path(args.get("--slurm"))
+
+        if SLURM_DIR.exists() and SLURM_DIR.is_dir():
+            shutil.rmtree(SLURM_DIR)
+        SLURM_DIR.mkdir()
+
+        index = 0
+        while not queue.empty():
+            with open(Path(SLURM_DIR, f"{index}.dat"), "w") as slurm_file:
+                size = 0
+                while not queue.empty() and size < MAX_BATCH:
+                    job = queue.get()
+                    slurm_file.write(job.cli + "\n")
+                    size += 1
+            index += 1
