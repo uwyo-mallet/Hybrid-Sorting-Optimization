@@ -17,6 +17,8 @@ Options:
     -j, --jobs=N             Do N jobs in parallel.
     -m, --methods=METHODS    Comma seperated list of methods to use for sorters.
     -o, --output=FILE        Output to save results from QST.
+    -r, --repeats=N          Number of times to repeat the experiments.
+                             This option and -s are mutually exclusive.
     -s, --slurm=SLURM        Generate a slurm job data file and save to SLURM.
     -t, --threshold=THRESH   Comma seperated range for threshold (min,max)
                              including both endpoints, or a single value.
@@ -93,6 +95,10 @@ if __name__ == "__main__":
     QST_PATH = Path(args.get("--exec"))
     NUM_JOBS = args.get("--jobs") or 1
     NUM_JOBS = int(NUM_JOBS)
+
+    NUM_REPEATS = args.get("--repeats") or 1
+    NUM_REPEATS = int(NUM_REPEATS)
+
     THRESH_RANGE = [4, 4]
 
     # Parse methods
@@ -135,7 +141,7 @@ if __name__ == "__main__":
             OUTPUT_PATH = Path(f"./output_{now}.csv")
         else:
             output_folder = Path(f"./results/{now}/")
-            output_folder.mkdir(exist_ok=True)
+            output_folder.mkdir(exist_ok=True, parents=True)
             OUTPUT_PATH = Path(output_folder, f"./output_{now}.csv")
 
     # Error check CLI args
@@ -175,19 +181,20 @@ if __name__ == "__main__":
                 queue.put(Job(QST_PATH, file, desc, method, 1, OUTPUT_PATH))
 
     if args.get("--slurm") is None:
-        # Create my own process group and start all the jobs in parrallel
-        os.setpgrp()
-        try:
-            threads = [threading.Thread(target=worker) for _ in range(NUM_JOBS)]
-            # Start each thread and wait till they all complete
-            for thread in threads:
-                thread.start()
-            # Wait till all are started before waiting
-            for thread in threads:
-                thread.join()
-        except KeyboardInterrupt:
-            # Kill all processes in my group if stopped early.
-            os.killpg(0, signal.SIGKILL)
+        for i in range(NUM_REPEATS):
+            # Create my own process group and start all the jobs in parrallel
+            os.setpgrp()
+            try:
+                threads = [threading.Thread(target=worker) for _ in range(NUM_JOBS)]
+                # Start each thread and wait till they all complete
+                for thread in threads:
+                    thread.start()
+                # Wait till all are started before waiting
+                for thread in threads:
+                    thread.join()
+            except KeyboardInterrupt:
+                # Kill all processes in my group if stopped early.
+                os.killpg(0, signal.SIGKILL)
     else:
         with open(Path(args.get("--slurm")), "w") as slurm_file:
             while not queue.empty():
