@@ -18,7 +18,7 @@
 #include "sort.hpp"
 
 namespace fs = boost::filesystem;
-namespace mp = boost::multiprecision;
+namespace bmp = boost::multiprecision;
 
 // Argument Parsing
 #define VERSION \
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
   }
 
   // Load the data
-  std::vector<mp::cpp_int> data;
+  std::vector<bmp::cpp_int> data;
   try
   {
     from_disk_gz(data, arguments.in_file);

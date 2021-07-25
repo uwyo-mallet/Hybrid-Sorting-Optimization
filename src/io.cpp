@@ -12,7 +12,7 @@
 #include <random>
 
 namespace fs = boost::filesystem;
-namespace mp = boost::multiprecision;
+namespace bmp = boost::multiprecision;
 
 template <typename T>
 void print(const std::vector<T> &arr)
@@ -27,7 +27,7 @@ void print(const std::vector<T> &arr)
 template void print(const std::vector<int> &arr);
 template void print(const std::vector<float> &arr);
 
-void from_disk_txt(std::vector<mp::cpp_int> &vec, fs::path filename)
+void from_disk_txt(std::vector<bmp::cpp_int> &vec, fs::path filename)
 {
   std::ifstream in_file(filename.string());
 
@@ -37,7 +37,7 @@ void from_disk_txt(std::vector<mp::cpp_int> &vec, fs::path filename)
   }
 
   // Handle reading floats, but just cast them into ints
-  mp::cpp_int buffer;
+  bmp::cpp_int buffer;
   while (in_file >> buffer)
   {
     vec.push_back(buffer);
@@ -46,7 +46,7 @@ void from_disk_txt(std::vector<mp::cpp_int> &vec, fs::path filename)
   in_file.close();
 }
 
-void from_disk_gz(std::vector<mp::cpp_int> &vec, fs::path filename)
+void from_disk_gz(std::vector<bmp::cpp_int> &vec, fs::path filename)
 {
   std::ifstream in_file(filename.string(),
                         std::ios_base::in | std::ios_base::binary);
@@ -64,7 +64,7 @@ void from_disk_gz(std::vector<mp::cpp_int> &vec, fs::path filename)
   std::istream instream(&inbuf);
 
   // TODO: Handle floats here.
-  mp::cpp_int line;
+  bmp::cpp_int line;
   while (instream >> line)
   {
     vec.push_back(line);

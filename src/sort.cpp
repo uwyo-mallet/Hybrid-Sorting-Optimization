@@ -5,7 +5,7 @@
 #include <climits>
 #include <iostream>
 
-namespace mp = boost::multiprecision;
+namespace bmp = boost::multiprecision;
 
 /*
   Determine if an array is sorted by checking every value.
@@ -432,46 +432,46 @@ void qsort_c(T input[], const size_t &len, const size_t &thresh)
 // Template forward decleration to fix linker issues
 template bool is_sorted<int>(int input[], const size_t &len);
 template bool is_sorted<float>(float input[], const size_t &len);
-template bool is_sorted<mp::cpp_int>(mp::cpp_int input[], const size_t &len);
+template bool is_sorted<bmp::cpp_int>(bmp::cpp_int input[], const size_t &len);
 
 template void swap<int>(int *a, int *b);
 template void swap<float>(float *a, float *b);
 template void swap<size_t>(size_t *a, size_t *b);
-template void swap<mp::cpp_int>(mp::cpp_int *a, mp::cpp_int *b);
+template void swap<bmp::cpp_int>(bmp::cpp_int *a, bmp::cpp_int *b);
 
 template int *median_of_three<int>(int *a, int *b, int *c);
 template float *median_of_three<float>(float *a, float *b, float *c);
-template mp::cpp_int *median_of_three<mp::cpp_int>(mp::cpp_int *a,
-                                                   mp::cpp_int *b,
-                                                   mp::cpp_int *c);
+template bmp::cpp_int *median_of_three<bmp::cpp_int>(bmp::cpp_int *a,
+                                                     bmp::cpp_int *b,
+                                                     bmp::cpp_int *c);
 
 template void insertion_sort<int>(int input[], const size_t &len);
 template void insertion_sort<float>(float input[], const size_t &len);
-template void insertion_sort<mp::cpp_int>(mp::cpp_int input[],
-                                          const size_t &len);
+template void insertion_sort<bmp::cpp_int>(bmp::cpp_int input[],
+                                           const size_t &len);
 
 // Partition
 template size_t vanilla_partition<int>(int input[], size_t low, size_t high);
 template size_t vanilla_partition<float>(float input[], size_t low,
                                          size_t high);
-template size_t vanilla_partition<mp::cpp_int>(mp::cpp_int input[], size_t low,
-                                               size_t high);
+template size_t vanilla_partition<bmp::cpp_int>(bmp::cpp_int input[],
+                                                size_t low, size_t high);
 
 // Recursive calls
 template void vanilla_quicksort<int>(int input[], int low, int high);
 template void vanilla_quicksort<float>(float input[], int low, int high);
-template void vanilla_quicksort<mp::cpp_int>(mp::cpp_int input[], int low,
-                                             int high);
+template void vanilla_quicksort<bmp::cpp_int>(bmp::cpp_int input[], int low,
+                                              int high);
 
 // User calls
 template void vanilla_quicksort<int>(int input[], const size_t &len);
 template void vanilla_quicksort<float>(float input[], const size_t &len);
-template void vanilla_quicksort<mp::cpp_int>(mp::cpp_int input[],
-                                             const size_t &len);
+template void vanilla_quicksort<bmp::cpp_int>(bmp::cpp_int input[],
+                                              const size_t &len);
 
 template void qsort_c<int>(int input[], const size_t &len,
                            const size_t &thresh);
 template void qsort_c<float>(float input[], const size_t &len,
                              const size_t &thresh);
-template void qsort_c<mp::cpp_int>(mp::cpp_int input[], const size_t &len,
-                                   const size_t &thresh);
+template void qsort_c<bmp::cpp_int>(bmp::cpp_int input[], const size_t &len,
+                                    const size_t &thresh);
