@@ -36,6 +36,8 @@ from queue import Queue
 
 from docopt import docopt
 
+from info import write_info
+
 
 @dataclass
 class Job:
@@ -79,23 +81,6 @@ def worker():
     while not queue.empty():
         job = queue.get()
         job.run()
-
-
-def write_info(output_folder):
-    info = {
-        "Architecture": platform.architecture(),
-        "Machine": platform.machine(),
-        "Platform": platform.platform(),
-        "Processor": platform.processor(),
-        "Release": platform.release(),
-        "System": platform.system(),
-        "Uname": platform.uname(),
-        "Version": platform.version(),
-    }
-
-    with open(Path(output_folder, "system_details.txt"), "w") as f:
-        for i in info.keys():
-            f.write(f"{i}: {str(info[i])}\n")
 
 
 if __name__ == "__main__":

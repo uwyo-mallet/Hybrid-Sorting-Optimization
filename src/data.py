@@ -26,7 +26,7 @@ import multiprocessing
 import random
 import shutil
 import sys
-from multiprocessing import Process, Pool
+from multiprocessing import Pool, Process
 from pathlib import Path
 
 import numpy as np
