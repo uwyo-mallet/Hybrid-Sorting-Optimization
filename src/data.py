@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Plot statistics about the tests, optionally generate new data.
+Generate large amounts of testing data as fast as possible.
 
 Usage:
     data.py evaluate FILE [options]
@@ -13,21 +13,24 @@ Options:
     -o, --output=DIR         Output to save data (default: ./data/).
     -t, --threshold=THRESH   Comma seperated range for output data.
                              If no increment is specified, the minimum
-                             value is used. Example: 500000,20000000,500000
+                             value is used. Example: 500_000,20_000_000,500_000
 
 Commands:
     evaluate            Evaluate an output CSV from QST run(s).
     generate            Generate testing data.
 """
 
+
+import gzip
+import multiprocessing
 import random
 import shutil
+import sys
+from multiprocessing import Process, Pool
 from pathlib import Path
 
 import numpy as np
 from docopt import docopt
-
-import sys
 
 # Default thresholds
 INCREMENT = 100_000
@@ -35,96 +38,165 @@ MIN_ELEMENTS = INCREMENT
 MAX_ELEMENTS = 1_000_000
 
 
-def create_dirs(base_path, dirs):
-    """Create all the directories for output files."""
-    base_path.mkdir(parents=True, exist_ok=True)
-    for dir in dirs:
-        real_path = Path(base_path, dir)
-        real_path.mkdir()
+class DataGen:
+    """
+    An extremely optimized, parallel approach to generating large amounts of
+    testing data as quickly as possible.
+    """
 
+    def __init__(self, output, minimum, maximum, increment, force):
+        random.seed()
+        self.dirs = {
+            "ascending": self.ascending,
+            "descending": self.descending,
+            "random": self.random,
+            "single_num": self.single_num,
+        }
 
-def ascending(num_elements):
-    """Return an array of ascending numbers from 0 to num_elements."""
-    return cache[:num_elements]
+        self.min = minimum
+        self.max = maximum + increment
+        self.inc = increment
 
+        self.base_path = output or "./data/"
+        self.base_path = Path(self.base_path)
 
-def descending(num_elements):
-    """Return the reverse of ascending."""
-    return np.flip(ascending(num_elements))
+        if self.base_path.exists() and not force:
+            raise Exception("Output directory already exists")
+        elif self.base_path.is_file():
+            raise Exception("Output requires a directory, not a file")
 
+        if force:
+            shutil.rmtree(self.base_path, ignore_errors=True)
 
-def random_nums(num_elements):
-    """Generate num_elements random numbers in a list."""
-    ret = []
-    for _ in range(num_elements):
-        ret.append(random.randint(0, num_elements))
+        self.create_dirs()
 
-    return np.asarray(ret, dtype=np.int64)
+    def create_dirs(self):
+        """Create all the directories for output files."""
+        self.base_path.mkdir(parents=True, exist_ok=True)
+        for dir in self.dirs.keys():
+            real_path = Path(self.base_path, dir)
+            real_path.mkdir()
 
+    def ascending(self, output):
+        for i, num_elements in enumerate(range(self.min, self.max, self.inc)):
+            if i == 0:
+                np.savetxt(
+                    Path(output, f"{i}.dat.gz"),
+                    np.arange(num_elements, dtype=np.int64),
+                    fmt="%u",
+                    delimiter="\n",
+                    comments="",
+                )
+            else:
+                prev = Path(output, f"{i - 1}.dat.gz")
+                current = Path(output, f"{i}.dat.gz")
+                shutil.copy(prev, current)
 
-def single_num(num_elements):
-    """Return an array of length num_elements where every element is 42."""
-    arr = np.empty(num_elements, dtype=np.int64)
-    arr.fill(42)
-    return arr
+                with gzip.open(current, "a") as f:
+                    data = np.arange(
+                        num_elements - self.inc, num_elements, dtype=np.int64
+                    ).tolist()
+                    data = [str(i) for i in data]
+                    data = "\n".join(data) + "\n"
 
+                    f.write(data.encode())
 
-def evaluate(in_file):
-    print("Use the evaluate.ipynb notebook instead, at least for now...")
+    def descending(self, output):
+        for i, num_elements in enumerate(range(self.min, self.max, self.inc)):
+            if i == 0:
+                np.savetxt(
+                    Path(output, f"{i}.dat.gz"),
+                    np.arange(0, num_elements, dtype=np.int64)[::-1],
+                    fmt="%u",
+                    delimiter="\n",
+                    comments="",
+                )
+            else:
+                prev = Path(output, f"{i - 1}.dat.gz")
+                current = Path(output, f"{i}.dat.gz")
 
+                with gzip.open(prev, "r") as prev_file:
+                    prev_data = prev_file.read()
 
-def generate(
-    output,
-    minimum,
-    maximum,
-    increment,
-    force=False,
-):
-    """Generate all random data and write to output folder."""
-    DIRS = {
-        "ascending": ascending,
-        "descending": descending,
-        "random": random_nums,
-        "single_num": single_num,
-    }
-    random.seed()
+                with gzip.open(current, "wb") as f:
+                    data = np.arange(
+                        num_elements - self.inc, num_elements, dtype=np.int64
+                    )[::-1].tolist()
 
-    base_path = output or "data/"
-    base_path = Path(base_path)
+                    data = [str(i) for i in data]
+                    data = "\n".join(data) + "\n"
+                    data = data.encode()
 
-    if base_path.exists() and not force:
-        raise Exception("Output directory already exists")
-    elif base_path.is_file():
-        raise Exception("Output requires a directory, not a file")
+                    f.write(data + prev_data)
 
-    if force:
-        shutil.rmtree(base_path, ignore_errors=True)
-
-    create_dirs(base_path, DIRS.keys())
-    for k, v in DIRS.items():
-        dest_folder = Path(base_path, k)
-        for i, num_elements in enumerate(
-            range(minimum, maximum + increment, increment)
-        ):
-            dest_filename = Path(dest_folder, f"{i}.dat.gz")
-            np.savetxt(
-                dest_filename,
-                v(num_elements),
-                fmt="%u",
-                delimiter="\n",
-                comments="",
-            )
-
-    with open(Path(base_path, "details.txt"), "w") as f:
-        f.write(
-            f"MIN_ELEMENTS: {MIN_ELEMENTS}\nMAX_ELEMENTS: {MAX_ELEMENTS}\nINCREMENT: {INCREMENT}"
+    def _random(self, args):
+        data = np.random.randint(self.max + 1, size=args[1], dtype=np.int64)
+        np.savetxt(
+            args[0],
+            data,
+            fmt="%u",
+            delimiter="\n",
+            comments="",
         )
+
+    def random(self, output):
+        sets = [
+            (Path(output, f"{i}.dat.gz"), num_elements)
+            for i, num_elements in enumerate(range(self.min, self.max, self.inc))
+        ]
+        pool = Pool(multiprocessing.cpu_count())
+        pool.map(self._random, sets)
+        pool.close()
+        pool.join()
+
+    def single_num(self, output):
+        for i, num_elements in enumerate(range(self.min, self.max, self.inc)):
+            if i == 0:
+                data = np.empty(num_elements, dtype=np.int64)
+                data.fill(42)
+
+                np.savetxt(
+                    Path(output, f"{i}.dat.gz"),
+                    data,
+                    fmt="%u",
+                    delimiter="\n",
+                    comments="",
+                )
+            else:
+                prev = Path(output, f"{i - 1}.dat.gz")
+                current = Path(output, f"{i}.dat.gz")
+                shutil.copy(prev, current)
+
+                with gzip.open(current, "a") as f:
+                    data = np.empty(self.inc, dtype=np.int64)
+                    data.fill(42)
+                    data = data.tolist()
+
+                    data = [str(i) for i in data]
+                    data = "\n".join(data) + "\n"
+
+                    f.write(data.encode())
+
+    def generate(self):
+        processes = []
+        for k, v in self.dirs.items():
+            output = Path(self.base_path, k)
+            p = Process(target=v, args=(output,))
+            p.start()
+
+        for p in processes:
+            p.join()
+
+        with open(Path(self.base_path, "details.txt"), "w") as f:
+            f.write(
+                f"MIN_ELEMENTS: {self.min}\nMAX_ELEMENTS: {self.max}\nINCREMENT: {self.inc}"
+            )
 
 
 if __name__ == "__main__":
     args = docopt(__doc__)
     if args.get("evaluate"):
-        evaluate(args.get("FILE"))
+        print("[Deprecated]: Use the evaluate.ipynb jupyter notebook instead.")
     elif args.get("generate"):
         # Parse threshold and validate
         if args.get("--threshold") is not None:
@@ -155,5 +227,7 @@ if __name__ == "__main__":
         print(f"Maximum: {maximum:,}", file=sys.stderr)
         print(f"Increment: {increment:,}", file=sys.stderr)
 
-        cache = np.arange(0, maximum, 1, dtype=np.int64)
-        generate(args.get("--output"), minimum, maximum, increment, args.get("--force"))
+        d = DataGen(
+            args.get("--output"), minimum, maximum, increment, args.get("--force")
+        )
+        d.generate()
