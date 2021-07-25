@@ -2,13 +2,15 @@
 
 # DO NOT CALL OR EDIT THIS DIRECTLY.
 # This file is only used by run_job.sh
+# Contains the definition of a SINGLE job in a batch array. If you must edit
+# this file, only edit the slurm parameters.
 
 #SBATCH --job-name=Quicksort-Tuning
 #SBATCH --account=mallet
 #SBATCH --partition=teton
-#SBATCH --time=05:00:00
+#SBATCH --time=08:00:00
 #SBATCH --nodes=1
-#SBATCH --mem=2G
+#SBATCH --mem=4G
 #SBATCH --signal=TERM@300
 
 echo "- - - - - - - - - - - - - - - - - - - - -"
