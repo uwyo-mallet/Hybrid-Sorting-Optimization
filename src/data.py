@@ -106,7 +106,7 @@ class DataGen:
             if i == 0:
                 np.savetxt(
                     Path(output, f"{i}.dat.gz"),
-                    np.arange(0, num_elements, dtype=np.int64)[::-1],
+                    np.arange(num_elements - 1, -1, -1, dtype=np.int64),
                     fmt="%u",
                     delimiter="\n",
                     comments="",
@@ -120,8 +120,11 @@ class DataGen:
 
                 with gzip.open(current, "wb") as f:
                     data = np.arange(
-                        num_elements - self.inc, num_elements, dtype=np.int64
-                    )[::-1].tolist()
+                        num_elements - 1,
+                        num_elements - self.inc - 1,
+                        -1,
+                        dtype=np.int64,
+                    ).tolist()
 
                     data = [str(i) for i in data]
                     data = "\n".join(data) + "\n"
