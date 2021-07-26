@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Write info about the system to a FOLDER/system_details.txt
+Write info about the system to a FOLDER/system_details.pickle
 
 Usage:
     info.py DIR [options]
@@ -11,11 +11,11 @@ Options:
 
 import platform
 from pathlib import Path
-
+import pickle
 from docopt import docopt
 
 
-def write_info(output_folder):
+def write_info(output_folder, concurrent="slurm"):
     info = {
         "Architecture": platform.architecture(),
         "Machine": platform.machine(),
@@ -25,11 +25,11 @@ def write_info(output_folder):
         "System": platform.system(),
         "Uname": platform.uname(),
         "Version": platform.version(),
+        "Number of concurrent jobs": concurrent,
     }
 
-    with open(Path(output_folder, "system_details.txt"), "w") as f:
-        for i in info.keys():
-            f.write(f"{i}: {str(info[i])}\n")
+    with open(Path(output_folder, "system_details.pickle"), "wb") as f:
+        pickle.dump(info, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":

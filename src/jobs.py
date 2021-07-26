@@ -23,8 +23,8 @@ Options:
     -t, --threshold=THRESH   Comma seperated range for threshold (min,max)
                              including both endpoints, or a single value.
 """
-
 import os
+import shutil
 import signal
 import subprocess
 import threading
@@ -36,7 +36,6 @@ from queue import Queue
 from docopt import docopt
 
 from info import write_info
-import shutil
 
 # Maximum array index supported by slurm
 # https://slurm.schedmd.com/job_array.html
@@ -45,6 +44,8 @@ MAX_BATCH = 4_500
 
 @dataclass
 class Job:
+    """Dataclass storing the parameters of a single call to the QST subprocess."""
+
     exec_path: Path
     infile_path: Path
     description: str
@@ -54,6 +55,7 @@ class Job:
 
     @property
     def command(self):
+        """Return the appropiate format for subprocess.Popen."""
         return [
             str(self.exec_path.absolute()),
             str(self.infile_path.absolute()),
@@ -69,6 +71,7 @@ class Job:
 
     @property
     def cli(self):
+        """Return the raw CLI equivalent of the subprocess.Popen command."""
         return " ".join(self.command)
 
     def run(self, quiet=False):
@@ -82,18 +85,20 @@ class Job:
 
 
 def worker():
+    """Run jobs in queue until queue is empty, used for threads."""
     while not queue.empty():
         job = queue.get()
         job.run()
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__, version="1.0.0")
+    args = docopt(__doc__)
     now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     # Cleanup CLI inputs
     args["--exec"] = args.get("--exec") or "./build/QST"
 
+    # Setup constants
     VALID_METHODS = ("vanilla_quicksort", "qsort_c", "insertion_sort", "std")
     DATA_TYPES = ("ascending", "descending", "random", "single_num")
 
@@ -189,7 +194,7 @@ if __name__ == "__main__":
 
     if args.get("--slurm") is None:
         # Save some deatils about what platform we are running on.
-        write_info(OUTPUT_PATH.parent)
+        write_info(OUTPUT_PATH.parent, NUM_JOBS)
 
         for i in range(NUM_REPEATS):
             # Create my own process group and start all the jobs in parrallel
