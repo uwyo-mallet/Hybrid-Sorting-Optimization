@@ -6,7 +6,7 @@ VERSION="1.1.0"
 REMOTE_DIR="jarulsam@teton.arcc.uwyo.edu:/project/mallet/jarulsam/quicksort-tuning/"
 CWD="$(pwd -P)"
 CWD="${CWD}/"
-EXCLUDE="*build/*"
+EXCLUDE_FILE="./exclude-file.txt"
 
 show_help() {
     printf "Usage: cluster [OPTION...] to\n"
@@ -28,12 +28,12 @@ clean() {
 
 # Send to remote
 to() {
-    rsync -auvz --progress -e 'ssh -o StrictHostKeyChecking=no' --delete --exclude="${EXCLUDE}" "${CWD}" "${REMOTE_DIR}"
+    rsync -auvz --progress -e 'ssh -o StrictHostKeyChecking=no' --delete --exclude-from="${EXCLUDE_FILE}" "${CWD}" "${REMOTE_DIR}"
 }
 
 # Pull from remote
 from() {
-    rsync -auvz --progress -e 'ssh -o StrictHostKeyChecking=no' --delete --exclude="${EXCLUDE}" "${REMOTE_DIR}" "${CWD}"
+    rsync -auvz --progress -e 'ssh -o StrictHostKeyChecking=no' --exclude-from="${EXCLUDE_FILE}" "${REMOTE_DIR}" "${CWD}"
 }
 
 # Activate the required modules and build QST

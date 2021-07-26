@@ -10,7 +10,7 @@ EXE="${CWD}/build/QST"                                    # QST executable.
 INPUT_DIR="${CWD}/slurm.d/"                               # Dir with all commands to run (slurm.d/).
 RESULTS_DIR="${CWD}/results/$(date +"%Y-%m-%d_%H-%M-%S")" # Place to store all the results.
 JOB_DETAILS="${RESULTS_DIR}/job_details.txt"              # File to save all the details of this job.
-NUM_RUNS=2                                                # Number of times to run the same data set.
+NUM_RUNS=10                                               # Number of times to run the same data set.
 
 echoerr() { printf "%s\n" "$*" >&2; }
 
