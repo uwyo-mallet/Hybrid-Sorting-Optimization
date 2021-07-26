@@ -19,8 +19,6 @@ Commands:
     evaluate            Evaluate an output CSV from QST run(s).
     generate            Generate testing data.
 """
-
-
 import gzip
 import multiprocessing
 import random
@@ -39,12 +37,24 @@ MAX_ELEMENTS = 1_000_000
 
 
 class DataGen:
-    """
-    An extremely optimized, parallel approach to generating large amounts of
-    testing data as quickly as possible.
-    """
+    """Utility class for generating lots of data really fast."""
 
-    def __init__(self, output, minimum, maximum, increment, force):
+    def __init__(
+        self, output: Path, minimum: int, maximum: int, increment: int, force: bool
+    ):
+        """
+        Initialize range and output parameters.
+
+        Args:
+            output: Path to folder to output data.
+            minimum: Minimum size data to create.
+            maximum: Maximum size data to create.
+            increment: Increments of data to create, must evenly divise maximum.
+
+        Raises:
+            IsADirectoryError: Output directory already exists
+            NotADirectoryError: Output requires a directory, not a file
+        """
         random.seed()
         self.dirs = {
             "ascending": self.ascending,
@@ -61,9 +71,9 @@ class DataGen:
         self.base_path = Path(self.base_path)
 
         if self.base_path.exists() and not force:
-            raise Exception("Output directory already exists")
-        elif self.base_path.is_file():
-            raise Exception("Output requires a directory, not a file")
+            raise IsADirectoryError("Output directory already exists")
+        if self.base_path.is_file():
+            raise NotADirectoryError("Output requires a directory, not a file")
 
         if force:
             shutil.rmtree(self.base_path, ignore_errors=True)
@@ -71,54 +81,68 @@ class DataGen:
         self.create_dirs()
 
     def create_dirs(self):
-        """Create all the directories for output files."""
+        """Create all the directories for output files from self.dirs."""
         self.base_path.mkdir(parents=True, exist_ok=True)
-        for dir in self.dirs.keys():
-            real_path = Path(self.base_path, dir)
+        for d in self.dirs:
+            real_path = Path(self.base_path, d)
             real_path.mkdir()
 
-    def ascending(self, output):
+    def _append(self, prev: Path, current: Path, data: str):
+        """
+        Copy a .gz file and append to the new file assuming the data is text.
+
+        Args:
+            prev: Path to prev file.
+            current: Path to new file to be created.
+            data: Data to be appended to current.
+        """
+        shutil.copy(prev, current)
+        with gzip.open(current, "a") as append_file:
+            append_file.write(data.encode())
+
+    @staticmethod
+    def _save(output: Path, data):
+        """Save an np array as either txt or gz depending on the extension."""
+        np.savetxt(output, data, fmt="%u", delimiter="\n", comments="")
+
+    def ascending(self, output: Path):
+        """Generate ascending data and save to dir output."""
         for i, num_elements in enumerate(range(self.min, self.max, self.inc)):
             if i == 0:
-                np.savetxt(
+                self._save(
                     Path(output, f"{i}.dat.gz"),
                     np.arange(num_elements, dtype=np.int64),
-                    fmt="%u",
-                    delimiter="\n",
-                    comments="",
                 )
             else:
                 prev = Path(output, f"{i - 1}.dat.gz")
                 current = Path(output, f"{i}.dat.gz")
-                shutil.copy(prev, current)
 
-                with gzip.open(current, "a") as f:
-                    data = np.arange(
-                        num_elements - self.inc, num_elements, dtype=np.int64
-                    ).tolist()
-                    data = [str(i) for i in data]
-                    data = "\n".join(data) + "\n"
+                data = np.arange(
+                    num_elements - self.inc, num_elements, dtype=np.int64
+                ).tolist()
+                data = [str(i) for i in data]
+                data = "\n".join(data) + "\n"
 
-                    f.write(data.encode())
+                self._append(prev, current, data)
 
-    def descending(self, output):
+    def descending(self, output: Path):
+        """Generate descending data and save to dir output."""
         for i, num_elements in enumerate(range(self.min, self.max, self.inc)):
             if i == 0:
-                np.savetxt(
+                self._save(
                     Path(output, f"{i}.dat.gz"),
                     np.arange(num_elements - 1, -1, -1, dtype=np.int64),
-                    fmt="%u",
-                    delimiter="\n",
-                    comments="",
                 )
             else:
                 prev = Path(output, f"{i - 1}.dat.gz")
                 current = Path(output, f"{i}.dat.gz")
 
+                # Prepend by reading the old file, then writing a new file with
+                # the new data then the old data.
                 with gzip.open(prev, "r") as prev_file:
                     prev_data = prev_file.read()
 
-                with gzip.open(current, "wb") as f:
+                with gzip.open(current, "wb") as current_file:
                     data = np.arange(
                         num_elements - 1,
                         num_elements - self.inc - 1,
@@ -130,9 +154,10 @@ class DataGen:
                     data = "\n".join(data) + "\n"
                     data = data.encode()
 
-                    f.write(data + prev_data)
+                    current_file.write(data + prev_data)
 
     def _random(self, args):
+        """Save random data to file. Helper for multiprocessing."""
         data = np.random.randint(self.max + 1, size=args[1], dtype=np.int64)
         np.savetxt(
             args[0],
@@ -142,7 +167,8 @@ class DataGen:
             comments="",
         )
 
-    def random(self, output):
+    def random(self, output: Path):
+        """Generate random data and save to dir output."""
         sets = [
             (Path(output, f"{i}.dat.gz"), num_elements)
             for i, num_elements in enumerate(range(self.min, self.max, self.inc))
@@ -152,35 +178,27 @@ class DataGen:
         pool.close()
         pool.join()
 
-    def single_num(self, output):
+    def single_num(self, output: Path):
+        """Generate single num data and save to dir output."""
         for i, num_elements in enumerate(range(self.min, self.max, self.inc)):
             if i == 0:
                 data = np.empty(num_elements, dtype=np.int64)
                 data.fill(42)
-
-                np.savetxt(
-                    Path(output, f"{i}.dat.gz"),
-                    data,
-                    fmt="%u",
-                    delimiter="\n",
-                    comments="",
-                )
+                self._save(Path(output, f"{i}.dat.gz"), data)
             else:
                 prev = Path(output, f"{i - 1}.dat.gz")
                 current = Path(output, f"{i}.dat.gz")
-                shutil.copy(prev, current)
 
-                with gzip.open(current, "a") as f:
-                    data = np.empty(self.inc, dtype=np.int64)
-                    data.fill(42)
-                    data = data.tolist()
+                data = np.empty(self.inc, dtype=np.int64)
+                data.fill(42)
+                data = data.tolist()
 
-                    data = [str(i) for i in data]
-                    data = "\n".join(data) + "\n"
+                str_dat = "\n".join([str(i) for i in data]) + "\n"
 
-                    f.write(data.encode())
+                self._append(prev, current, str_dat)
 
     def generate(self):
+        """Generate all types of data in parallel."""
         processes = []
         for k, v in self.dirs.items():
             output = Path(self.base_path, k)
@@ -212,9 +230,10 @@ if __name__ == "__main__":
                 minimum = buf[0]
                 maximum = buf[1]
                 try:
-                    increment = buf[3]
+                    increment = buf[2]
                 except IndexError:
                     increment = minimum
+
             except ValueError as e:
                 raise ValueError(f"Invalid threshold: {buf}") from e
         else:
