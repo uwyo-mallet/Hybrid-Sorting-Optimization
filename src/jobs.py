@@ -34,6 +34,7 @@ from pathlib import Path
 from queue import Queue
 
 from docopt import docopt
+from tqdm import tqdm
 
 from info import write_info
 
@@ -74,7 +75,7 @@ class Job:
         """Return the raw CLI equivalent of the subprocess.Popen command."""
         return " ".join(self.command)
 
-    def run(self, quiet=False):
+    def run(self, quiet=True):
         """Call the subprocess and run the job."""
         to_run = self.command
         if not quiet:
@@ -89,6 +90,7 @@ def worker():
     while not queue.empty():
         job = queue.get()
         job.run()
+        progress_bar.update()
 
 
 if __name__ == "__main__":
@@ -98,7 +100,6 @@ if __name__ == "__main__":
     # Cleanup CLI inputs
     args["--exec"] = args.get("--exec") or "./build/QST"
 
-    # Setup constants
     VALID_METHODS = ("vanilla_quicksort", "qsort_c", "insertion_sort", "std")
     DATA_TYPES = ("ascending", "descending", "random", "single_num")
 
@@ -108,8 +109,8 @@ if __name__ == "__main__":
     NUM_JOBS = args.get("--jobs") or 1
     NUM_JOBS = int(NUM_JOBS)
 
-    NUM_REPEATS = args.get("--repeats") or 1
-    NUM_REPEATS = int(NUM_REPEATS)
+    NUM_RUNS = args.get("--runs") or 1
+    NUM_RUNS = int(NUM_RUNS)
 
     THRESH_RANGE = [4, 4]
 
@@ -188,28 +189,32 @@ if __name__ == "__main__":
             # QST corrects this to 0 on the CSV output.
             if method == "qsort_c":
                 for thresh in THRESHOLDS:
-                    queue.put(Job(QST_PATH, file, desc, method, thresh, OUTPUT_PATH))
+                    for _ in range(NUM_RUNS):
+                        queue.put(
+                            Job(QST_PATH, file, desc, method, thresh, OUTPUT_PATH)
+                        )
             else:
-                queue.put(Job(QST_PATH, file, desc, method, 1, OUTPUT_PATH))
+                for _ in range(NUM_RUNS):
+                    queue.put(Job(QST_PATH, file, desc, method, 1, OUTPUT_PATH))
 
     if args.get("--slurm") is None:
         # Save some deatils about what platform we are running on.
         write_info(OUTPUT_PATH.parent, NUM_JOBS)
+        progress_bar = tqdm(total=queue.qsize())
 
-        for i in range(NUM_REPEATS):
-            # Create my own process group and start all the jobs in parrallel
-            os.setpgrp()
-            try:
-                threads = [threading.Thread(target=worker) for _ in range(NUM_JOBS)]
-                # Start each thread and wait till they all complete
-                for thread in threads:
-                    thread.start()
-                # Wait till all are started before waiting
-                for thread in threads:
-                    thread.join()
-            except KeyboardInterrupt:
-                # Kill all processes in my group if stopped early.
-                os.killpg(0, signal.SIGKILL)
+        # Create my own process group and start all the jobs in parrallel
+        os.setpgrp()
+        try:
+            threads = [threading.Thread(target=worker) for _ in range(NUM_JOBS)]
+            # Start each thread and wait till they all complete
+            for thread in threads:
+                thread.start()
+            # Wait till all are started before waiting
+            for thread in threads:
+                thread.join()
+        except KeyboardInterrupt:
+            # Kill all processes in my group if stopped early.
+            os.killpg(0, signal.SIGKILL)
     else:
         SLURM_DIR = Path(args.get("--slurm"))
 
