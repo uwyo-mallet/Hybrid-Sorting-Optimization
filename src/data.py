@@ -210,7 +210,7 @@ class DataGen:
 
         with open(Path(self.base_path, "details.txt"), "w") as f:
             f.write(
-                f"MIN_ELEMENTS: {self.min}\nMAX_ELEMENTS: {self.max}\nINCREMENT: {self.inc}"
+                f"MIN_ELEMENTS: {self.min}\nMAX_ELEMENTS: {self.max - self.inc}\nINCREMENT: {self.inc}"
             )
 
 
