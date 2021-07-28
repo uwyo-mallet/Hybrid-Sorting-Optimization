@@ -15,13 +15,15 @@ Instructions for compiling QST and setting up the required python environment
 on the cluster.
 
 1. Load the required modules
+
    ```
    module load gcc
    module load swset
-   module load boost/1.67.0
+   module load boost/1.72.0
    module load cmake/3.16.5
    module load miniconda3
    ```
+
 2. Compile QST
 
    ```
@@ -51,43 +53,43 @@ this procedure is used to generate and run the tests.
 
 1. Generating the input data.
 
-   Generate a large amount of random data of the following categories:
+   Generate a large amount of data of the following categories:
 
    - Ascending
    - Descending
    - Entirely random
    - Repeated single number
 
-   Edit `src/data.py` to specify the threshold and generate the data with:
+   Use `src/data.py` to specify the threshold and generate the data with:
 
    ```
-   python src/data.py generate
+   python src/data.py generate -f -t 1_000_000,50_000_000
    ```
 
-   This will create a `data/` directory with a subfolder for each category of data.
-
-   > This will take a considerable amount of time for larger input sizes.
+   This will create a `data/` directory with a subfolder for each category of
+   data.
 
    By default, the resulting data will be compressed. This has no impact other
-   than to speedup the process moving data to and from the cluster.
+   than to speedup the process moving data to and from the cluster. You can
+   manually inspect the data using `zcat`.
 
-2. Create the `slurm.dat` file.
+2. Create the `slurm.d/` directory.
 
-   The `slurm.dat` contains all the parameters for the slurm batch array jobs.
-   This file cannot exceed 5000 lines or slurm will fail to initialize the batch
-   array job.
+   The `slurm.d/` contains several files each detailing the parameters for the
+   slurm batch array jobs. Each file cannot exceed 5000 lines otherwise slurm
+   will fail to submit the job.
 
-   The following command generates a `slurm.dat` file which specifies the
-   sorting methods (`qsort_c` and `std::sort`), threshold values (1 - 20), and
-   input data (`data/`) to test.
+   The following command generates `slurm.d/` which specifies the sorting
+   methods (`qsort_c` and `std::sort`), threshold values (1 - 20), number of
+   times to run the same input data (20) and, input data (`data/`) to test.
 
    ```
-   python src/job.py -s slurm.dat -m qsort_c,std -t 1,20 data/
+   python src/job.py -s ./slurm.d/ -m qsort_c,std -t 1,20 -r 20 data/
    ```
 
 3. Tune job parameters and submit the jobs.
 
-   Once the `slurm.dat` file is created, we are ready to dispatch all the jobs.
+   Once the `slurm.d/` directory is created, we are ready to dispatch all the jobs.
    This is handled by the `run_job.sh` script. This script will create a
    `results` directory and store all the outputs in a timestamped directory.
 
@@ -98,8 +100,6 @@ this procedure is used to generate and run the tests.
    ```
    ./run_job.sh
    ```
-
-   > Remember, if `slurm.dat` exceeds 5000 lines the slurm job will fail.
 
 4. Post-processing and Evaluation.
 
@@ -119,6 +119,7 @@ Very work in progress...
   varying systems, architectures, and compilers, this _specific implementation_
   is included.
 - [x] Design an evaluation method:
+- [x] Support arbitrary precision integers (`boost::multiprecision::cpp_int`)
   1. Generate large arrays of varying distributions.
      - Ascending
      - Descending
