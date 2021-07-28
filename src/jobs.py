@@ -107,7 +107,7 @@ def parse_args(args):
     # Num jobs
     parsed["jobs"] = args.get("--jobs") or 1
     parsed["jobs"] = int(parsed["jobs"])
-    if parsed["jobs"] < 0:
+    if parsed["jobs"] <= 0:
         raise ValueError("Jobs must be >= 1")
 
     # Methods
@@ -196,6 +196,12 @@ class Scheduler:
 
         self._gen_jobs()
 
+    def _get_exec_version(self):
+        cmd = [self.exec, "--version"]
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        stdout, _ = p.communicate()
+        return stdout.decode()
+
     def _gen_jobs(self):
         files = self.data_dir.glob(r"**/*.gz")
         self.job_queue: "Queue[Job]" = Queue()
@@ -247,7 +253,12 @@ class Scheduler:
         self.pbar = tqdm(total=self.active_queue.qsize(), disable=not self.progress)
 
         # Log system info
-        write_info(self.output.parent, self.jobs)
+        write_info(
+            self.output.parent,
+            total_num_jobs=self.active_queue.qsize(),
+            concurrent=self.jobs,
+            qst_vers=self._get_exec_version(),
+        )
         # Create my own process group
         os.setpgrp()
         try:
