@@ -16,6 +16,7 @@ Options:
     -j, --jobs=N             Do N jobs in parallel.
     -m, --methods=METHODS    Comma seperated list of methods to use for sorters.
     -o, --output=FILE        Output CSV to save results from QST.
+    -p, --progress           Enable a progress bar.
     -r, --runs=N             Number of times to run the same input data.
     -s, --slurm=DIR          Generate a batch of slurm data files in this dir.
     -t, --threshold=THRESH   Comma seperated range for threshold (min,max)
@@ -34,11 +35,12 @@ from pathlib import Path
 from queue import Queue
 
 from docopt import docopt
+from tqdm import tqdm
 
 from info import write_info
 
 VALID_METHODS = ("vanilla_quicksort", "qsort_c", "insertion_sort", "std")
-THRESHOLD_METHODS = "qsort_c"
+THRESHOLD_METHODS = ("qsort_c",)
 DATA_TYPES = ("ascending", "descending", "random", "single_num")
 
 # Maximum array index supported by slurm
@@ -88,6 +90,7 @@ class Job:
 
 
 def parse_args(args):
+    """Parse CLI args from docopt."""
     parsed = {}
 
     # Data dir
@@ -116,6 +119,9 @@ def parse_args(args):
     except AttributeError:
         methods = VALID_METHODS
     parsed["methods"] = methods
+
+    # Progress bar
+    parsed["progress"] = args.get("--progress")
 
     # Num runs
     parsed["runs"] = args.get("--runs") or 1
@@ -183,6 +189,7 @@ class Scheduler:
         self.runs = kwargs["runs"]
         self.slurm = kwargs["slurm"]
         self.threshold = kwargs["threshold"]
+        self.progress = kwargs["progress"]
 
         self.job_queue: "Queue[Job]" = Queue()
         self.active_queue: "Queue[Job]" = Queue()
@@ -224,15 +231,20 @@ class Scheduler:
     def _worker(self):
         while True:
             job = self.active_queue.get()
-            job.run()
+            job.run(quiet=self.progress)
             self.active_queue.task_done()
 
+            self.pbar.update()
+
     def run_jobs(self):
+        """Run all the jobs on the local machine."""
         print("===========================", file=sys.stderr)
         print(f"About to run {self.active_queue.qsize()} jobs", file=sys.stderr)
         print("===========================", file=sys.stderr)
         time.sleep(3)
         print("Okay, lets do it!", file=sys.stderr)
+
+        self.pbar = tqdm(total=self.active_queue.qsize(), disable=not self.progress)
 
         # Log system info
         write_info(self.output.parent, self.jobs)
@@ -247,6 +259,7 @@ class Scheduler:
             os.killpg(0, signal.SIGKILL)
 
     def gen_slurm(self):
+        """Create the slurm.d/ directory with all necessary parameters."""
         if self.slurm.exists() and self.slurm.is_dir():
             shutil.rmtree(self.slurm)
         elif self.slurm.is_file():
@@ -270,7 +283,6 @@ if __name__ == "__main__":
     args = parse_args(docopt(__doc__))
 
     s = Scheduler(**args)
-
     if args["slurm"]:
         s.gen_slurm()
     else:
