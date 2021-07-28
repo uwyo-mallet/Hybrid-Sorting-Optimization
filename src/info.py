@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Write info about the system to a FOLDER/system_details.pickle
+Write info about the system to a FOLDER/system_details.pickle.
 
 Usage:
     info.py DIR [options]
@@ -9,9 +9,10 @@ Options:
     -h, --help               Show this help.
 """
 
+import json
 import platform
 from pathlib import Path
-import pickle
+
 from docopt import docopt
 
 
@@ -28,8 +29,8 @@ def write_info(output_folder, concurrent="slurm"):
         "Number of concurrent jobs": concurrent,
     }
 
-    with open(Path(output_folder, "system_details.pickle"), "wb") as f:
-        pickle.dump(info, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(Path(output_folder, "system_details.json"), "w") as f:
+        json.dump(info, f, sort_keys=True)
 
 
 if __name__ == "__main__":
