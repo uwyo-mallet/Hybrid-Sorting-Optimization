@@ -29,7 +29,7 @@ total_num_jobs=0
 for f in "${INPUT_DIR}"/*.dat; do
   num_lines=$(wc -l <"$f")
   printf "%s" "${num_lines}: "
-  sbatch --array "0-${num_lines}" "${CWD}/job.sbatch" "$f"
+  sbatch --array "0-${num_lines}%500" "${CWD}/job.sbatch" "$f"
   ((total_num_jobs += num_lines))
 
   sleep 1

@@ -8,9 +8,9 @@
 #SBATCH --job-name=Quicksort-Tuning
 #SBATCH --account=mallet
 #SBATCH --partition=teton
-#SBATCH --time=08:00:00
+#SBATCH --time=02:00:00
 #SBATCH --nodes=1
-#SBATCH --mem=4G
+#SBATCH --mem=0.5G
 #SBATCH --signal=TERM@300
 
 echo "- - - - - - - - - - - - - - - - - - - - -"
