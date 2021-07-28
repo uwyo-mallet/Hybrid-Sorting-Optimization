@@ -99,7 +99,7 @@ int main(int argc, char** argv)
   }
   size = data.size();
 
-  // Signal handler
+  // Signal handlers
   signal(SIGINT, signal_handler);
   signal(SIGTERM, signal_handler);
 
@@ -167,7 +167,7 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
       break;
 
     case 'o':
-      args->out_file = std::string(arg);
+      args->out_file = fs::path(arg);
       break;
 
     case 't':
@@ -194,7 +194,7 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
         // Too many arguments
         argp_usage(state);
       }
-      args->in_file = std::string(arg);
+      args->in_file = fs::path(arg);
       break;
 
     case ARGP_KEY_END:

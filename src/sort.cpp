@@ -418,16 +418,21 @@ void qsort_c(void *const pbase, size_t total_elems, size_t size,
 }
 
 /* Comparator for qsort_c */
-// TODO: this may have a performance impact in the real world, investigate.
-int compare(const void *a, const void *b) { return (*(int *)a - *(int *)b); }
+int compare(const void *a, const void *b)
+{
+  bmp::cpp_int arg1 = *(bmp::cpp_int *)a;
+  bmp::cpp_int arg2 = *(bmp::cpp_int *)b;
+
+  if (arg1 < arg2) return -1;
+  if (arg1 > arg2) return 1;
+  return 0;
+}
+
 template <typename T>
 void qsort_c(T input[], const size_t &len, const size_t &thresh)
 {
   qsort_c(input, len, sizeof(T), compare, thresh);
 }
-
-/* void qsort_c(void *const pbase, size_t total_elems, size_t size, */
-/*     compar_d_fn_t cmp) */
 
 // Template forward decleration to fix linker issues
 template bool is_sorted<int>(int input[], const size_t &len);
