@@ -22,6 +22,7 @@ Options:
     -t, --threshold=THRESH   Comma seperated range for threshold (min,max)
                              including both endpoints, or a single value.
 """
+import multiprocessing
 import os
 import shutil
 import signal
@@ -105,10 +106,14 @@ def parse_args(args):
         raise FileNotFoundError("Can't find QST executable")
 
     # Num jobs
-    parsed["jobs"] = args.get("--jobs") or 1
-    parsed["jobs"] = int(parsed["jobs"])
-    if parsed["jobs"] <= 0:
-        raise ValueError("Jobs must be >= 1")
+    if args.get("--jobs") == "CPU":
+        parsed["jobs"] = multiprocessing.cpu_count() - 1
+        parsed["jobs"] = parsed["jobs"] if parsed["jobs"] > 0 else 1
+    else:
+        parsed["jobs"] = args.get("--jobs") or 1
+        parsed["jobs"] = int(parsed["jobs"])
+        if parsed["jobs"] <= 0:
+            raise ValueError("Jobs must be >= 1")
 
     # Methods
     try:
@@ -126,7 +131,7 @@ def parse_args(args):
     # Num runs
     parsed["runs"] = args.get("--runs") or 1
     parsed["runs"] = int(parsed["runs"])
-    if parsed["runs"] < 0:
+    if parsed["runs"] <= 0:
         raise ValueError("Runs must be >= 1")
 
     # Slurm
