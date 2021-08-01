@@ -8,23 +8,14 @@
 #SBATCH --job-name=Quicksort-Tuning
 #SBATCH --account=mallet
 #SBATCH --partition=teton
-#SBATCH --time=02:00:00
+#SBATCH --time=06:00:00
 #SBATCH --nodes=1
-#SBATCH --mem=0.5G
+#SBATCH --mem=4G
 #SBATCH --signal=TERM@300
-
-echo "- - - - - - - - - - - - - - - - - - - - -"
-echo "SLURM_JOB_ID: $SLURM_JOB_ID"
-echo "SLURM_JOB_NAME: $SLURM_JOB_NAME"
-echo "SLURM_JOB_NODELIST: $SLURM_JOB_NODELIST"
-echo "SLURM_ARRAY_TASK_ID: $SLURM_ARRAY_TASK_ID"
-echo "- - - - - - - - - - - - - - - - - - - - -"
+#SBATCH --profile=all
+#SBATCH --output=stdout_%A.out
 
 INPUT_DATA="$1"
 mapfile -t commands <"$INPUT_DATA"
 
-echo "- - - - - - - - - - - - - - - - - - - - -"
 ${commands[$SLURM_ARRAY_TASK_ID]}
-echo "- - - - - - - - - - - - - - - - - - - - -"
-
-echo "DONE"

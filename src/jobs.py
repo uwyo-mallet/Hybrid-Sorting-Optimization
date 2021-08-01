@@ -277,6 +277,13 @@ class Scheduler:
             raise FileExistsError("Slurm output cannot be a file")
 
         self.slurm.mkdir()
+        write_info(
+            self.slurm,
+            total_num_jobs=self.active_queue.qsize(),
+            concurrent="slurm",
+            qst_vers=self._get_exec_version(),
+            runs=self.runs,
+        )
         index = 0
         while not self.active_queue.empty():
             with open(Path(self.slurm, f"{index}.dat"), "w") as slurm_file:

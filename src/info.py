@@ -17,7 +17,13 @@ from pathlib import Path
 from docopt import docopt
 
 
-def write_info(output_folder, total_num_jobs=None, concurrent="slurm", qst_vers=None):
+def write_info(
+    output_folder,
+    total_num_jobs=None,
+    concurrent="slurm",
+    qst_vers=None,
+    runs=None,
+):
     """Write system information to output_folder/job_details.json."""
     info = {
         "Architecture": platform.architecture(),
@@ -28,13 +34,14 @@ def write_info(output_folder, total_num_jobs=None, concurrent="slurm", qst_vers=
         "Processor": platform.processor(),
         "QST Version": qst_vers,
         "Release": platform.release(),
+        "Runs": runs,
         "System": platform.system(),
         "Total number of jobs": total_num_jobs,
         "Version": platform.version(),
     }
 
     with open(Path(output_folder, "job_details.json"), "w") as f:
-        json.dump(info, f, sort_keys=True)
+        json.dump(info, f, indent=4, sort_keys=True)
 
 
 if __name__ == "__main__":
