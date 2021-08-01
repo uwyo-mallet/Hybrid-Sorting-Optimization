@@ -263,6 +263,7 @@ class Scheduler:
             total_num_jobs=self.active_queue.qsize(),
             concurrent=self.jobs,
             qst_vers=self._get_exec_version(),
+            runs=self.runs,
         )
         # Create my own process group
         os.setpgrp()
