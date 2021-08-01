@@ -28,11 +28,11 @@ sorted_files=($(printf "%s\n" "${files[@]}" | sort -V))
 for f in "${sorted_files[@]}"; do
   num_lines=$(wc -l <"$f")
   printf "%s" "$(basename "$f") ${num_lines}: "
-  sbatch --array "0-${num_lines}%1000" "${CWD}/job.sbatch" "$f"
+  sbatch --array "0-${num_lines}%50" "${CWD}/job.sbatch" "$f"
   ((total_num_jobs += num_lines))
 
   # Sleep per batch of jobs. Otherwise, this causes slurm to fail MANY jobs.
-  sleep 90
+  sleep 300
 done
 
 printf "\n%s\n" "Total number of jobs: ${total_num_jobs}"
