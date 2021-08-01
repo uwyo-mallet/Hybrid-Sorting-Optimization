@@ -7,6 +7,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <chrono>
 #include <csignal>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -20,10 +21,17 @@
 namespace fs = boost::filesystem;
 namespace bmp = boost::multiprecision;
 
+#ifdef USE_BOOST_CPP_INT
+#define BOOST_CPP_INT "True"
+#else
+#define BOOST_CPP_INT "False"
+#endif
+
 // Argument Parsing
-#define VERSION \
-  QST_VERSION "\nCompiled with: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION " " \
-  CMAKE_BUILD_TYPE
+#define VERSION                                                            \
+  QST_VERSION "\nCompiled with: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION \
+              "\nType: " CMAKE_BUILD_TYPE                                  \
+              "\nUSE_BOOST_CPP_INT: " BOOST_CPP_INT
 
 const char* argp_program_version = VERSION;
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
@@ -48,7 +56,7 @@ struct arguments
   fs::path in_file;
   std::string method;
   fs::path out_file;
-  int threshold;
+  size_t threshold;
 };
 
 // Option parser
@@ -82,13 +90,18 @@ int main(int argc, char** argv)
 
   // The only sort with a supported threshold is qsort_c,
   // so otherwise, just set to 0.
-  if (arguments.method != "qsort_c")
+  if (arguments.method != "qsort_c" && arguments.method != "qsort_recursive")
   {
     arguments.threshold = 0;
   }
 
   // Load the data
+#ifdef USE_BOOST_CPP_INT
   std::vector<bmp::cpp_int> data;
+#else
+  std::vector<uint64_t> data;
+#endif
+
   try
   {
     from_disk_gz(data, arguments.in_file);
@@ -107,9 +120,9 @@ int main(int argc, char** argv)
   // Timing
   auto start_time = std::chrono::high_resolution_clock::now();
   // Map str name of function to actual function
-  if (arguments.method == "vanilla_quicksort")
+  if (arguments.method == "qsort_recursive")
   {
-    vanilla_quicksort(data.data(), data.size());
+    qsort_recursive(data.data(), data.size(), arguments.threshold);
   }
   else if (arguments.method == "insertion_sort")
   {
@@ -121,7 +134,11 @@ int main(int argc, char** argv)
   }
   else if (arguments.method == "std")
   {
-    std::sort(data.begin(), data.end());
+#ifdef USE_BOOST_CPP_INT
+    std::sort(data.begin(), data.end(), compare_std<bmp::cpp_int>);
+#else
+    std::sort(data.begin(), data.end(), compare_std<uint64_t>);
+#endif
   }
   else
   {

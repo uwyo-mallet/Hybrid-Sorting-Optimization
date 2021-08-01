@@ -1,3 +1,4 @@
+
 #include "sort.hpp"
 
 #include <algorithm>
@@ -93,7 +94,7 @@ void insertion_sort(T input[], const size_t &len)
   @return: Index of new pivot value.
 */
 template <typename T>
-size_t vanilla_partition(T input[], size_t lo, size_t hi)
+size_t partition(T input[], size_t lo, size_t hi)
 {
   size_t p = lo;
   T pivot_val = input[p];
@@ -121,13 +122,21 @@ size_t vanilla_partition(T input[], size_t lo, size_t hi)
   @return: Number of recursive calls
 */
 template <typename T>
-void vanilla_quicksort(T input[], int lo, int hi)
+void qsort_recursive(T input[], const int lo, const int hi,
+                     const size_t &thresh)
 {
   if (lo < hi)
   {
-    size_t pivot_index = vanilla_partition(input, lo, hi);
-    vanilla_quicksort(input, lo, pivot_index - 1);
-    vanilla_quicksort(input, pivot_index + 1, hi);
+    if ((hi - lo) <= thresh)
+    {
+      insertion_sort(input, (hi - lo));
+    }
+    else
+    {
+      size_t pivot_index = partition(input, lo, hi);
+      qsort_recursive(input, lo, pivot_index - 1, thresh);
+      qsort_recursive(input, pivot_index + 1, hi, thresh);
+    }
   }
 }
 
@@ -140,13 +149,10 @@ void vanilla_quicksort(T input[], int lo, int hi)
   @return: Number of recursive calls.
 */
 template <typename T>
-void vanilla_quicksort(T input[], const size_t &len)
+void qsort_recursive(T input[], const size_t &len, const size_t &thresh)
 {
-  vanilla_quicksort(input, 0, len - 1);
+  qsort_recursive(input, 0, len - 1, thresh);
 }
-
-/* Discontinue optimized quicksort when the partition gets below this size */
-#define QSORT_MAX_THRESH 4
 
 /* Stack node declarations used to store unfulfilled partition obligations. */
 typedef struct
@@ -418,65 +424,85 @@ void qsort_c(void *const pbase, size_t total_elems, size_t size,
 }
 
 /* Comparator for qsort_c */
-int compare(const void *a, const void *b)
+template <typename T>
+int compare(const T *a, const T *b)
 {
-  bmp::cpp_int arg1 = *(bmp::cpp_int *)a;
-  bmp::cpp_int arg2 = *(bmp::cpp_int *)b;
-
-  if (arg1 < arg2) return -1;
-  if (arg1 > arg2) return 1;
+  if (*a < *b) return -1;
+  if (*a > *b) return 1;
   return 0;
+}
+
+/* Comparator for std::sort */
+template <typename T>
+bool compare_std(const T &a, const T &b)
+{
+  return (a < b);
 }
 
 template <typename T>
 void qsort_c(T input[], const size_t &len, const size_t &thresh)
 {
-  qsort_c(input, len, sizeof(T), compare, thresh);
+  qsort_c(input, len, sizeof(T), (compar_d_fn_t)compare<T>, thresh);
 }
 
 // Template forward decleration to fix linker issues
 template bool is_sorted<int>(int input[], const size_t &len);
-template bool is_sorted<float>(float input[], const size_t &len);
+template bool is_sorted<uint64_t>(uint64_t input[], const size_t &len);
 template bool is_sorted<bmp::cpp_int>(bmp::cpp_int input[], const size_t &len);
 
 template void swap<int>(int *a, int *b);
-template void swap<float>(float *a, float *b);
-template void swap<size_t>(size_t *a, size_t *b);
+template void swap<uint64_t>(uint64_t *a, uint64_t *b);
 template void swap<bmp::cpp_int>(bmp::cpp_int *a, bmp::cpp_int *b);
 
 template int *median_of_three<int>(int *a, int *b, int *c);
-template float *median_of_three<float>(float *a, float *b, float *c);
 template bmp::cpp_int *median_of_three<bmp::cpp_int>(bmp::cpp_int *a,
                                                      bmp::cpp_int *b,
                                                      bmp::cpp_int *c);
 
+// Insertion Sort
 template void insertion_sort<int>(int input[], const size_t &len);
-template void insertion_sort<float>(float input[], const size_t &len);
+template void insertion_sort<uint64_t>(uint64_t input[], const size_t &len);
 template void insertion_sort<bmp::cpp_int>(bmp::cpp_int input[],
                                            const size_t &len);
 
 // Partition
-template size_t vanilla_partition<int>(int input[], size_t low, size_t high);
-template size_t vanilla_partition<float>(float input[], size_t low,
-                                         size_t high);
-template size_t vanilla_partition<bmp::cpp_int>(bmp::cpp_int input[],
-                                                size_t low, size_t high);
+template size_t partition<int>(int input[], size_t low, size_t high);
+template size_t partition<uint64_t>(uint64_t input[], size_t low, size_t high);
+template size_t partition<bmp::cpp_int>(bmp::cpp_int input[], size_t low,
+                                        size_t high);
 
-// Recursive calls
-template void vanilla_quicksort<int>(int input[], int low, int high);
-template void vanilla_quicksort<float>(float input[], int low, int high);
-template void vanilla_quicksort<bmp::cpp_int>(bmp::cpp_int input[], int low,
-                                              int high);
+// qsort_recursive recursive calls
+template void qsort_recursive<int>(int input[], const int lo, const int hi,
+                                   const size_t &thresh);
+template void qsort_recursive<uint64_t>(uint64_t input[], const int lo,
+                                        const int hi, const size_t &thresh);
+template void qsort_recursive<bmp::cpp_int>(bmp::cpp_int input[], const int lo,
+                                            const int hi, const size_t &thresh);
 
-// User calls
-template void vanilla_quicksort<int>(int input[], const size_t &len);
-template void vanilla_quicksort<float>(float input[], const size_t &len);
-template void vanilla_quicksort<bmp::cpp_int>(bmp::cpp_int input[],
-                                              const size_t &len);
+// qsort_recursive user calls
+template void qsort_recursive<int>(int input[], const size_t &len,
+                                   const size_t &thresh);
+template void qsort_recursive<uint64_t>(uint64_t input[], const size_t &len,
+                                        const size_t &thresh);
+template void qsort_recursive<bmp::cpp_int>(bmp::cpp_int input[],
+                                            const size_t &len,
+                                            const size_t &thresh);
 
+// qsort_c
 template void qsort_c<int>(int input[], const size_t &len,
                            const size_t &thresh);
-template void qsort_c<float>(float input[], const size_t &len,
-                             const size_t &thresh);
+template void qsort_c<uint64_t>(uint64_t input[], const size_t &len,
+                                const size_t &thresh);
 template void qsort_c<bmp::cpp_int>(bmp::cpp_int input[], const size_t &len,
                                     const size_t &thresh);
+
+// Comparator for qsort_c and std::sort
+template int compare<int>(const int *a, const int *b);
+template int compare<uint64_t>(const uint64_t *a, const uint64_t *b);
+template int compare<bmp::cpp_int>(const bmp::cpp_int *a,
+                                   const bmp::cpp_int *b);
+
+template bool compare_std<int>(const int &a, const int &b);
+template bool compare_std<uint64_t>(const uint64_t &a, const uint64_t &b);
+template bool compare_std<bmp::cpp_int>(const bmp::cpp_int &a,
+                                        const bmp::cpp_int &b);
