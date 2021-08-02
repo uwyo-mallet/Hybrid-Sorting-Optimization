@@ -27,8 +27,9 @@ void print(const std::vector<T> &arr)
 }
 
 template <typename T>
-void from_disk_txt(std::vector<T> &vec, fs::path filename)
+std::vector<T> from_disk_txt(fs::path filename)
 {
+  std::vector<T> vec;
   std::ifstream in_file(filename.string());
 
   if (!in_file.is_open() || !in_file.good())
@@ -44,11 +45,14 @@ void from_disk_txt(std::vector<T> &vec, fs::path filename)
   }
 
   in_file.close();
+
+  return vec;
 }
 
 template <typename T>
-void from_disk_gz(std::vector<T> &vec, fs::path filename)
+std::vector<T> from_disk_gz(fs::path filename)
 {
+  std::vector<T> vec;
   std::ifstream in_file(filename.string(),
                         std::ios_base::in | std::ios_base::binary);
   if (!in_file.is_open() || !in_file.good())
@@ -71,6 +75,8 @@ void from_disk_gz(std::vector<T> &vec, fs::path filename)
   }
   // Cleanup
   in_file.close();
+
+  return vec;
 }
 
 #endif /* IO_HPP_ */

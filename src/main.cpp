@@ -98,25 +98,17 @@ int main(int argc, char** argv)
     arguments.threshold = 0;
   }
 
-  // Load the data
 #ifdef USE_BOOST_CPP_INT
-  std::vector<bmp::cpp_int> orig_data;
+  const std::vector<bmp::cpp_int> orig_data =
+      from_disk_gz<bmp::cpp_int>(arguments.in_file);
   std::vector<bmp::cpp_int> data;
 #else
-  std::vector<uint64_t> orig_data;
+  const std::vector<uint64_t> orig_data =
+      from_disk_gz<uint64_t>(arguments.in_file);
   std::vector<uint64_t> data;
 #endif
 
-  try
-  {
-    from_disk_gz(orig_data, arguments.in_file);
-  }
-  catch (std::ios_base::failure& e)
-  {
-    std::cerr << e.what() << std::endl;
-    return EXIT_FAILURE;
-  }
-  size = data.size();
+  size = orig_data.size();
 
   // Signal handlers
   signal(SIGINT, signal_handler);
@@ -167,6 +159,7 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
       {
         throw std::invalid_argument("Runs must be > 0");
       }
+      break;
 
     case 't':
       try
