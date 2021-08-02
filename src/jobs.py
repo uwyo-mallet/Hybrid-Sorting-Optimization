@@ -285,6 +285,7 @@ class Scheduler:
             qst_vers=self._get_exec_version(),
             runs=self.runs,
             total_num_jobs=self.active_queue.qsize(),
+            total_num_sorts=self.active_queue.qsize() * self.runs,
         )
         # Create my own process group
         os.setpgrp()
@@ -310,6 +311,7 @@ class Scheduler:
             qst_vers=self._get_exec_version(),
             runs=self.runs,
             total_num_jobs=self.active_queue.qsize(),
+            total_num_sorts=self.active_queue.qsize() * self.runs,
         )
         index = 0
         while not self.active_queue.empty():
