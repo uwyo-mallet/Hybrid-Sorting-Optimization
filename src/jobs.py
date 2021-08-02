@@ -185,6 +185,8 @@ def parse_args(args):
 
 
 class Scheduler:
+    """Utility class allowing for easy job generation and scheduling across many threads."""
+
     def __init__(self, **kwargs):
         self.data_dir = kwargs["data_dir"]
         self.exec = kwargs["exec"]
@@ -208,6 +210,7 @@ class Scheduler:
         return stdout.decode()
 
     def _gen_jobs(self):
+        """Populate the queue with jobs."""
         files = self.data_dir.glob(r"**/*.gz")
         self.job_queue: "Queue[Job]" = Queue()
 
@@ -240,6 +243,7 @@ class Scheduler:
         self.active_queue = self.job_queue
 
     def _worker(self):
+        """Worker function for each thread."""
         while True:
             job = self.active_queue.get()
             job.run(quiet=self.progress)
@@ -260,10 +264,10 @@ class Scheduler:
         # Log system info
         write_info(
             self.output.parent,
-            total_num_jobs=self.active_queue.qsize(),
             concurrent=self.jobs,
             qst_vers=self._get_exec_version(),
             runs=self.runs,
+            total_num_jobs=self.active_queue.qsize(),
         )
         # Create my own process group
         os.setpgrp()
@@ -285,10 +289,10 @@ class Scheduler:
         self.slurm.mkdir()
         write_info(
             self.slurm,
-            total_num_jobs=self.active_queue.qsize(),
             concurrent="slurm",
             qst_vers=self._get_exec_version(),
             runs=self.runs,
+            total_num_jobs=self.active_queue.qsize(),
         )
         index = 0
         while not self.active_queue.empty():
