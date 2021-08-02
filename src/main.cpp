@@ -97,11 +97,11 @@ int main(int argc, char** argv)
 
 #ifdef USE_BOOST_CPP_INT
   const std::vector<bmp::cpp_int> orig_data =
-      from_disk_gz<bmp::cpp_int>(arguments.in_file);
+      from_disk<bmp::cpp_int>(arguments.in_file);
   std::vector<bmp::cpp_int> data;
 #else
   const std::vector<uint64_t> orig_data =
-      from_disk_gz<uint64_t>(arguments.in_file);
+      from_disk<uint64_t>(arguments.in_file);
   std::vector<uint64_t> data;
 #endif
 

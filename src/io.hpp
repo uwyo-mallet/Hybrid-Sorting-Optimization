@@ -13,7 +13,6 @@
 #include <vector>
 
 namespace fs = boost::filesystem;
-/* namespace bmp = boost::multiprecision; */
 
 template <typename T>
 void print(const std::vector<T> &arr)
@@ -27,7 +26,7 @@ void print(const std::vector<T> &arr)
 }
 
 template <typename T>
-std::vector<T> from_disk_txt(fs::path filename)
+std::vector<T> from_disk_txt(const fs::path &filename)
 {
   std::vector<T> vec;
   std::ifstream in_file(filename.string());
@@ -50,7 +49,7 @@ std::vector<T> from_disk_txt(fs::path filename)
 }
 
 template <typename T>
-std::vector<T> from_disk_gz(fs::path filename)
+std::vector<T> from_disk_gz(const fs::path &filename)
 {
   std::vector<T> vec;
   std::ifstream in_file(filename.string(),
@@ -77,6 +76,16 @@ std::vector<T> from_disk_gz(fs::path filename)
   in_file.close();
 
   return vec;
+}
+
+template <typename T>
+std::vector<T> from_disk(const fs::path &filename)
+{
+  if (filename.extension().string() == ".gz")
+  {
+    return from_disk_gz<T>(filename);
+  }
+  return from_disk_txt<T>(filename);
 }
 
 #endif /* IO_HPP_ */
