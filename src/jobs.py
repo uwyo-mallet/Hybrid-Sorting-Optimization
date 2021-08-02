@@ -57,6 +57,7 @@ class Job:
     infile_path: Path
     description: str
     method: str
+    runs: int
     threshold: int
     output: Path
 
@@ -72,6 +73,8 @@ class Job:
             str(self.method),
             "--output",
             str(self.output),
+            "--runs",
+            str(self.runs),
             "--threshold",
             str(self.threshold),
         ]
@@ -228,15 +231,29 @@ class Scheduler:
                 # QST (> V1.0) corrects this to 0 on the CSV output.
                 if method in THRESHOLD_METHODS:
                     for thresh in self.threshold:
-                        for _ in range(self.runs):
-                            self.job_queue.put(
-                                Job(self.exec, file, desc, method, thresh, self.output)
-                            )
-                else:
-                    for _ in range(self.runs):
                         self.job_queue.put(
-                            Job(self.exec, file, desc, method, thresh, self.output)
+                            Job(
+                                self.exec,
+                                file,
+                                desc,
+                                method,
+                                self.runs,
+                                thresh,
+                                self.output,
+                            )
                         )
+                else:
+                    self.job_queue.put(
+                        Job(
+                            self.exec,
+                            file,
+                            desc,
+                            method,
+                            self.runs,
+                            thresh,
+                            self.output,
+                        )
+                    )
         self.active_queue = self.job_queue
 
     def _restore_jobs(self):
