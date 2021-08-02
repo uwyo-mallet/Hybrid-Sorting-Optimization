@@ -2,6 +2,8 @@
 #ifndef EXP_HPP_
 #define EXP_HPP_
 
+#include <algorithm>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <chrono>
 #include <stdexcept>
 #include <string>
@@ -35,7 +37,8 @@ std::string time(const std::string& method, const size_t& threshold,
   {
     start_time = std::chrono::steady_clock::now();
 #ifdef USE_BOOST_CPP_INT
-    std::sort(vec.begin(), vec.end(), compare_std<bmp::cpp_int>);
+    std::sort(vec.begin(), vec.end(),
+              compare_std<boost::multiprecision::cpp_int>);
 #else
     std::sort(vec.begin(), vec.end(), compare_std<uint64_t>);
 #endif

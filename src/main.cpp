@@ -5,14 +5,11 @@
 #include <boost/filesystem/directory.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
-#include <chrono>
 #include <csignal>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
-#include <map>
 #include <string>
-#include <thread>
 
 #include "config.hpp"
 #include "exp.hpp"
