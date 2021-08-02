@@ -15,14 +15,14 @@
 #include <thread>
 
 #include "config.hpp"
+#include "exp.hpp"
 #include "io.hpp"
-#include "sort.hpp"
 
 namespace fs = boost::filesystem;
-namespace bmp = boost::multiprecision;
 
 #ifdef USE_BOOST_CPP_INT
 #define BOOST_CPP_INT "True"
+namespace bmp = boost::multiprecision;
 #else
 #define BOOST_CPP_INT "False"
 #endif
@@ -44,8 +44,9 @@ static char args_doc[] = "INPUT";
 // Accepted methods
 static struct argp_option options[] = {
     {"description", 'd', "DESCRIP", 0, "Short description of input data."},
-    {"method", 'm', "METHOD", 0, "Sorting method"},
-    {"output", 'o', "FILE", 0, "Output to FILE instead of STDOUT"},
+    {"method", 'm', "METHOD", 0, "Sorting method."},
+    {"output", 'o', "FILE", 0, "Output to FILE instead of STDOUT."},
+    {"runs", 'r', "N", 0, "Number of times to sort the same data. Default: 1"},
     {"threshold", 't', "THRESH", 0, "Threshold to switch to insertion sort."},
     {0},
 };
@@ -56,7 +57,8 @@ struct arguments
   fs::path in_file;
   std::string method;
   fs::path out_file;
-  size_t threshold;
+  int64_t runs;
+  int64_t threshold;
 };
 
 // Option parser
@@ -64,11 +66,11 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state);
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
 void signal_handler(int signum);
-void write(struct arguments args, size_t size, std::string time, bool valid);
+void write(struct arguments args, const size_t& size,
+           const std::vector<std::string>& times);
 
 struct arguments arguments;
-bool valid = false;
-std::string elapsed_time = "-1";
+std::vector<std::string> times;
 size_t size = 0;
 
 int main(int argc, char** argv)
@@ -77,6 +79,7 @@ int main(int argc, char** argv)
   arguments.description = "N/A";
   arguments.method = "qsort_c";
   arguments.out_file = "-";
+  arguments.runs = 1;
   // Threshold is only used for supported sorting methods.
   arguments.threshold = 4;
 
@@ -97,14 +100,16 @@ int main(int argc, char** argv)
 
   // Load the data
 #ifdef USE_BOOST_CPP_INT
+  std::vector<bmp::cpp_int> orig_data;
   std::vector<bmp::cpp_int> data;
 #else
+  std::vector<uint64_t> orig_data;
   std::vector<uint64_t> data;
 #endif
 
   try
   {
-    from_disk_gz(data, arguments.in_file);
+    from_disk_gz(orig_data, arguments.in_file);
   }
   catch (std::ios_base::failure& e)
   {
@@ -117,49 +122,17 @@ int main(int argc, char** argv)
   signal(SIGINT, signal_handler);
   signal(SIGTERM, signal_handler);
 
-  // Timing
-  auto start_time = std::chrono::high_resolution_clock::now();
-  // Map str name of function to actual function
-  if (arguments.method == "qsort_recursive")
+  for (size_t i = 0; i < arguments.runs; i++)
   {
-    qsort_recursive(data.data(), data.size(), arguments.threshold);
+    data = orig_data;
+    times.push_back(time(arguments.method, arguments.threshold, data));
+    data.clear();
   }
-  else if (arguments.method == "insertion_sort")
-  {
-    insertion_sort(data.data(), data.size());
-  }
-  else if (arguments.method == "qsort_c")
-  {
-    qsort_c(data.data(), data.size(), arguments.threshold);
-  }
-  else if (arguments.method == "std")
-  {
-#ifdef USE_BOOST_CPP_INT
-    std::sort(data.begin(), data.end(), compare_std<bmp::cpp_int>);
-#else
-    std::sort(data.begin(), data.end(), compare_std<uint64_t>);
-#endif
-  }
-  else
-  {
-    std::cerr << "Invalid method selected." << std::endl;
-    return EXIT_FAILURE;
-  }
-
-  auto end_time = std::chrono::high_resolution_clock::now();
-  auto runtime = std::chrono::duration_cast<std::chrono::microseconds>(
-      end_time - start_time);
-
-  // Convert runtime to string
-  elapsed_time = std::to_string((size_t)runtime.count());
-
-  // Ensure the data is actually sorted correctly
-  valid = is_sorted(data.data(), data.size());
 
   // Output
   try
   {
-    write(arguments, data.size(), elapsed_time, valid);
+    write(arguments, size, times);
   }
   catch (std::ios_base::failure& e)
   {
@@ -187,6 +160,13 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
     case 'o':
       args->out_file = fs::path(arg);
       break;
+
+    case 'r':
+      args->runs = std::stoi(std::string(arg));
+      if (args->runs <= 0)
+      {
+        throw std::invalid_argument("Runs must be > 0");
+      }
 
     case 't':
       try
@@ -235,7 +215,7 @@ void signal_handler(int signum)
   // Try to write the output on failure.
   try
   {
-    write(arguments, size, elapsed_time, valid);
+    write(arguments, size, times);
   }
   catch (std::ios_base::failure& e)
   {
@@ -244,7 +224,8 @@ void signal_handler(int signum)
   exit(EXIT_FAILURE);
 }
 
-void write(struct arguments args, size_t size, std::string time, bool valid)
+void write(struct arguments args, const size_t& size,
+           const std::vector<std::string>& times)
 {
   if (args.out_file == "-")
   {
@@ -252,10 +233,12 @@ void write(struct arguments args, size_t size, std::string time, bool valid)
     std::cout << "Input: " << args.in_file << std::endl;
     std::cout << "Description: " << args.description << std::endl;
     std::cout << "Size: " << size << std::endl;
-    std::cout << "Elapsed Time (microseconds): " << elapsed_time << std::endl;
+    for (std::string time : times)
+    {
+      std::cout << "Elapsed Time (microseconds): " << time << std::endl;
+    }
 
     std::cout << "Threshold: " << args.threshold << std::endl;
-    std::cout << "Valid: " << (valid ? "True" : "False") << std::endl;
   }
   else
   {
@@ -273,14 +256,17 @@ void write(struct arguments args, size_t size, std::string time, bool valid)
     {
       out_file.clear();
       out_file << "Method,Input,Description,Size,Elapsed Time "
-                  "(microseconds),Threshold,Valid"
+                  "(microseconds),Threshold"
                << std::endl;
     }
 
     // Write the actual data
-    out_file << args.method << "," << args.in_file << "," << args.description
-             << "," << size << "," << time << "," << args.threshold << ","
-             << (valid ? "True" : "False") << std::endl;
+    for (std::string time : times)
+    {
+      out_file << args.method << "," << args.in_file << "," << args.description
+               << "," << size << "," << time << "," << args.threshold
+               << std::endl;
+    }
 
     out_file.close();
   }

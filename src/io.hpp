@@ -4,16 +4,11 @@
 
 #include <algorithm>
 #include <boost/filesystem.hpp>
-/* #include <boost/iostreams/copy.hpp> */
 #include <boost/iostreams/filter/gzip.hpp>
-/* #include <boost/iostreams/filter/zlib.hpp> */
 #include <boost/iostreams/filtering_streambuf.hpp>
-/* #include <boost/multiprecision/cpp_int.hpp> */
-/* #include <cstddef> */
 #include <fstream>
 #include <iostream>
 #include <iterator>
-/* #include <random> */
 #include <string>
 #include <vector>
 
@@ -69,7 +64,6 @@ void from_disk_gz(std::vector<T> &vec, fs::path filename)
   // Convert streambuf to istream
   std::istream instream(&inbuf);
 
-  // TODO: Handle floats here.
   T line;
   while (instream >> line)
   {
