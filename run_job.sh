@@ -24,15 +24,20 @@ total_num_jobs=0
 
 files=("${INPUT_DIR}"/*.dat)
 sorted_files=($(printf "%s\n" "${files[@]}" | sort -V))
+pos=$((${#files[*]} - 1))
+last="${files[$pos]}"
 
 for f in "${sorted_files[@]}"; do
   num_lines=$(wc -l <"$f")
   printf "%s" "$(basename "$f") ${num_lines}: "
-  sbatch --array "0-${num_lines}%50" "${CWD}/job.sbatch" "$f"
+  sbatch --array "0-${num_lines}" "${CWD}/job.sbatch" "$f"
   ((total_num_jobs += num_lines))
 
   # Sleep per batch of jobs. Otherwise, this causes slurm to fail MANY jobs.
-  sleep 300
+  # Skip the sleep if it is the last, since we aren't submitting any more jobs.
+  if [[ "$f" != "$last" ]]; then
+    sleep 300
+  fi
 done
 
 printf "\n%s\n" "Total number of jobs: ${total_num_jobs}"
