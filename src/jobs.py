@@ -281,6 +281,7 @@ class Scheduler:
         # Log system info
         write_info(
             self.output.parent,
+            command=" ".join(sys.argv),
             concurrent=self.jobs,
             qst_vers=self._get_exec_version(),
             runs=self.runs,
@@ -307,6 +308,7 @@ class Scheduler:
         self.slurm.mkdir()
         write_info(
             self.slurm,
+            command=" ".join(sys.argv),
             concurrent="slurm",
             qst_vers=self._get_exec_version(),
             runs=self.runs,

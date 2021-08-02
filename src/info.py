@@ -31,6 +31,7 @@ from docopt import docopt
 
 def write_info(
     output_folder,
+    command=None,
     concurrent="slurm",
     qst_vers="",
     runs=0,
@@ -40,6 +41,7 @@ def write_info(
     """Write system information to output_folder/job_details.json."""
     info = {
         "Architecture": platform.architecture(),
+        "Command": command,
         "Machine": platform.machine(),
         "Node": platform.node(),
         "Number of CPUs": multiprocessing.cpu_count(),
