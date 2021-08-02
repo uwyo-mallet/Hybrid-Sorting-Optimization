@@ -26,9 +26,9 @@ namespace bmp = boost::multiprecision;
 
 // Argument Parsing
 #define VERSION                                                            \
-  QST_VERSION "\nCompiled with: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION \
-              "\nType: " CMAKE_BUILD_TYPE                                  \
-              "\nUSE_BOOST_CPP_INT: " BOOST_CPP_INT
+  QST_VERSION "\n\tCompiled with: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION \
+              "\n\tType: " CMAKE_BUILD_TYPE                                  \
+              "\n\tUSE_BOOST_CPP_INT: " BOOST_CPP_INT
 
 const char* argp_program_version = VERSION;
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
