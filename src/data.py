@@ -5,21 +5,24 @@ Generate large amounts of testing data as fast as possible.
 Usage:
     data.py evaluate FILE [options]
     data.py generate [options]
+    data.py validate DIR
     data.py -h | --help
 
 Options:
     -h, --help               Show this help.
-    -f, --force              Overwrite existing.
     -o, --output=DIR         Output to save data (default: ./data/).
     -t, --threshold=THRESH   Comma seperated range for output data.
                              If no increment is specified, the minimum
                              value is used. Example: 500_000,20_000_000,500_000
+    --type=TYPE              Only generate one type of data
 
 Commands:
     evaluate            Evaluate an output CSV from QST run(s).
     generate            Generate testing data.
+    validate            Ensure all generated files are the correct length.
 """
 import gzip
+import json
 import multiprocessing
 import random
 import shutil
@@ -39,9 +42,7 @@ MAX_ELEMENTS = 1_000_000
 class DataGen:
     """Utility class for generating lots of data really fast."""
 
-    def __init__(
-        self, output: Path, minimum: int, maximum: int, increment: int, force: bool
-    ):
+    def __init__(self, output: Path, minimum: int, maximum: int, increment: int):
         """
         Initialize range and output parameters.
 
@@ -52,7 +53,6 @@ class DataGen:
             increment: Increments of data to create, must evenly divise maximum.
 
         Raises:
-            IsADirectoryError: Output directory already exists
             NotADirectoryError: Output requires a directory, not a file
         """
         random.seed()
@@ -70,13 +70,8 @@ class DataGen:
         self.base_path = output or "./data/"
         self.base_path = Path(self.base_path)
 
-        if self.base_path.exists() and not force:
-            raise IsADirectoryError("Output directory already exists")
         if self.base_path.is_file():
             raise NotADirectoryError("Output requires a directory, not a file")
-
-        if force:
-            shutil.rmtree(self.base_path, ignore_errors=True)
 
         self.create_dirs()
 
@@ -85,7 +80,7 @@ class DataGen:
         self.base_path.mkdir(parents=True, exist_ok=True)
         for d in self.dirs:
             real_path = Path(self.base_path, d)
-            real_path.mkdir()
+            real_path.mkdir(exist_ok=True)
 
     def _append(self, prev: Path, current: Path, data: str):
         """
@@ -110,12 +105,12 @@ class DataGen:
         for i, num_elements in enumerate(range(self.min, self.max, self.inc)):
             if i == 0:
                 self._save(
-                    Path(output, f"{i}.dat.gz"),
+                    Path(output, f"{i}.gz"),
                     np.arange(num_elements, dtype=np.int64),
                 )
             else:
-                prev = Path(output, f"{i - 1}.dat.gz")
-                current = Path(output, f"{i}.dat.gz")
+                prev = Path(output, f"{i - 1}.gz")
+                current = Path(output, f"{i}.gz")
 
                 data = np.arange(
                     num_elements - self.inc, num_elements, dtype=np.int64
@@ -130,12 +125,12 @@ class DataGen:
         for i, num_elements in enumerate(range(self.min, self.max, self.inc)):
             if i == 0:
                 self._save(
-                    Path(output, f"{i}.dat.gz"),
+                    Path(output, f"{i}.gz"),
                     np.arange(num_elements - 1, -1, -1, dtype=np.int64),
                 )
             else:
-                prev = Path(output, f"{i - 1}.dat.gz")
-                current = Path(output, f"{i}.dat.gz")
+                prev = Path(output, f"{i - 1}.gz")
+                current = Path(output, f"{i}.gz")
 
                 # Prepend by reading the old file, then writing a new file with
                 # the new data then the old data.
@@ -158,11 +153,13 @@ class DataGen:
 
     def _random(self, args):
         """Save random data to file. Helper for multiprocessing."""
-        data = np.random.randint(self.max + 1, size=args[1], dtype=np.int64)
+        data = np.random.randint(
+            low=self.min, high=self.max + 1, size=args[1], dtype=np.int64
+        )
         np.savetxt(
             args[0],
             data,
-            fmt="%u",
+            fmt="%d",
             delimiter="\n",
             comments="",
         )
@@ -170,7 +167,7 @@ class DataGen:
     def random(self, output: Path):
         """Generate random data and save to dir output."""
         sets = [
-            (Path(output, f"{i}.dat.gz"), num_elements)
+            (Path(output, f"{i}.gz"), num_elements)
             for i, num_elements in enumerate(range(self.min, self.max, self.inc))
         ]
         pool = Pool(multiprocessing.cpu_count())
@@ -184,10 +181,10 @@ class DataGen:
             if i == 0:
                 data = np.empty(num_elements, dtype=np.int64)
                 data.fill(42)
-                self._save(Path(output, f"{i}.dat.gz"), data)
+                self._save(Path(output, f"{i}.gz"), data)
             else:
-                prev = Path(output, f"{i - 1}.dat.gz")
-                current = Path(output, f"{i}.dat.gz")
+                prev = Path(output, f"{i - 1}.gz")
+                current = Path(output, f"{i}.gz")
 
                 data = np.empty(self.inc, dtype=np.int64)
                 data.fill(42)
@@ -197,28 +194,101 @@ class DataGen:
 
                 self._append(prev, current, str_dat)
 
-    def generate(self):
+    def generate(self, t=None):
         """Generate all types of data in parallel."""
-        processes = []
-        for k, v in self.dirs.items():
-            output = Path(self.base_path, k)
-            p = Process(target=v, args=(output,))
-            p.start()
 
-        for p in processes:
+        if t is None:
+            processes = []
+            for k, v in self.dirs.items():
+                output = Path(self.base_path, k)
+                # Remove existing
+                if output.exists():
+                    shutil.rmtree(output)
+                output.mkdir()
+                p = Process(target=v, args=(output,))
+                p.start()
+
+            for p in processes:
+                p.join()
+        else:
+            if t not in self.dirs:
+                raise ValueError("Invalid type")
+
+            output = Path(self.base_path, t)
+            p = Process(target=self.dirs[t], args=(output,))
+            p.start()
             p.join()
 
-        with open(Path(self.base_path, "details.txt"), "w") as f:
-            f.write(
-                f"MIN_ELEMENTS: {self.min}\nMAX_ELEMENTS: {self.max - self.inc}\nINCREMENT: {self.inc}"
-            )
+        with open(Path(self.base_path, "details.json"), "w") as f:
+            data = {
+                "minimum": self.min,
+                "maximum": self.max - self.inc,
+                "increment": self.inc,
+            }
+            json.dump(data, f, indent=4)
+
+
+class Validate:
+    subdirs = [
+        "ascending",
+        "descending",
+        "random",
+        "single_num",
+    ]
+
+    def __init__(self, in_dir: Path):
+        self.in_dir = in_dir
+
+        details_path = Path(self.in_dir, "details.json")
+        if not details_path.exists():
+            raise FileNotFoundError("Missing deatils.json")
+
+        with open(details_path, "r") as details_file:
+            details = json.load(details_file)
+
+        self.min = details["minimum"]
+        self.max = details["maximum"]
+        self.inc = details["increment"]
+
+        if not self.in_dir.exists():
+            raise NotADirectoryError("Missing input directory")
+
+    def _validate_dir(self, path):
+        files = sorted(list(path.glob("*.gz")), key=lambda x: int(x.stem))
+        if len(files) != self.correct_num_files:
+            print(f"[Warning]: Possibly missing files in {path}")
+
+        correct_num_lines = self.min
+
+        for f in files:
+            num_lines = sum(1 for _ in gzip.open(f, "rb"))
+            if num_lines != correct_num_lines:
+                print(f"[Error]: {f}, {num_lines} != {correct_num_lines}")
+            correct_num_lines += self.inc
+
+    def validate(self):
+        self.correct_num_files = int(self.max / self.inc)
+
+        existing = []
+        for subdir in self.subdirs:
+            path = Path(self.in_dir, subdir)
+            if not path.exists():
+                print(f"[Warning]: Missing subdirectory: {subdir}")
+                continue
+            existing.append(path)
+
+        pool = Pool(multiprocessing.cpu_count())
+        pool.map(self._validate_dir, existing)
+        pool.close()
+        pool.join()
 
 
 if __name__ == "__main__":
     args = docopt(__doc__)
     if args.get("evaluate"):
         print("[Deprecated]: Use the evaluate.ipynb jupyter notebook instead.")
-    elif args.get("generate"):
+
+    if args.get("generate"):
         # Parse threshold and validate
         if args.get("--threshold") is not None:
             try:
@@ -240,7 +310,6 @@ if __name__ == "__main__":
             minimum = MIN_ELEMENTS
             maximum = MAX_ELEMENTS
             increment = INCREMENT
-
         if maximum <= minimum or minimum < 0 or maximum < 0 or increment < 0:
             raise ValueError("Invalid threshold range")
 
@@ -249,7 +318,8 @@ if __name__ == "__main__":
         print(f"Maximum: {maximum:,}", file=sys.stderr)
         print(f"Increment: {increment:,}", file=sys.stderr)
 
-        d = DataGen(
-            args.get("--output"), minimum, maximum, increment, args.get("--force")
-        )
-        d.generate()
+        d = DataGen(args.get("--output"), minimum, maximum, increment)
+        d.generate(args.get("--type"))
+    elif args.get("validate"):
+        v = Validate(Path(args.get("DIR")))
+        v.validate()
