@@ -33,15 +33,21 @@ def write_info(
     output_folder,
     command=None,
     concurrent="slurm",
+    data_details_path=None,
     qst_vers="",
     runs=0,
     total_num_jobs=0,
     total_num_sorts=0,
 ):
     """Write system information to output_folder/job_details.json."""
+    if data_details_path is not None and data_details_path.is_file():
+        with open(data_details_path, "r") as data_details_file:
+            data_details = json.load(data_details_file)
+
     info = {
         "Architecture": platform.architecture(),
         "Command": command,
+        "Data Details": data_details,
         "Machine": platform.machine(),
         "Node": platform.node(),
         "Number of CPUs": multiprocessing.cpu_count(),
@@ -58,7 +64,7 @@ def write_info(
     }
 
     with open(Path(output_folder, "job_details.json"), "w") as f:
-        json.dump(info, f, indent=4, sort_keys=True)
+        json.dump(info, f, indent=4)
 
 
 if __name__ == "__main__":

@@ -282,6 +282,7 @@ class Scheduler:
         write_info(
             self.output.parent,
             command=" ".join(sys.argv),
+            data_details_path=Path(self.data_dir, "details.json"),
             concurrent=self.jobs,
             qst_vers=self._get_exec_version(),
             runs=self.runs,
@@ -310,6 +311,7 @@ class Scheduler:
             self.slurm,
             command=" ".join(sys.argv),
             concurrent="slurm",
+            data_details_path=Path(self.data_dir, "details.json"),
             qst_vers=self._get_exec_version(),
             runs=self.runs,
             total_num_jobs=self.active_queue.qsize(),
