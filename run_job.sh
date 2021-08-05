@@ -48,7 +48,7 @@ last="${files[$pos]}"
 for f in "${sorted_files[@]}"; do
   num_lines=$(wc -l <"$f")
   printf "%s" "$(basename "$f") ${num_lines}: "
-  echo sbatch --array "0-${num_lines}" --partition="$1" "${CWD}/job.sbatch" "$f"
+  sbatch --array "0-${num_lines}" --partition="$1" "${CWD}/job.sbatch" "$f"
   ((total_num_jobs += num_lines))
 
   # Sleep per batch of jobs. Otherwise, this causes slurm to fail MANY jobs.
