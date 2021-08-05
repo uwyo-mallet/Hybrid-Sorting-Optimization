@@ -48,7 +48,7 @@ last="${files[$pos]}"
 for f in "${sorted_files[@]}"; do
   num_lines=$(wc -l <"$f")
   printf "%s" "$(basename "$f") ${num_lines}: "
-  sbatch --array "0-${num_lines}" --partition="$1" "${CWD}/job.sbatch" "$f"
+  echo sbatch --array "0-${num_lines}" --partition="$1" "${CWD}/job.sbatch" "$f"
   ((total_num_jobs += num_lines))
 
   # Sleep per batch of jobs. Otherwise, this causes slurm to fail MANY jobs.
@@ -65,3 +65,6 @@ cp "${INPUT_DIR}/job_details.json" "${RESULTS_DIR}/."
 
 # Ensure the slurm.d/ dir is preserved
 cp -r "$INPUT_DIR" "${RESULTS_DIR}/."
+
+# Save which partition we ran on
+echo "$1" >"${RESULTS_DIR}/partition"
