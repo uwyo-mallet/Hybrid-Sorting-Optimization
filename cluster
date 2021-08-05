@@ -3,7 +3,7 @@
 VERSION="1.1.0"
 
 # Ensure that this does have a trailing slash
-REMOTE_DIR="jarulsam@teton.arcc.uwyo.edu:/project/mallet/jarulsam/quicksort-tuning/"
+REMOTE_DIR="jarulsam@teton.arcc.uwyo.edu:/gscratch/jarulsam/quicksort-tuning/"
 CWD="$(pwd -P)"
 CWD="${CWD}/"
 EXCLUDE_FILE="./exclude-file.txt"
@@ -28,12 +28,12 @@ clean() {
 
 # Send to remote
 to() {
-    rsync -auvz --progress -e 'ssh -o StrictHostKeyChecking=no' --delete --exclude-from="${EXCLUDE_FILE}" "${CWD}" "${REMOTE_DIR}"
+    rsync -auv --progress -e 'ssh -o StrictHostKeyChecking=no' --delete --exclude-from="${EXCLUDE_FILE}" "${CWD}" "${REMOTE_DIR}"
 }
 
 # Pull from remote
 from() {
-    rsync -auvz --progress -e 'ssh -o StrictHostKeyChecking=no' --exclude-from="${EXCLUDE_FILE}" "${REMOTE_DIR}" "${CWD}"
+    rsync -auv --progress -e 'ssh -o StrictHostKeyChecking=no' --exclude-from="${EXCLUDE_FILE}" "${REMOTE_DIR}" "${CWD}"
 }
 
 # Activate the required modules and build QST
