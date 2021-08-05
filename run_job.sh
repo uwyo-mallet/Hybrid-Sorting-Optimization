@@ -11,13 +11,31 @@ RESULTS_DIR="${CWD}/results/$(date +"%Y-%m-%d_%H-%M-%S")" # Place to store all t
 
 echoerr() { printf "%s\n" "$*" >&2; }
 
+partitions=("teton" "teton-cascade" "teton-hugemem" "teton-massmem" "teton-knl" "moran")
+
+# Ensure the inputs exist
 if ! [ -d "$INPUT_DIR" ]; then
   echoerr "Cannot open $INPUT_DIR"
   exit 1
 fi
 
-mkdir -p "$RESULTS_DIR"
+# Ensure a valid partitition is selected
+if [[ ! " ${partitions[@]} " =~ " ${1} " ]]; then
+  echoerr "Invalid partition selection"
+  exit 2
+fi
 
+# Ensure slurm.d/ has at least 1 input file
+if ! test -n "$(
+  shopt -s nullglob
+  echo "${INPUT_DIR}"/*.dat
+)"; then
+  echoerr "${INPUT_DIR} doesn't contain at .dat files!"
+  exit 3
+fi
+
+# Everything looks good, proceeed to actual job submission.
+mkdir -p "$RESULTS_DIR"
 cd "$RESULTS_DIR" || exit 1
 
 total_num_jobs=0
@@ -30,7 +48,7 @@ last="${files[$pos]}"
 for f in "${sorted_files[@]}"; do
   num_lines=$(wc -l <"$f")
   printf "%s" "$(basename "$f") ${num_lines}: "
-  sbatch --array "0-${num_lines}" "${CWD}/job.sbatch" "$f"
+  sbatch --array "0-${num_lines}" --partition="$1" "${CWD}/job.sbatch" "$f"
   ((total_num_jobs += num_lines))
 
   # Sleep per batch of jobs. Otherwise, this causes slurm to fail MANY jobs.
