@@ -5,9 +5,11 @@
 
 # DO NOT EDIT job.sbatch!
 # Instead, edit the following variables, then run with ./run_job.sh
-CWD=$(realpath .)                                         # Project directory.
-INPUT_DIR="${CWD}/slurm.d/"                               # Dir with all commands to run (slurm.d/).
-RESULTS_DIR="${CWD}/results/$(date +"%Y-%m-%d_%H-%M-%S")" # Place to store all the results.
+
+# Project directory.
+CWD=$(realpath .)
+# Dir with all commands to run (slurm.d/).
+INPUT_DIR="${CWD}/slurm.d/"
 
 echoerr() { printf "%s\n" "$*" >&2; }
 
@@ -35,6 +37,7 @@ if ! test -n "$(
 fi
 
 # Everything looks good, proceeed to actual job submission.
+RESULTS_DIR="${CWD}/results/$(date +"%Y-%m-%d_%H-%M-%S")_$1"
 mkdir -p "$RESULTS_DIR"
 cd "$RESULTS_DIR" || exit 1
 
