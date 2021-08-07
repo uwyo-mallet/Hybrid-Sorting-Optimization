@@ -11,39 +11,41 @@ learning.
 
 ## Setup
 
-Instructions for compiling QST and setting up the required python environment
-on the cluster.
+Compiling QST and setting up the required python environment on ARCC.
 
 1. Load the required modules
 
    ```
-   module load gcc
-   module load swset
-   module load boost/1.72.0
-   module load cmake/3.16.5
-   module load miniconda3
+   $ module load gcc
+   $ module load swset
+   $ module load boost/1.72.0
+   $ module load cmake/3.16.5
+   $ module load miniconda3
    ```
 
 2. Compile QST
 
    ```
-   mkdir build
-   cd build
-   cmake .. -DCMAKE_BUILD_TYPE=RELEASE
-   make
+   $ mkdir build
+   $ cd build
+   # Optionally enable boost CPP int with: -DUSE_BOOST_CPP_INT=ON
+   $ cmake .. -DCMAKE_BUILD_TYPE=RELEASE
+   $ make
 
-   $ ./QST -V
-   1.0.4
-   Compiled with: GNU 7.3.0
+   $ ./QST --version
+   1.3.2
+       Compiled with: GNU 11.1.1
+       Type: RELEASE
+       USE_BOOST_CPP_INT: False
    ```
 
 3. Setup the python environment
 
    ```
-   conda create -n qst_py python=3.8
-   conda activate qst_py
+   $ conda create -n qst_py python=3.8
+   $ conda activate qst_py
 
-   pip install -r requirements.txt
+   $ pip install -r requirements.txt
    ```
 
 ## Running Tests
@@ -53,7 +55,7 @@ this procedure is used to generate and run the tests.
 
 1. Generating the input data.
 
-   Generate a large amount of data of the following categories:
+   Generate a large amount of input data of the following categories:
 
    - Ascending
    - Descending
@@ -63,48 +65,78 @@ this procedure is used to generate and run the tests.
    Use `src/data.py` to specify the threshold and generate the data with:
 
    ```
-   python src/data.py generate -f -t 1_000_000,50_000_000
+   $ python src/data.py generate -f -t 1_000_000,50_000_000
    ```
 
    This will create a `data/` directory with a subfolder for each category of
    data.
 
    By default, the resulting data will be compressed. This has no impact other
-   than to speedup the process moving data to and from the cluster. You can
-   manually inspect the data using `zcat`.
+   than to speedup the process moving data to and from ARCC. You can manually
+   inspect the data using `zcat`. `QST` will automatically try to decompress
+   files with the `.gz` extension. If the input does not have this extension it
+   is assumed to be plain text.
 
 2. Create the `slurm.d/` directory.
 
    The `slurm.d/` contains several files each detailing the parameters for the
    slurm batch array jobs. Each file cannot exceed 5000 lines otherwise slurm
-   will fail to submit the job.
+   will fail to submit the job, so this script auto truncates each file to 4,500
+   lines by default, then creates another file with the remaining jobs.
 
    The following command generates `slurm.d/` which specifies the sorting
    methods (`qsort_c` and `std::sort`), threshold values (1 - 20), number of
    times to run the same input data (20) and, input data (`data/`) to test.
 
    ```
-   python src/job.py -s ./slurm.d/ -m qsort_c,std -t 1,20 -r 20 data/
+   $ python src/job.py -s ./slurm.d/ -m qsort_c,std -t 1,20 -r 20 data/
    ```
 
-3. Tune job parameters and submit the jobs.
+3. Submit the jobs.
 
-   Once the `slurm.d/` directory is created, we are ready to dispatch all the jobs.
-   This is handled by the `run_job.sh` script. This script will create a
-   `results` directory and store all the outputs in a timestamped directory.
+   Once the `slurm.d/` directory is created, we are ready to dispatch all the
+   jobs. This is handled by the `run_job.sh` script. This script will create a
+   results directory and store all the outputs in a timestamped directory.
 
    Edit the variables at the top of `run_job.sh` to fit your environment.
 
-   Then, start the jobs by running the script:
+   Then, start the jobs by running the `run_job.sh` script, substituting
+   `teton` with whatever partition you would like to run on:
 
    ```
-   ./run_job.sh
+   $ ./run_job.sh teton
    ```
 
-4. Post-processing and Evaluation.
+4. Optionally, repeat all the jobs on several different partitions with:
+
+   ```
+   $ ./all_partitions.sh
+   ```
+
+   This will dispatch jobs across many partitions simultaneously, creating a
+   separate results directory for each, suffixed by `_partition_name`.
+
+   List of partitions:
+
+   - teton
+   - teton-cascade
+   - teton-hugemem
+   - teton-massmem
+   - teton-knl
+   - moran
+
+   These particular partitions were chosen because they all have differing
+   CPU architectures. More info
+   [here](https://arccwiki.atlassian.net/wiki/spaces/DOCUMENTAT/pages/82247690/Hardware+-+Teton).
+
+5. Post-processing and Evaluation.
 
    Once all the slurm jobs are complete, you can use the `evaluate.ipynb`
    jupyter notebook to view the results.
+
+   ```
+   $ jupyter notebook evaluate.ipynb
+   ```
 
 ## Road Map
 
@@ -133,7 +165,7 @@ Very work in progress...
   - [x] Implement aforementioned evaluation method.
   - [x] Generate data.
   - [x] Build evaluation tools.
-  - [ ] Increase the number of inputs and run more tests.
+  - [x] Increase the number of inputs and run more tests.
   - [ ] Investigate introsort, more specifically implementations of `std::sort`.
 
 ## Sources
