@@ -4,5 +4,5 @@ partitions=("teton" "teton-cascade" "teton-hugemem" "teton-massmem" "teton-knl" 
 
 for i in "${partitions[@]}"; do
   ./run_job.sh "$i"
-  sleep 60
+  sleep 300
 done
