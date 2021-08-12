@@ -40,7 +40,13 @@ from tqdm import tqdm
 
 from info import write_info
 
-VALID_METHODS = ("vanilla_quicksort", "qsort_c", "insertion_sort", "std")
+VALID_METHODS = (
+    "vanilla_quicksort",
+    "qsort_c",
+    "insertion_sort",
+    "insertion_sort_asm",
+    "std",
+)
 THRESHOLD_METHODS = ("qsort_c",)
 DATA_TYPES = ("ascending", "descending", "random", "single_num")
 
@@ -250,7 +256,7 @@ class Scheduler:
                             desc,
                             method,
                             self.runs,
-                            thresh,
+                            1,
                             self.output,
                         )
                     )

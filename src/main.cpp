@@ -25,7 +25,7 @@ namespace bmp = boost::multiprecision;
 #endif
 
 // Argument Parsing
-#define VERSION                                                            \
+#define VERSION                                                              \
   QST_VERSION "\n\tCompiled with: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION \
               "\n\tType: " CMAKE_BUILD_TYPE                                  \
               "\n\tUSE_BOOST_CPP_INT: " BOOST_CPP_INT

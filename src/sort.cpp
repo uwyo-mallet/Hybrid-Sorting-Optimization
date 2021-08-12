@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <climits>
+#include <cstdint>
 #include <iostream>
 
 namespace bmp = boost::multiprecision;

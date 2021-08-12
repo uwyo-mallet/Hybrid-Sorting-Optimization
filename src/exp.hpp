@@ -28,6 +28,14 @@ std::string time(const std::string& method, const size_t& threshold,
     start_time = std::chrono::steady_clock::now();
     insertion_sort(vec.data(), vec.size());
   }
+#ifndef USE_BOOST_CPP_INT
+  // insertion sort asm only works with uint64_t
+  else if (method == "insertion_sort_asm")
+  {
+    start_time = std::chrono::steady_clock::now();
+    insertion_sort_asm(vec.data(), vec.size());
+  }
+#endif
   else if (method == "qsort_c")
   {
     start_time = std::chrono::steady_clock::now();

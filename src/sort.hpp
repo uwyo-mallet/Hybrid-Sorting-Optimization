@@ -3,6 +3,7 @@
 #define SORT_HPP_
 
 #include <cstddef>
+#include <cstdint>
 
 typedef int (*compar_d_fn_t)(const void *, const void *);
 
@@ -23,5 +24,7 @@ int compare(const T *a, const T *b);
 
 template <typename T>
 bool compare_std(const T &a, const T &b);
+
+extern "C" void insertion_sort_asm(uint64_t input[], const uint64_t size);
 
 #endif /* SORT_HPP_ */
