@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.4.0
+  VERSION 1.4.1
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES CXX ASM)
 configure_file(src/config.h.in config.hpp)
@@ -40,5 +40,5 @@ endif(USE_BOOST_CPP_INT)
 
 
 # Compiler warnings, platform specific.
-add_compile_options("$<$<CONFIG:RELEASE>:-W;-Wall;-O3;-pedantic>")
+add_compile_options("$<$<CONFIG:RELEASE>:-W;-Wall;-O2;-pedantic>")
 add_compile_options("$<$<CONFIG:DEBUG>:-W;-Wall;-O0;-g;-pedantic>")
