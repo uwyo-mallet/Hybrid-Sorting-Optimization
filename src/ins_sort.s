@@ -10,7 +10,7 @@
 #   uint64_t* start = arr;
 #   uint64_t* end = arr + n;
 #
-#   for (uint64_t* i = start; i < end; i++)
+#   for (uint64_t* i = start + 1; i < end; i++)
 #   {
 #     uint64_t* j = i;
 #     while (j > start && *j < *(j - 1))
@@ -29,51 +29,51 @@
         .text
 
 insertion_sort_asm:
-    # Stack stuff
-    push RBP
-    mov RBP, RSP
+    push RBP                            # Required preservations
+    mov RBP,RSP                         #
+    push RBX                            #
 
-    push RBX                     # Must preserve
+    cmp     RSI,0                       # Check if length is <= 0
+    je      done                        # If so, exit
 
-init:
-    cmp     RSI,0                     # Check if length is <= 0
-    jle     done                      # If so, exit
-    lea     RCX,[RDI]                 # Pointer to first element of array
-    lea     RDX,[RDI + (8 * RSI) - 8] # Pointer to last element of array
+    lea     R9,[RDI + (8 * RSI) - 8]    # Pointer to last element of array
+    mov     RAX,RDI                     # i = start
 
-    # RCX -> Start
-    # RDX -> End
-    # RAX -> i
-    # RBX -> i - 1
-    # R8 -> swap 1
-    # R9 -> swap 2
+# RDI -> Start
+# R9 -> End
+# RAX -> i
+# RBX -> j
+# RCX -> j - 1
+# R10 -> Swap 1
+# R11 -> Swap 2
 
 outer:
-    add     RCX,8
-    cmp     RCX,RDX
-    jg      done
-    mov     RAX,RCX
-    lea     RBX,[RAX - 8]
+    mov     RCX,RAX                     #
+    add     RAX,8
+
+    cmp     RAX,R9
+    ja      done
+
+    mov     RBX,RAX
 
 inner:
     # while j > start
-    cmp     RAX,RDI
+    cmp     RBX,RDI
     jle     outer
 
     # && *j < *(j - 1)
-    mov     R8,[RAX]
-    mov     R9,[RBX]
-    cmp     R8,R9
-    jge     outer
+    mov     R11,[RCX]
+    cmp     [RBX],R11
+    jae     outer
 
     # swap(*j, *(j - 1))
-    mov     R8,[RBX]
-    mov     R9,[RAX]
-    mov     [RAX],R8
-    mov     [RBX],R9
+    mov     R10,[RBX]
+    mov     [RBX],R11
+    mov     [RCX],R10
 
-    sub     RAX,8
     sub     RBX,8
+    sub     RCX,8
+
     jmp     inner
 
 done:
