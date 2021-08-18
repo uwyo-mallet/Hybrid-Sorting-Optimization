@@ -288,18 +288,20 @@ void version_json()
   // boost_cpp_int
   std::cout << "\t\"boost_cpp_int\": ";
 #ifdef USE_BOOST_CPP_INT
-  std::cout << "1," << std::endl;
+  std::cout << "1";
 #else
-  std::cout << "0," << std::endl;
+  std::cout << "0";
 #endif  // USE_BOOST_CPP_INT
+  std::cout << "," << std::endl;
 
   // asm_enabled
   std::cout << "\t\"asm_enabled\": ";
 #ifdef ASM_ENABLED
-  std::cout << "1," << std::endl;
+  std::cout << "1";
 #else
-  std::cout << "0," << std::endl;
+  std::cout << "0";
 #endif  // USE_BOOST_CPP_INT
+  std::cout << std::endl;
 
   std::cout << "}" << std::endl;
 }
