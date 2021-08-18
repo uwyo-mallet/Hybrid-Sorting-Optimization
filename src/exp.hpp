@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "platform.hpp"
 #include "sort.hpp"
 
 template <typename T>
@@ -22,16 +23,19 @@ std::string time(const std::string& method, const size_t& threshold,
     start_time = std::chrono::steady_clock::now();
     insertion_sort(vec.data(), vec.size());
   }
-#ifdef __x86_64__
-#ifndef USE_BOOST_CPP_INT
+#ifdef ARCH_X86
   // insertion sort asm only works with uint64_t
   else if (method == "insertion_sort_asm")
   {
     start_time = std::chrono::steady_clock::now();
     insertion_sort_asm(vec.data(), vec.size());
   }
-#endif  // USE_BOOST_CPP_INT
-#endif  // __x86_64__
+  else if (method == "qsort_asm")
+  {
+    start_time = std::chrono::steady_clock::now();
+    qsort_asm(vec.data(), vec.size(), threshold);
+  }
+#endif  // ARCH_X86
   else if (method == "qsort_c")
   {
     start_time = std::chrono::steady_clock::now();

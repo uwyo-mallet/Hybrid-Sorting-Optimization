@@ -2,15 +2,14 @@
 #ifndef SORT_HPP_
 #define SORT_HPP_
 
-// TODO: Add an architecture check here for x86 vs arm
-// platform.hpp?
-
-#include <cstddef>
 #include <cstdint>
 #include <set>
 #include <string>
 
-static const std::set<std::string> THRESHOLD_METHODS{"qsort_c", "qsort_cpp"};
+#include "platform.hpp"
+
+static const std::set<std::string> THRESHOLD_METHODS{"qsort_c", "qsort_cpp",
+                                                     "qsort_asm"};
 
 template <typename T>
 bool is_sorted(T input[], const size_t &len);
@@ -27,9 +26,11 @@ int compare(const T *a, const T *b);
 template <typename T>
 bool compare_std(const T &a, const T &b);
 
-#ifdef __x86_64__
+#ifdef ARCH_X86
 extern "C" void insertion_sort_asm(uint64_t input[], const uint64_t size);
-#endif
+extern "C" void qsort_asm(uint64_t arr[], const uint64_t n,
+                          const size_t threshold);
+#endif  // ARCH_X86
 
 typedef int (*compar_d_fn_t)(const void *, const void *);
 

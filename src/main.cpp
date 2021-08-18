@@ -15,21 +15,16 @@
 #include "config.hpp"
 #include "exp.hpp"
 #include "io.hpp"
+#include "platform.hpp"
 
 namespace fs = boost::filesystem;
 
-#ifdef USE_BOOST_CPP_INT
-#define BOOST_CPP_INT "True"
-namespace bmp = boost::multiprecision;
-#else
-#define BOOST_CPP_INT "False"
-#endif
-
-// Argument Parsing
 #define VERSION                                                              \
   QST_VERSION "\n\tCompiled with: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION \
               "\n\tType: " CMAKE_BUILD_TYPE                                  \
-              "\n\tUSE_BOOST_CPP_INT: " BOOST_CPP_INT
+              "\n\tBOOST CPP INT: [" BOOST_CPP_INT                           \
+              "]"                                                            \
+              "\n\tASM Methods: [" ASM_ENABLED "]"
 
 const char* argp_program_version = VERSION;
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
@@ -40,12 +35,15 @@ static char doc[] =
 static char args_doc[] = "INPUT";
 
 // Accepted methods
+#define VERSION_JSON_SHORT_OPT 0x80
 static struct argp_option options[] = {
     {"description", 'd', "DESCRIP", 0, "Short description of input data."},
     {"method", 'm', "METHOD", 0, "Sorting method."},
     {"output", 'o', "FILE", 0, "Output to FILE instead of STDOUT."},
     {"runs", 'r', "N", 0, "Number of times to sort the same data. Default: 1"},
     {"threshold", 't', "THRESH", 0, "Threshold to switch to insertion sort."},
+    {"version-json", VERSION_JSON_SHORT_OPT, 0, 0,
+     "Output version information in machine readable format."},
     {0},
 };
 
@@ -66,6 +64,7 @@ static struct argp argp = {options, parse_opt, args_doc, doc};
 void signal_handler(int signum);
 void write(struct arguments args, const size_t& size,
            const std::vector<std::string>& times);
+void version_json();
 
 struct arguments arguments;
 std::vector<std::string> times;
@@ -177,6 +176,10 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
       }
       break;
 
+    case VERSION_JSON_SHORT_OPT:
+      version_json();
+      exit(EXIT_SUCCESS);
+
     case ARGP_KEY_ARG:
       if (state->arg_num >= 1)
       {
@@ -261,4 +264,27 @@ void write(struct arguments args, const size_t& size,
 
     out_file.close();
   }
+}
+
+void version_json()
+{
+  std::cout << "{" << std::endl;
+  std::cout << "\t\"version:\": "
+            << "\"" QST_VERSION "\""
+            << "," << std::endl;
+  std::cout << "\t\"boost_cpp_int\": ";
+#ifdef USE_BOOST_CPP_INT
+  std::cout << "1," << std::endl;
+#else
+  std::cout << "0," << std::endl;
+#endif  // USE_BOOST_CPP_INT
+
+  std::cout << "\t\"asm_enabled\": ";
+#ifdef ASM_ENABLED
+  std::cout << "1," << std::endl;
+#else
+  std::cout << "0," << std::endl;
+#endif  // USE_BOOST_CPP_INT
+
+  std::cout << "}" << std::endl;
 }
