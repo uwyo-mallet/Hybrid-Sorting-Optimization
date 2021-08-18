@@ -269,9 +269,23 @@ void write(struct arguments args, const size_t& size,
 void version_json()
 {
   std::cout << "{" << std::endl;
+
+  // version
   std::cout << "\t\"version:\": "
             << "\"" QST_VERSION "\""
             << "," << std::endl;
+
+  // compiler id
+  std::cout << "\t\"compiler_id\": "
+            << "\"" CXX_COMPILER_ID "\""
+            << "," << std::endl;
+
+  // compiler version
+  std::cout << "\t\"compiler_version\": "
+            << "\"" CXX_COMPILER_VERSION "\""
+            << "," << std::endl;
+
+  // boost_cpp_int
   std::cout << "\t\"boost_cpp_int\": ";
 #ifdef USE_BOOST_CPP_INT
   std::cout << "1," << std::endl;
@@ -279,6 +293,7 @@ void version_json()
   std::cout << "0," << std::endl;
 #endif  // USE_BOOST_CPP_INT
 
+  // asm_enabled
   std::cout << "\t\"asm_enabled\": ";
 #ifdef ASM_ENABLED
   std::cout << "1," << std::endl;
