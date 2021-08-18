@@ -41,14 +41,14 @@ from tqdm import tqdm
 from info import write_info
 
 VALID_METHODS = (
-    "vanilla_quicksort",
-    "qsort_c",
-    "qsort_cpp",
     "insertion_sort",
     "insertion_sort_asm",
+    "qsort_asm",
+    "qsort_c",
+    "qsort_cpp",
     "std",
 )
-THRESHOLD_METHODS = ("qsort_c", "qsort_cpp")
+THRESHOLD_METHODS = ("qsort_asm", "qsort_c", "qsort_cpp")
 DATA_TYPES = ("ascending", "descending", "random", "single_num")
 
 # Maximum array index supported by slurm
