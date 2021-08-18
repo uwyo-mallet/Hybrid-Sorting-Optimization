@@ -17,17 +17,12 @@ std::string time(const std::string& method, const size_t& threshold,
 {
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 
-  // Map str name of function to actual function
-  if (method == "qsort_recursive")
-  {
-    start_time = std::chrono::steady_clock::now();
-    qsort_recursive(vec.data(), vec.size(), threshold);
-  }
-  else if (method == "insertion_sort")
+  if (method == "insertion_sort")
   {
     start_time = std::chrono::steady_clock::now();
     insertion_sort(vec.data(), vec.size());
   }
+#ifdef __x86_64__
 #ifndef USE_BOOST_CPP_INT
   // insertion sort asm only works with uint64_t
   else if (method == "insertion_sort_asm")
@@ -35,11 +30,17 @@ std::string time(const std::string& method, const size_t& threshold,
     start_time = std::chrono::steady_clock::now();
     insertion_sort_asm(vec.data(), vec.size());
   }
-#endif
+#endif  // USE_BOOST_CPP_INT
+#endif  // __x86_64__
   else if (method == "qsort_c")
   {
     start_time = std::chrono::steady_clock::now();
     qsort_c(vec.data(), vec.size(), threshold);
+  }
+  else if (method == "qsort_cpp")
+  {
+    start_time = std::chrono::steady_clock::now();
+    qsort_cpp(vec.data(), vec.size(), threshold);
   }
   else if (method == "std")
   {

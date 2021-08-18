@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.4.1
+  VERSION 1.4.2
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES CXX ASM)
 configure_file(src/config.h.in config.hpp)
@@ -21,7 +21,12 @@ include_directories(${BOOST_INCLUDE_DIRS})
 set(SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/main.cpp
     ${PROJECT_SOURCE_DIR}/src/sort.cpp
-    ${PROJECT_SOURCE_DIR}/src/ins_sort.s)
+    ${PROJECT_SOURCE_DIR}/src/qsort_c.cpp
+)
+
+if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
+    list(APPEND SRC_FILES ${PROJECT_SOURCE_DIR}/src/ins_sort.s)
+endif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
 
 set(EXECUTABLE_NAME QST)
 add_executable(${EXECUTABLE_NAME} ${SRC_FILES})

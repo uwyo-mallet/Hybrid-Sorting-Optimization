@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <string>
 
 #include "config.hpp"
@@ -90,7 +91,7 @@ int main(int argc, char** argv)
 
   // The only sort with a supported threshold is qsort_c,
   // so otherwise, just set to 0.
-  if (arguments.method != "qsort_c" && arguments.method != "qsort_recursive")
+  if (!THRESHOLD_METHODS.count(arguments.method))
   {
     arguments.threshold = 0;
   }

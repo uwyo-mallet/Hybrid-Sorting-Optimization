@@ -86,351 +86,125 @@ void insertion_sort(T input[], const size_t &len)
   }
 }
 
-/*
-  Partition the array for swapping.
-
-  @param input: Current subarray.
-  @param lo: Low index of current subarray.
-  @param hi: High index of current subarray.
-  @return: Index of new pivot value.
-*/
 template <typename T>
-size_t partition(T input[], size_t lo, size_t hi)
+struct stack_node
 {
-  size_t p = lo;
-  T pivot_val = input[p];
+  T *lo;
+  T *hi;
+};
+#define STACK_SIZE (CHAR_BIT * sizeof(size_t))
+#define PUSH(low, high) (((top->lo = (low)), (top->hi = (high)), ++top))
+#define POP(low, high) ((--top, (low = top->lo), (high = top->hi)))
+#define STACK_NOT_EMPTY (stack < top)
+#define min(x, y) ((x) < (y) ? (x) : (y))
 
-  for (size_t i = lo + 1; i <= hi; i++)
+template <typename T>
+void qsort_cpp(T arr[], const size_t &n, const size_t &thresh)
+{
+  stack_node<T> stack[STACK_SIZE];
+  stack_node<T> *top = stack;
+
+  PUSH(arr, arr + n - 1);
+
+  T *hi;
+  T *lo;
+
+  while (STACK_NOT_EMPTY)
   {
-    if (input[i] <= pivot_val)
+    POP(lo, hi);
+
+    T *mid = lo + ((hi - lo) >> 1);
+
+    if (*mid < *lo)
     {
-      p++;
-      swap(&input[i], &input[p]);
+      swap(mid, lo);
     }
-  }
-  swap(&input[p], &input[lo]);
-
-  return p;
-}
-
-/*
-  Recursive implementation of vanilla quicksort.
-  Pivot is the first of each subarray.
-
-  @param input: Input array to sort.
-  @param lo: Low index of current subarray.
-  @param hi: High index of current subarray.
-  @return: Number of recursive calls
-*/
-template <typename T>
-void qsort_recursive(T input[], const int lo, const int hi,
-                     const size_t &thresh)
-{
-  if (lo < hi)
-  {
-    if ((hi - lo) <= thresh)
+    if (*hi < *mid)
     {
-      insertion_sort(input, (hi - lo));
+      swap(mid, hi);
     }
     else
     {
-      size_t pivot_index = partition(input, lo, hi);
-      qsort_recursive(input, lo, pivot_index - 1, thresh);
-      qsort_recursive(input, pivot_index + 1, hi, thresh);
+      goto jump_over;
     }
-  }
-}
-
-/*
-  Recursive implementation of vanilla quicksort.
-  Pivot is the first of each subarray.
-
-  @param input: Input array to sort.
-  @param len: Length of input array.
-  @return: Number of recursive calls.
-*/
-template <typename T>
-void qsort_recursive(T input[], const size_t &len, const size_t &thresh)
-{
-  qsort_recursive(input, 0, len - 1, thresh);
-}
-
-/* Stack node declarations used to store unfulfilled partition obligations. */
-typedef struct
-{
-  char *lo;
-  char *hi;
-} stack_node;
-
-/* The next 4 #defines implement a very fast in-line stack abstraction. */
-/* The stack needs log(total_elements) entries (we could even subtract
-   log(QSORT_MAX_THRESH)). Since total_elements has type size_t, we get as
-   upper bound for log(total_elements): bits per byte (CHAR_BIT) *
-   sizeof(size_t).  */
-#define STACK_SIZE (CHAR_BIT * sizeof(size_t))
-#define PUSH(low, high) ((void)((top->lo = (low)), (top->hi = (high)), ++top))
-#define POP(low, high) ((void)(--top, (low = top->lo), (high = top->hi)))
-#define STACK_NOT_EMPTY (stack < top)
-
-/* Byte-wise swap two items of size SIZE. */
-#define SWAP(a, b, size)         \
-  do                             \
-  {                              \
-    size_t __size = (size);      \
-    char *__a = (a), *__b = (b); \
-    do                           \
-    {                            \
-      char __tmp = *__a;         \
-      *__a++ = *__b;             \
-      *__b++ = __tmp;            \
-    } while (--__size > 0);      \
-  } while (0)
-
-/*
-  Iterative, extremely optimized implementation of quicksort.
-  Pivot is the median of 3 (first, mid, last) values of array.
-
-  This implementation incorporates four optimizations discussed in
-   Sedgewick:
-
-  1. Non-recursive, using an explicit stack of pointer that store the
-     next array partition to sort.  To save time, this maximum amount
-     of space required to store an array of SIZE_MAX is allocated on the
-     stack.  Assuming a 32-bit (64 bit) integer for size_t, this needs
-     only 32 * sizeof(stack_node) == 256 bytes (for 64 bit: 1024 bytes).
-     Pretty cheap, actually.
-
-  2. Choose the pivot element using a median-of-three decision tree.
-     This reduces the probability of selecting a bad pivot value and
-     eliminates certain extraneous comparisons.
-
-  3. Only quicksorts TOTAL_ELEMS / QSORT_MAX_THRESH partitions, leaving
-     insertion sort to order the QSORT_MAX_THRESH items within each
-     partition. This is a big win, since insertion sort is faster for small,
-    mostly sorted array segments.
-
-  4. The larger of the two sub-partitions is always pushed onto the
-     stack first, with the algorithm then concentrating on the
-     smaller partition.  This *guarantees* no more than log (total_elems)
-     stack size is needed (actually O(1) in this case)!
-
-  @param pbase: Pointer to start of array to sort.
-  @param total_elems: Total number of elements in array.
-  @param size: Size of element in array.
-  @param cmp: Comparator function
-  (https://www.cplusplus.com/reference/cstdlib/qsort/)
-*/
-void qsort_c(void *const pbase, size_t total_elems, size_t size,
-             compar_d_fn_t cmp, const size_t &thresh)
-{
-  char *base_ptr = (char *)pbase;
-
-  const size_t max_thresh = thresh * size;
-
-  if (total_elems == 0)
-  {
-    /* Avoid lossage with unsigned arithmetic below. */
-    return;
-  }
-
-  if (total_elems > thresh)
-  {
-    char *lo = base_ptr;
-    char *hi = &lo[size * (total_elems - 1)];
-
-    stack_node stack[STACK_SIZE];
-    stack_node *top = stack;
-
-    PUSH(NULL, NULL);
-
-    while (STACK_NOT_EMPTY)
+    if (*mid < *lo)
     {
-      char *left_ptr;
-      char *right_ptr;
+      swap(mid, lo);
+    }
 
-      /*
-        Select median value from among LO, MID, and HI. Rearrange
-        LO and HI so the three values are sorted. This lowers the
-        probability of picking a pathological pivot value and
-        skips a comparison for both the LEFT_PTR and RIGHT_PTR in
-        the while loops.
-      */
+  jump_over:
 
-      char *mid = lo + size * ((hi - lo) / size >> 1);
+    T *left_ptr = lo + 1;
+    T *right_ptr = hi - 1;
 
-      if ((*cmp)((void *)mid, (void *)lo) < 0)
+    do
+    {
+      while (*left_ptr < *mid)
       {
-        SWAP(mid, lo, size);
+        left_ptr++;
       }
-      if ((*cmp)((void *)hi, (void *)mid) < 0)
+      while (*mid < *right_ptr)
       {
-        SWAP(mid, hi, size);
+        right_ptr--;
       }
-      else
-      {
-        goto jump_over;
-      }
-      if ((*cmp)((void *)mid, (void *)lo) < 0)
-      {
-        SWAP(mid, lo, size);
-      }
-    jump_over:
 
-      left_ptr = lo + size;
-      right_ptr = hi - size;
-
-      /*
-        Here's the famous ``collapse the walls'' section of quicksort.
-        Gotta like those tight inner loops!  They are the main reason
-        that this algorithm runs much faster than others.
-      */
-      do
+      if (left_ptr < right_ptr)
       {
-        while ((*cmp)((void *)left_ptr, (void *)mid) < 0)
+        swap(left_ptr, right_ptr);
+        if (mid == left_ptr)
         {
-          left_ptr += size;
+          mid = right_ptr;
+        }
+        else if (mid == right_ptr)
+        {
+          mid = left_ptr;
         }
 
-        while ((*cmp)((void *)mid, (void *)right_ptr) < 0)
-        {
-          right_ptr -= size;
-        }
+        left_ptr++;
+        right_ptr--;
+      }
+      else if (left_ptr == right_ptr)
+      {
+        left_ptr++;
+        right_ptr--;
+        break;
+      }
+    } while (left_ptr <= right_ptr);
 
-        if (left_ptr < right_ptr)
-        {
-          SWAP(left_ptr, right_ptr, size);
-          if (mid == left_ptr)
-          {
-            mid = right_ptr;
-          }
-          else if (mid == right_ptr)
-          {
-            mid = left_ptr;
-          }
-
-          left_ptr += size;
-          right_ptr -= size;
-        }
-        else if (left_ptr == right_ptr)
-        {
-          left_ptr += size;
-          right_ptr -= size;
-          break;
-        }
-      } while (left_ptr <= right_ptr);
-
-      /*
-        Set up pointers for next iteration.  First determine whether
-        left and right partitions are below the threshold size.  If so,
-        ignore one or both.  Otherwise, push the larger partition's
-        bounds on the stack and continue sorting the smaller one.
-      */
-      if ((size_t)(right_ptr - lo) <= max_thresh)
-      {
-        if ((size_t)(hi - left_ptr) <= max_thresh)
-        {
-          /* Ignore both small partitions. */
-          POP(lo, hi);
-        }
-        else
-        {
-          /* Ignore small left partition. */
-          lo = left_ptr;
-        }
-      }
-      else if ((size_t)(hi - left_ptr) <= max_thresh)
-      {
-        /* Ignore small right partition. */
-        hi = right_ptr;
-      }
-      else if ((right_ptr - lo) > (hi - left_ptr))
-      {
-        /* Push larger left partition indices. */
-        PUSH(lo, right_ptr);
-        lo = left_ptr;
-      }
-      else
-      {
-        /* Push larger right partition indices. */
-        PUSH(left_ptr, hi);
-        hi = right_ptr;
-      }
+    if ((right_ptr - lo) > thresh && right_ptr > lo)
+    {
+      PUSH(lo, right_ptr);
+    }
+    if ((hi - left_ptr) > thresh && left_ptr < hi)
+    {
+      PUSH(left_ptr, hi);
     }
   }
 
+  T *const end = arr + n - 1;
+  T *tmp_ptr = arr;
+  T *run_ptr;
+  T *first_thresh = min(end, arr + thresh);
   /*
-    Once the BASE_PTR array is partially sorted by quicksort the rest
-    is completely sorted using insertion sort, since this is efficient
-    for partitions below MAX_THRESH size. BASE_PTR points to the beginning
-    of the array to sort, and END_PTR points at the very last element in
-    the array (*not* one beyond it!).
+    Find smallest element in first threshold and place it at the
+    array's beginning.  This is the smallest array element,
+    and the operation speeds up insertion sort's inner loop.
   */
 
-#define min(x, y) ((x) < (y) ? (x) : (y))
-
+  for (run_ptr = tmp_ptr + 1; run_ptr <= first_thresh; run_ptr++)
   {
-    char *const end_ptr = &base_ptr[size * (total_elems - 1)];
-    char *tmp_ptr = base_ptr;
-    char *thresh = min(end_ptr, base_ptr + max_thresh);
-    char *run_ptr;
-
-    /*
-      Find smallest element in first threshold and place it at the
-      array's beginning.  This is the smallest array element,
-      and the operation speeds up insertion sort's inner loop.
-    */
-
-    for (run_ptr = tmp_ptr + size; run_ptr <= thresh; run_ptr += size)
-      if ((*cmp)((void *)run_ptr, (void *)tmp_ptr) < 0)
-      {
-        tmp_ptr = run_ptr;
-      }
-
-    if (tmp_ptr != base_ptr)
+    if (*run_ptr < *tmp_ptr)
     {
-      SWAP(tmp_ptr, base_ptr, size);
-    }
-
-    /* Insertion sort, running from left-hand-side up to right-hand-side.  */
-
-    run_ptr = base_ptr + size;
-    while ((run_ptr += size) <= end_ptr)
-    {
-      tmp_ptr = run_ptr - size;
-      while ((*cmp)((void *)run_ptr, (void *)tmp_ptr) < 0)
-      {
-        tmp_ptr -= size;
-      }
-
-      tmp_ptr += size;
-      if (tmp_ptr != run_ptr)
-      {
-        char *trav;
-
-        trav = run_ptr + size;
-        while (--trav >= run_ptr)
-        {
-          char c = *trav;
-          char *hi, *lo;
-
-          for (hi = lo = trav; (lo -= size) >= tmp_ptr; hi = lo)
-          {
-            *hi = *lo;
-          }
-          *hi = c;
-        }
-      }
+      tmp_ptr = run_ptr;
     }
   }
-}
 
-/* Comparator for qsort_c */
-template <typename T>
-int compare(const T *a, const T *b)
-{
-  if (*a < *b) return -1;
-  if (*a > *b) return 1;
-  return 0;
+  if (tmp_ptr != arr)
+  {
+    swap(tmp_ptr, arr);
+  }
+
+  insertion_sort(arr, n);
 }
 
 /* Comparator for std::sort */
@@ -438,12 +212,6 @@ template <typename T>
 bool compare_std(const T &a, const T &b)
 {
   return (a < b);
-}
-
-template <typename T>
-void qsort_c(T input[], const size_t &len, const size_t &thresh)
-{
-  qsort_c(input, len, sizeof(T), (compar_d_fn_t)compare<T>, thresh);
 }
 
 // Template forward decleration to fix linker issues
@@ -455,55 +223,22 @@ template void swap<int>(int *a, int *b);
 template void swap<uint64_t>(uint64_t *a, uint64_t *b);
 template void swap<bmp::cpp_int>(bmp::cpp_int *a, bmp::cpp_int *b);
 
-template int *median_of_three<int>(int *a, int *b, int *c);
-template bmp::cpp_int *median_of_three<bmp::cpp_int>(bmp::cpp_int *a,
-                                                     bmp::cpp_int *b,
-                                                     bmp::cpp_int *c);
-
-// Insertion Sort
 template void insertion_sort<int>(int input[], const size_t &len);
 template void insertion_sort<uint64_t>(uint64_t input[], const size_t &len);
 template void insertion_sort<bmp::cpp_int>(bmp::cpp_int input[],
                                            const size_t &len);
 
-// Partition
-template size_t partition<int>(int input[], size_t low, size_t high);
-template size_t partition<uint64_t>(uint64_t input[], size_t low, size_t high);
-template size_t partition<bmp::cpp_int>(bmp::cpp_int input[], size_t low,
-                                        size_t high);
-
-// qsort_recursive recursive calls
-template void qsort_recursive<int>(int input[], const int lo, const int hi,
-                                   const size_t &thresh);
-template void qsort_recursive<uint64_t>(uint64_t input[], const int lo,
-                                        const int hi, const size_t &thresh);
-template void qsort_recursive<bmp::cpp_int>(bmp::cpp_int input[], const int lo,
-                                            const int hi, const size_t &thresh);
-
-// qsort_recursive user calls
-template void qsort_recursive<int>(int input[], const size_t &len,
-                                   const size_t &thresh);
-template void qsort_recursive<uint64_t>(uint64_t input[], const size_t &len,
-                                        const size_t &thresh);
-template void qsort_recursive<bmp::cpp_int>(bmp::cpp_int input[],
-                                            const size_t &len,
-                                            const size_t &thresh);
-
-// qsort_c
-template void qsort_c<int>(int input[], const size_t &len,
-                           const size_t &thresh);
-template void qsort_c<uint64_t>(uint64_t input[], const size_t &len,
-                                const size_t &thresh);
-template void qsort_c<bmp::cpp_int>(bmp::cpp_int input[], const size_t &len,
-                                    const size_t &thresh);
-
-// Comparator for qsort_c and std::sort
-template int compare<int>(const int *a, const int *b);
-template int compare<uint64_t>(const uint64_t *a, const uint64_t *b);
-template int compare<bmp::cpp_int>(const bmp::cpp_int *a,
-                                   const bmp::cpp_int *b);
-
 template bool compare_std<int>(const int &a, const int &b);
 template bool compare_std<uint64_t>(const uint64_t &a, const uint64_t &b);
 template bool compare_std<bmp::cpp_int>(const bmp::cpp_int &a,
                                         const bmp::cpp_int &b);
+
+template void qsort_cpp<int>(int arr[], const size_t &n, const size_t &thresh);
+template void qsort_cpp<uint64_t>(uint64_t arr[], const size_t &n,
+                                  const size_t &thresh);
+template void qsort_cpp<bmp::cpp_int>(bmp::cpp_int arr[], const size_t &len,
+                                      const size_t &thresh);
+
+template struct stack_node<int>;
+template struct stack_node<uint64_t>;
+template struct stack_node<bmp::cpp_int>;

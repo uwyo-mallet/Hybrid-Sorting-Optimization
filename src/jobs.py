@@ -19,7 +19,7 @@ Options:
     -p, --progress           Enable a progress bar.
     -r, --runs=N             Number of times to run the same input data.
     -s, --slurm=DIR          Generate a batch of slurm data files in this dir.
-    -t, --threshold=THRESH   Comma seperated range for threshold (min,max)
+    -t, --threshold=THRESH   Comma seperated range for threshold (min,max,[step])
                              including both endpoints, or a single value.
 """
 import multiprocessing
@@ -43,11 +43,12 @@ from info import write_info
 VALID_METHODS = (
     "vanilla_quicksort",
     "qsort_c",
+    "qsort_cpp",
     "insertion_sort",
     "insertion_sort_asm",
     "std",
 )
-THRESHOLD_METHODS = ("qsort_c",)
+THRESHOLD_METHODS = ("qsort_c", "qsort_cpp")
 DATA_TYPES = ("ascending", "descending", "random", "single_num")
 
 # Maximum array index supported by slurm
@@ -173,22 +174,25 @@ def parse_args(args):
         except ValueError:
             try:
                 buf = args.get("--threshold").rsplit(",")
-                if len(buf) != 2:
+                if len(buf) < 2 or len(buf) > 3:
                     raise ValueError
                 thresh_range = [int(i) for i in buf]
+                if len(thresh_range) == 2:
+                    thresh_range.append(1)
             except ValueError as e:
                 raise ValueError(f"Invalid threshold: {buf}") from e
     else:
-        thresh_range = [4, 4]
+        thresh_range = [4, 4, 1]
 
     # Ensure thresholds are within sensible range
     if (
         thresh_range[1] < thresh_range[0]
         or thresh_range[0] <= 0
         or thresh_range[1] <= 0
+        or thresh_range[2] <= 0
     ):
         raise ValueError(f"Invalid threshold range: {thresh_range}")
-    parsed["threshold"] = range(thresh_range[0], thresh_range[1] + 1)
+    parsed["threshold"] = range(thresh_range[0], thresh_range[1] + 1, thresh_range[2])
 
     return parsed
 
