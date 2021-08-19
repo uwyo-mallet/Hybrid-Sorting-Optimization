@@ -46,6 +46,7 @@ VALID_METHODS = (
     "qsort_asm",
     "qsort_c",
     "qsort_cpp",
+    "qsort_sanity",
     "std",
 )
 THRESHOLD_METHODS = ("qsort_asm", "qsort_c", "qsort_cpp")
