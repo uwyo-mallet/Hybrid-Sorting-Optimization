@@ -48,6 +48,11 @@ size_t time(const std::string& method, const size_t& threshold,
     start_time = std::chrono::steady_clock::now();
     qsort_cpp(vec.data(), vec.size(), threshold, compare<T>);
   }
+  else if (method == "qsort_cpp_no_comp")
+  {
+    start_time = std::chrono::steady_clock::now();
+    qsort_cpp_no_comp(vec.data(), vec.size(), threshold);
+  }
   else if (method == "qsort_sanity")
   {
     start_time = std::chrono::steady_clock::now();
@@ -80,7 +85,6 @@ size_t time(const std::string& method, const size_t& threshold,
     throw std::runtime_error("Not valid sort");
   }
 
-  // return std::to_string((size_t)runtime.count());
   return (size_t)runtime.count();
 }
 #endif

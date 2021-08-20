@@ -46,10 +46,16 @@ VALID_METHODS = (
     "qsort_asm",
     "qsort_c",
     "qsort_cpp",
+    "qsort_cpp_no_comp",
     "qsort_sanity",
     "std",
 )
-THRESHOLD_METHODS = ("qsort_asm", "qsort_c", "qsort_cpp")
+THRESHOLD_METHODS = (
+    "qsort_asm",
+    "qsort_c",
+    "qsort_cpp",
+    "qsort_cpp_no_comp",
+)
 DATA_TYPES = ("ascending", "descending", "random", "single_num")
 
 # Maximum array index supported by slurm

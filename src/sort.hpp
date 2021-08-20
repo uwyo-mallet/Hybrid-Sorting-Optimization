@@ -13,8 +13,8 @@
 #include "platform.hpp"
 namespace bmp = boost::multiprecision;
 
-static const std::set<std::string> THRESHOLD_METHODS{"qsort_c", "qsort_cpp",
-                                                     "qsort_asm"};
+static const std::set<std::string> THRESHOLD_METHODS{
+    "qsort_asm", "qsort_c", "qsort_cpp", "qsort_cpp_no_comp"};
 
 #ifdef ARCH_X86
 extern "C" void insertion_sort_asm(uint64_t input[], const uint64_t size);
@@ -107,6 +107,34 @@ void insertion_sort(T input[], const size_t &n, Comparator comp)
   {
     T *j = i;
     while (j > input && comp(j, (j - 1)) < 0)
+    {
+      swap(j, j - 1);
+      j--;
+    }
+  }
+}
+
+/*
+  Iterative implementation of insertion sort
+
+  @param input: Input array to sort.
+  @param len: Length of input array.
+  @param compare: TODO
+*/
+template <typename T>
+void insertion_sort(T input[], const size_t &n)
+{
+  if (n <= 1)
+  {
+    return;
+  }
+
+  T const *end = input + n;
+
+  for (T *i = input + 1; i < end; i++)
+  {
+    T *j = i;
+    while (*j < *(j - 1))
     {
       swap(j, j - 1);
       j--;
@@ -232,6 +260,119 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
 
   // One pass of insertion sort.
   insertion_sort(arr, n, comp);
+}
+
+template <typename T>
+void qsort_cpp_no_comp(T arr[], const size_t &n, const size_t &thresh)
+{
+  if (n < thresh)
+  {
+    insertion_sort(arr, n);
+    return;
+  }
+
+  stack_node<T> stack[STACK_SIZE];
+  stack_node<T> *top = stack;
+
+  PUSH(arr, arr + n - 1);
+
+  T *hi;
+  T *lo;
+
+  while (STACK_NOT_EMPTY)
+  {
+    POP(lo, hi);
+
+    T *mid = lo + ((hi - lo) >> 1);
+
+    if (*mid < *lo)
+    {
+      swap(mid, lo);
+    }
+    if (*hi < *mid)
+    {
+      swap(mid, hi);
+    }
+    else
+    {
+      goto jump_over;
+    }
+    if (*mid < *lo)
+    {
+      swap(mid, lo);
+    }
+
+  jump_over:
+
+    T *left_ptr = lo + 1;
+    T *right_ptr = hi - 1;
+
+    do
+    {
+      while (*left_ptr < *mid)
+      {
+        left_ptr++;
+      }
+      while (*mid < *right_ptr)
+      {
+        right_ptr--;
+      }
+      if (left_ptr < right_ptr)
+      {
+        swap(left_ptr, right_ptr);
+        if (mid == left_ptr)
+        {
+          mid = right_ptr;
+        }
+        else if (mid == right_ptr)
+        {
+          mid = left_ptr;
+        }
+
+        left_ptr++;
+        right_ptr--;
+      }
+      else if (left_ptr == right_ptr)
+      {
+        left_ptr++;
+        right_ptr--;
+        break;
+      }
+    } while (left_ptr <= right_ptr);
+
+    if ((right_ptr - lo) > thresh && right_ptr > lo)
+    {
+      PUSH(lo, right_ptr);
+    }
+    if ((hi - left_ptr) > thresh && left_ptr < hi)
+    {
+      PUSH(left_ptr, hi);
+    }
+  }
+
+  T *const end = arr + n - 1;
+  T *tmp_ptr = arr;
+  T *run_ptr;
+  T *first_thresh = min(end, arr + thresh);
+  /*
+    Find smallest element in first threshold and place it at the
+    array's beginning.  This is the smallest array element,
+    and the operation speeds up insertion sort's inner loop.
+  */
+  for (run_ptr = tmp_ptr + 1; run_ptr <= first_thresh; run_ptr++)
+  {
+    if (*run_ptr < *tmp_ptr)
+    {
+      tmp_ptr = run_ptr;
+    }
+  }
+  if (tmp_ptr != arr)
+  {
+    swap(tmp_ptr, arr);
+  }
+
+  // One pass of insertion sort.
+  insertion_sort(arr, n);
 }
 
 #endif /* SORT_HPP_ */
