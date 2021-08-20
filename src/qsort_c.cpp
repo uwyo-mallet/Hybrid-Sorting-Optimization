@@ -12,19 +12,8 @@ typedef struct
 {
   char *lo;
   char *hi;
-} stack_node;
+} stack_node_c;
 
-/* The next 4 #defines implement a very fast in-line stack abstraction. */
-/* The stack needs log(total_elements) entries (we could even subtract
-   log(QSORT_MAX_THRESH)). Since total_elements has type size_t, we get as
-   upper bound for log(total_elements): bits per byte (CHAR_BIT) *
-   sizeof(size_t).  */
-#define STACK_SIZE (CHAR_BIT * sizeof(size_t))
-#define PUSH(low, high) ((void)((top->lo = (low)), (top->hi = (high)), ++top))
-#define POP(low, high) ((void)(--top, (low = top->lo), (high = top->hi)))
-#define STACK_NOT_EMPTY (stack < top)
-
-/* Byte-wise swap two items of size SIZE. */
 #define SWAP(a, b, size)         \
   do                             \
   {                              \
@@ -90,8 +79,8 @@ void qsort_c(void *const pbase, size_t total_elems, size_t size,
     char *lo = base_ptr;
     char *hi = &lo[size * (total_elems - 1)];
 
-    stack_node stack[STACK_SIZE];
-    stack_node *top = stack;
+    stack_node_c stack[STACK_SIZE];
+    stack_node_c *top = stack;
 
     PUSH(NULL, NULL);
 
@@ -276,15 +265,6 @@ void qsort_c(void *const pbase, size_t total_elems, size_t size,
   }
 }
 
-/* Comparator for qsort_c */
-template <typename T>
-int compare(const T *a, const T *b)
-{
-  if (*a < *b) return -1;
-  if (*a > *b) return 1;
-  return 0;
-}
-
 template <typename T>
 void qsort_c(T input[], const size_t &len, const size_t &thresh)
 {
@@ -297,9 +277,3 @@ template void qsort_c<uint64_t>(uint64_t input[], const size_t &len,
                                 const size_t &thresh);
 template void qsort_c<bmp::cpp_int>(bmp::cpp_int input[], const size_t &len,
                                     const size_t &thresh);
-
-// Comparator for qsort_c and std::sort
-template int compare<int>(const int *a, const int *b);
-template int compare<uint64_t>(const uint64_t *a, const uint64_t *b);
-template int compare<bmp::cpp_int>(const bmp::cpp_int *a,
-                                   const bmp::cpp_int *b);

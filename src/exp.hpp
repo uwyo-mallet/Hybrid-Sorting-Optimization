@@ -21,7 +21,7 @@ std::string time(const std::string& method, const size_t& threshold,
   if (method == "insertion_sort")
   {
     start_time = std::chrono::steady_clock::now();
-    insertion_sort(vec.data(), vec.size());
+    insertion_sort(vec.data(), vec.size(), compare<T>);
   }
 #ifdef ARCH_X86
   // insertion sort asm only works with uint64_t
@@ -44,7 +44,7 @@ std::string time(const std::string& method, const size_t& threshold,
   else if (method == "qsort_cpp")
   {
     start_time = std::chrono::steady_clock::now();
-    qsort_cpp(vec.data(), vec.size(), threshold);
+    qsort_cpp(vec.data(), vec.size(), threshold, compare<T>);
   }
   else if (method == "qsort_sanity")
   {
