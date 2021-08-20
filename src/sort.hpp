@@ -23,9 +23,8 @@ extern "C" void qsort_asm(uint64_t arr[], const uint64_t n,
 #endif  // ARCH_X86
 
 typedef int (*compar_d_fn_t)(const void *, const void *);
-
-template <typename T>
-void qsort_c(T input[], const size_t &len, const size_t &thresh);
+void qsort_c(void *const pbase, size_t total_elems, size_t size,
+             compar_d_fn_t cmp, const size_t &thresh);
 
 /* Comparator for qsort_* */
 template <typename T>
@@ -88,31 +87,6 @@ void swap(T *a, T *b)
 }
 
 /*
-  Given 3 values, sort them in place, and find the median.
-  The values are always sorted as, a <= b <= c.
-
-  @return: Pointer to median value (b)
-*/
-template <typename T>
-T *median_of_three(T *a, T *b, T *c)
-{
-  if (*a > *c)
-  {
-    swap(a, c);
-  }
-  if (*a > *b)
-  {
-    swap(a, b);
-  }
-  if (*b > *c)
-  {
-    swap(b, c);
-  }
-
-  return b;
-}
-
-/*
   Iterative implementation of insertion sort
 
   @param input: Input array to sort.
@@ -120,15 +94,21 @@ T *median_of_three(T *a, T *b, T *c)
   @param compare: TODO
 */
 template <typename T, typename Comparator>
-void insertion_sort(T input[], const size_t &len, Comparator comp)
+void insertion_sort(T input[], const size_t &n, Comparator comp)
 {
-  for (size_t i = 1; i < len; i++)
+  if (n <= 1)
   {
-    size_t j = i;
-    // while (j > 0 && input[j - 1] > input[j])
-    while (j > 0 && comp(&input[j - 1], &input[j]) > 0)
+    return;
+  }
+
+  T const *end = input + n;
+
+  for (T *i = input + 1; i < end; i++)
+  {
+    T *j = i;
+    while (j > input && comp(j, (j - 1)) < 0)
     {
-      swap(&input[j], &input[j - 1]);
+      swap(j, j - 1);
       j--;
     }
   }
@@ -144,6 +124,12 @@ struct stack_node
 template <typename T, typename Comparator>
 void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
 {
+  if (n < thresh)
+  {
+    insertion_sort(arr, n, comp);
+    return;
+  }
+
   stack_node<T> stack[STACK_SIZE];
   stack_node<T> *top = stack;
 
@@ -182,15 +168,14 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
 
     do
     {
-      while (*left_ptr < *mid)
+      while (comp(left_ptr, mid) < 0)
       {
         left_ptr++;
       }
-      while (*mid < *right_ptr)
+      while (comp(mid, right_ptr) < 0)
       {
         right_ptr--;
       }
-
       if (left_ptr < right_ptr)
       {
         swap(left_ptr, right_ptr);
@@ -233,7 +218,6 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
     array's beginning.  This is the smallest array element,
     and the operation speeds up insertion sort's inner loop.
   */
-
   for (run_ptr = tmp_ptr + 1; run_ptr <= first_thresh; run_ptr++)
   {
     if (comp(run_ptr, tmp_ptr) < 0)
@@ -241,12 +225,12 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
       tmp_ptr = run_ptr;
     }
   }
-
   if (tmp_ptr != arr)
   {
     swap(tmp_ptr, arr);
   }
 
+  // One pass of insertion sort.
   insertion_sort(arr, n, comp);
 }
 

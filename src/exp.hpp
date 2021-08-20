@@ -13,8 +13,8 @@
 #include "sort.hpp"
 
 template <typename T>
-std::string time(const std::string& method, const size_t& threshold,
-                 std::vector<T>& vec)
+size_t time(const std::string& method, const size_t& threshold,
+            std::vector<T>& vec)
 {
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 
@@ -39,7 +39,9 @@ std::string time(const std::string& method, const size_t& threshold,
   else if (method == "qsort_c")
   {
     start_time = std::chrono::steady_clock::now();
-    qsort_c(vec.data(), vec.size(), threshold);
+    // qsort_c(vec.data(), vec.size(), threshold);
+    qsort_c(vec.data(), vec.size(), sizeof(T), (compar_d_fn_t)compare<T>,
+            threshold);
   }
   else if (method == "qsort_cpp")
   {
@@ -78,6 +80,7 @@ std::string time(const std::string& method, const size_t& threshold,
     throw std::runtime_error("Not valid sort");
   }
 
-  return std::to_string((size_t)runtime.count());
+  // return std::to_string((size_t)runtime.count());
+  return (size_t)runtime.count();
 }
 #endif

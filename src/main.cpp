@@ -114,7 +114,8 @@ int main(int argc, char** argv)
   for (size_t i = 0; i < arguments.runs; i++)
   {
     data = orig_data;
-    times.push_back(time(arguments.method, arguments.threshold, data));
+    times.push_back(
+        std::to_string(time(arguments.method, arguments.threshold, data)));
     data.clear();
   }
 

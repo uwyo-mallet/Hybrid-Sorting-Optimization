@@ -264,16 +264,3 @@ void qsort_c(void *const pbase, size_t total_elems, size_t size,
     }
   }
 }
-
-template <typename T>
-void qsort_c(T input[], const size_t &len, const size_t &thresh)
-{
-  qsort_c(input, len, sizeof(T), (compar_d_fn_t)compare<T>, thresh);
-}
-
-template void qsort_c<int>(int input[], const size_t &len,
-                           const size_t &thresh);
-template void qsort_c<uint64_t>(uint64_t input[], const size_t &len,
-                                const size_t &thresh);
-template void qsort_c<bmp::cpp_int>(bmp::cpp_int input[], const size_t &len,
-                                    const size_t &thresh);
