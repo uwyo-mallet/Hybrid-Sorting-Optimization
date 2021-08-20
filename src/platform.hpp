@@ -16,7 +16,7 @@ namespace bmp = boost::multiprecision;
 #endif  // MSVC
 
 #ifdef __linux__
-#if defined(__x86_64__) && !defined(USE_BOOST_CPP_INT)
+#if defined(__x86_64__) && !defined(USE_BOOST_CPP_INT) && !defined(DISABLE_ASM)
 #define ARCH_X86
 #undef ASM_ENABLED
 #define ASM_ENABLED "+"
