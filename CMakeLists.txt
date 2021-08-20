@@ -21,17 +21,6 @@ include_directories(${BOOST_INCLUDE_DIRS})
 set(SRC_FILES ${PROJECT_SOURCE_DIR}/src/main.cpp
               ${PROJECT_SOURCE_DIR}/src/qsort_c.cpp)
 
-set(EXECUTABLE_NAME QST)
-add_executable(${EXECUTABLE_NAME} ${SRC_FILES})
-
-# Include for config
-target_include_directories(${EXECUTABLE_NAME} PRIVATE ${PROJECT_BINARY_DIR})
-
-# Linking
-target_link_libraries(${EXECUTABLE_NAME} Boost::iostreams Boost::filesystem
-                      Boost::boost)
-
-# USE_BOOST_CPP_INT define
 if(USE_BOOST_CPP_INT)
   add_definitions(-DUSE_BOOST_CPP_INT)
   set(DISABLE_ASM ON)
@@ -45,6 +34,16 @@ else()
     list(APPEND SRC_FILES ${PROJECT_SOURCE_DIR}/src/qsort_asm.s)
   endif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
 endif(DISABLE_ASM)
+
+set(EXECUTABLE_NAME QST)
+add_executable(${EXECUTABLE_NAME} ${SRC_FILES})
+
+# Include for config
+target_include_directories(${EXECUTABLE_NAME} PRIVATE ${PROJECT_BINARY_DIR})
+
+# Linking
+target_link_libraries(${EXECUTABLE_NAME} Boost::iostreams Boost::filesystem
+                      Boost::boost)
 
 # Compiler warnings, platform specific.
 add_compile_options("$<$<CONFIG:RELEASE>:-W;-Wall;-O2;-pedantic>")
