@@ -63,11 +63,11 @@ static struct argp argp = {options, parse_opt, args_doc, doc};
 
 void signal_handler(int signum);
 void write(struct arguments args, const size_t& size,
-           const std::vector<std::string>& times);
+           const std::vector<struct result>& results);
 void version_json();
 
 struct arguments arguments;
-std::vector<std::string> times;
+std::vector<struct result> results;
 size_t size = 0;
 
 int main(int argc, char** argv)
@@ -114,15 +114,14 @@ int main(int argc, char** argv)
   for (size_t i = 0; i < arguments.runs; i++)
   {
     data = orig_data;
-    times.push_back(
-        std::to_string(time(arguments.method, arguments.threshold, data)));
+    results.push_back(time(arguments.method, arguments.threshold, data));
     data.clear();
   }
 
   // Output
   try
   {
-    write(arguments, size, times);
+    write(arguments, size, results);
   }
   catch (std::ios_base::failure& e)
   {
@@ -210,7 +209,7 @@ void signal_handler(int signum)
   // Try to write the output on failure.
   try
   {
-    write(arguments, size, times);
+    write(arguments, size, results);
   }
   catch (std::ios_base::failure& e)
   {
@@ -220,7 +219,7 @@ void signal_handler(int signum)
 }
 
 void write(struct arguments args, const size_t& size,
-           const std::vector<std::string>& times)
+           const std::vector<struct result>& results)
 {
   if (args.out_file == "-")
   {
@@ -228,9 +227,10 @@ void write(struct arguments args, const size_t& size,
     std::cout << "Input: " << args.in_file << std::endl;
     std::cout << "Description: " << args.description << std::endl;
     std::cout << "Size: " << size << std::endl;
-    for (std::string time : times)
+    for (struct result res : results)
     {
-      std::cout << "Elapsed Time (microseconds): " << time << std::endl;
+      std::cout << "Elapsed Time (microseconds): " << res.time << std::endl;
+      std::cout << "Clock Cycles: " << res.clock << std::endl;
     }
 
     std::cout << "Threshold: " << args.threshold << std::endl;
@@ -251,15 +251,16 @@ void write(struct arguments args, const size_t& size,
     {
       out_file.clear();
       out_file << "Method,Input,Description,Size,Elapsed Time "
-                  "(microseconds),Threshold"
+                  "(microseconds),Threshold,Clock Cycles"
                << std::endl;
     }
 
     // Write the actual data
-    for (std::string time : times)
+    for (struct result res : results)
     {
       out_file << args.method << "," << args.in_file << "," << args.description
-               << "," << size << "," << time << "," << args.threshold
+               << "," << size << "," << std::to_string(res.time) << ","
+               << args.threshold << "," << std::to_string(res.clock)
                << std::endl;
     }
 

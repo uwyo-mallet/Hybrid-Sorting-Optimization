@@ -1,6 +1,9 @@
 #ifndef PLATFORM_HPP_
 #define PLATFORM_HPP_
 
+// Counting CPU Cycles
+#include <x86intrin.h>
+
 // Default features are disabled
 #define ASM_ENABLED "-"
 
