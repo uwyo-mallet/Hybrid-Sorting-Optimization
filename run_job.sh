@@ -57,7 +57,7 @@ for f in "${sorted_files[@]}"; do
   # Sleep per batch of jobs. Otherwise, this causes slurm to fail MANY jobs.
   # Skip the sleep if it is the last, since we aren't submitting any more jobs.
   if [[ "$f" != "$last" ]]; then
-    sleep 300
+    sleep 30
   fi
 done
 
