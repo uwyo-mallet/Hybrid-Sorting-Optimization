@@ -47,7 +47,7 @@ class DataGen:
             output: Path to folder to output data.
             minimum: Minimum size data to create.
             maximum: Maximum size data to create.
-            increment: Increments of data to create, must evenly divise maximum.
+            increment: Increments of data to create, should evenly divise maximum.
 
         Raises:
             NotADirectoryError: Output requires a directory, not a file
@@ -81,7 +81,7 @@ class DataGen:
 
     def _copy_and_append(self, prev: Path, current: Path, data):
         """
-        Copy a .gz file and append to the new file assuming the data is text.
+        Copy a .gz file and append to the new file assuming the data is an Iterable
 
         Args:
             prev: Path to prev file.
