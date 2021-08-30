@@ -5,9 +5,9 @@ which is usually combined with insertion sort for small lists to avoid some of
 the overhead of repeated partitioning and recursive calls. This improves
 performance in practice, but the threshold size of when to switch from quicksort
 to insertion sort is hard-coded. Optimizing the threshold value could offer
-better performance. This project evaluates quicksort on a variety of
-architectures with varying threshold values, and tunes this value with machine
-learning.
+better performance. This project evaluates various implementations of quicksort
+on a variety of architectures with varying threshold values, and tunes this value
+with machine learning.
 
 ## Setup
 
@@ -28,15 +28,18 @@ Compiling QST and setting up the required python environment on ARCC.
    ```
    $ mkdir build
    $ cd build
+
    # Optionally enable boost CPP int with: -DUSE_BOOST_CPP_INT=ON
+   # Optionally disable assembly sorting methods with: -DDISABLE_ASM=ON
    $ cmake .. -DCMAKE_BUILD_TYPE=RELEASE
    $ make
 
    $ ./QST --version
-   1.3.2
-       Compiled with: GNU 11.1.1
+   1.5.2
+       Compiled with: GNU 11.2.1
        Type: RELEASE
-       USE_BOOST_CPP_INT: False
+       BOOST CPP INT: [-]
+       ASM Methods: [+]
    ```
 
 3. Setup the python environment
@@ -50,7 +53,7 @@ Compiling QST and setting up the required python environment on ARCC.
 
 ## Running Tests
 
-Assuming that everything is compiled and the miniconda environment is active,
+Assuming that everything is compiled and the Miniconda environment is active,
 this procedure is used to generate and run the tests.
 
 1. Generating the input data.
@@ -75,7 +78,8 @@ this procedure is used to generate and run the tests.
    than to speedup the process moving data to and from ARCC. You can manually
    inspect the data using `zcat`. `QST` will automatically try to decompress
    files with the `.gz` extension. If the input does not have this extension it
-   is assumed to be plain text.
+   is assumed to be plain text. All initialization (including IO) is not
+   included in the runtime output.
 
 2. Create the `slurm.d/` directory.
 
@@ -89,8 +93,12 @@ this procedure is used to generate and run the tests.
    times to run the same input data (20) and, input data (`data/`) to test.
 
    ```
-   $ python src/job.py -s ./slurm.d/ -m qsort_c,std -t 1,20 -r 20 data/
+   $ python src/job.py --slurm ./slurm.d/ -m qsort_c,std -t 1,20 -r 20 data/
    ```
+
+   > Note: When running subsequent jobs, even if the input data and all
+   > parameters remain the same, **always** regenerate `slurm.d`. Otherwise,
+   > runtime specific information and timestamps will not be accurate.
 
 3. Submit the jobs.
 
