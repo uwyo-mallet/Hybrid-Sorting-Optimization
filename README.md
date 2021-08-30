@@ -63,7 +63,7 @@ this procedure is used to generate and run the tests.
    - Ascending
    - Descending
    - Entirely random
-   - Repeated single number
+   - Repeated single number (42)
 
    Use `src/data.py` to specify the threshold and generate the data with:
 
@@ -72,23 +72,28 @@ this procedure is used to generate and run the tests.
    ```
 
    This will create a `data/` directory with a subfolder for each category of
-   data.
+   data. All of the data will be compatible with `int64_t`.
+
+   > Beware: `QST` currently only supports unsigned integers. For testing, only
+   > use positive integers.
 
    By default, the resulting data will be compressed. This has no impact other
-   than to speedup the process moving data to and from ARCC. You can manually
-   inspect the data using `zcat`. `QST` will automatically try to decompress
-   files with the `.gz` extension. If the input does not have this extension it
-   is assumed to be plain text. All initialization (including IO) is not
-   included in the runtime output.
+   than to speedup the process moving data to and from various machines.
+   You can manually inspect the data using `zcat`. `QST` will automatically
+   try to decompress files with the `.gz` extension. If the input does not have
+   this extension it is assumed to be plain text. All initialization
+   (including IO) is not included in the runtime output.
 
 2. Create the `slurm.d/` directory.
 
-   The `slurm.d/` contains several files each detailing the parameters for the
-   slurm batch array jobs. Each file cannot exceed 5000 lines otherwise slurm
-   will fail to submit the job, so this script auto truncates each file to 4,500
-   lines by default, then creates another file with the remaining jobs.
+   The `slurm.d/` directory contains several files each detailing the parameters
+   for the slurm batch array jobs. Each file cannot exceed 5,000 lines
+   (this is specific to UW) otherwise slurm will fail to submit the job
+   ([info](https://slurm.schedmd.com/job_array.html)), so this script auto
+   truncates each file to 4,500 lines by default, then creates another file with
+   the remaining jobs.
 
-   The following command generates `slurm.d/` which specifies the sorting
+   For example, the following command generates `slurm.d/` which specifies the sorting
    methods (`qsort_c` and `std::sort`), threshold values (1 - 20), number of
    times to run the same input data (20) and, input data (`data/`) to test.
 
@@ -134,7 +139,7 @@ this procedure is used to generate and run the tests.
    - moran
 
    These particular partitions were chosen because they all have differing
-   CPU architectures. More info
+   CPU architectures. More info is available
    [here](https://arccwiki.atlassian.net/wiki/spaces/DOCUMENTAT/pages/82247690/Hardware+-+Teton).
 
 5. Post-processing and Evaluation.
@@ -158,27 +163,61 @@ Very work in progress...
   sort. One of which is glibc's qsort. To ensure consistency between tests on
   varying systems, architectures, and compilers, this _specific implementation_
   is included.
+- [x] Implement my own rendition of qsort using modern C++ features.
+- [x] Support arbitrary precision integers (`boost::multiprecision::cpp_int`),
+      although for now just use `uint64_t` to avoid the extra overhead.
 - [x] Design an evaluation method:
-- [x] Support arbitrary precision integers (`boost::multiprecision::cpp_int`)
   1. Generate large arrays of varying distributions.
      - Ascending
      - Descending
      - Random
      - Repeated single number
   2. Feed each array into each method, and time execution.
-     - Glibc qsort C version
-     - std::sort (varies based on platform) (baseline)
   3. Tweak the threshold value from 0 - N (20?) and run qsort again.
-- [ ] Graphs and evaluation.
-  - [x] Implement aforementioned evaluation method.
-  - [x] Generate data.
-  - [x] Build evaluation tools.
-  - [x] Increase the number of inputs and run more tests.
-  - [ ] Investigate introsort, more specifically implementations of `std::sort`.
+- [x] Implement aforementioned evaluation method.
+- [x] Generate data scripts.
+- [x] Build evaluation tools.
+- [x] Increase the number of inputs and run more tests.
+- [x] Run tests across many partitions of ARCC.
+- [x] Add unmodified qsort from glibc (`qsort_sanity`) as a sanity check.
+- [x] Run some small tests to discern the impact of comparator functions.
+- [x] Run some small tests to measure the performance gain of compiler
+      optimization (in-lining of the aforementioned comparator functions).
+- [ ] Investigate introsort (worst case O(nlog(n)), more specifically
+      implementations of `std::sort`.
+- [ ] Potentially analyze cache hits and misses, but generally quicksort does
+      pretty well here, so this may not be necessary.
+- [ ] Investigate branch prediction error performance impact. It's possible
+      branch prediction errors are common, but performance may still be
+      generally good. In which case, it is a waste to analyze this since it is
+      _very_ challenging to effectively measure.
+- [ ] Investigate this block quicksort implementation in this
+      [paper](https://arxiv.org/abs/1604.06697).
+
+### Side Goals - Mostly For Experience and Fun
+
+- [x] Implement insertion sort in x86 assembly. Can we beat an optimizing
+      compiler?
+- [ ] Implement quicksort in x86 assembly (this is currently broken and very
+      slow) This remains near the lowest priority item for this entire project.
+- [ ] Increase threshold significantly thousands to tens of thousands.
+      Interval of like 500? This doesn't make sense practically, as most inputs
+      for standard sorting algorithms are under 100 million inputs, and
+      using insertion sort for everything is not particularly efficient.
+- [ ] Test the runtime of worst-case inputs;
+      [paper](https://arxiv.org/abs/1604.06697).
+- [ ] Automate the entire testing processes across multiple machines using
+      ansible.
 
 ## Sources
 
+- [A Killer Advisory for Quicksort](https://algs4.cs.princeton.edu/references/papers/mcilroy.pdf)
+- [Block Quicksort](https://arxiv.org/abs/1604.06697)
 - [General Iterative Quicksort](https://www.geeksforgeeks.org/iterative-quick-sort/)
 - [Glibc Qsort](https://github.com/lattera/glibc/blob/master/stdlib/qsort.c)
-- [Quicksort Overview](https://www.youtube.com/watch?v=7h1s2SojIRw)
+- [Quicksort Basic Overview](https://www.youtube.com/watch?v=7h1s2SojIRw)
+- [Quicksort is Optimal](https://www.cs.princeton.edu/~rs/talks/QuicksortIsOptimal.pdf)
+- [Sedgewick Quicksort](https://algs4.cs.princeton.edu/23quicksort/)
 - [The Analysis of Quicksort Programs](https://link.springer.com/content/pdf/10.1007/BF00289467.pdf)
+- [`std::sort` (libc++)](https://github.com/llvm-mirror/libcxx/blob/a12cb9d211019d99b5875b6d8034617cbc24c2cc/include/algorithm#L3901)
+- [`std::sort` (libstdc++)](https://github.com/gcc-mirror/gcc/blob/d9375e490072d1aae73a93949aa158fcd2a27018/libstdc%2B%2B-v3/include/bits/stl_algo.h#L1950)
