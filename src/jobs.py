@@ -40,6 +40,8 @@ from tqdm import tqdm
 
 from info import write_info
 
+VERSION = "1.0.0"
+
 VALID_METHODS = (
     "insertion_sort",
     "insertion_sort_asm",
@@ -336,19 +338,21 @@ class Scheduler:
         )
         index = 0
         while not self.active_queue.empty():
-            with open(Path(self.slurm, f"{index}.dat"), "w") as slurm_file:
+            current_file = Path(self.slurm, f"{index}.dat")
+            with open(current_file, "w") as slurm_file:
                 size = 0
                 while not self.active_queue.empty() and size < MAX_BATCH:
                     job = self.active_queue.get()
                     slurm_file.write(job.cli + "\n")
                     self.active_queue.task_done()
                     size += 1
+            print(f"{current_file}: {size}")
 
             index += 1
 
 
 if __name__ == "__main__":
-    args = parse_args(docopt(__doc__))
+    args = parse_args(docopt(__doc__, version=VERSION))
 
     s = Scheduler(**args)
     if args["slurm"]:
