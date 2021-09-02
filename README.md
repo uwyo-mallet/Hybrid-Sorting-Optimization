@@ -74,8 +74,7 @@ this procedure is used to generate and run the tests.
    This will create a `data/` directory with a subfolder for each category of
    data. All of the data will be compatible with `int64_t`.
 
-   > Beware: `QST` currently only supports unsigned integers. For testing, only
-   > use positive integers.
+   > Beware: `QST` currently only supports unsigned integers.
 
    By default, the resulting data will be compressed. This has no impact other
    than to speedup the process moving data to and from various machines.
@@ -158,7 +157,7 @@ Very work in progress...
 
 - [x] Implement iterative insertion sort.
 - [x] Implement vanilla, recursive quicksort.
-- [x] Implement glibc [qsort](https://github.com/lattera/glibc/blob/master/stdlib/qsort.c).
+- [x] Implement glibc [`qsort`](https://github.com/lattera/glibc/blob/master/stdlib/qsort.c).
 - Only **some** standard libraries use quicksort in conjunction with insertion
   sort. One of which is glibc's qsort. To ensure consistency between tests on
   varying systems, architectures, and compilers, this _specific implementation_
@@ -179,7 +178,7 @@ Very work in progress...
 - [x] Build evaluation tools.
 - [x] Increase the number of inputs and run more tests.
 - [x] Run tests across many partitions of ARCC.
-- [x] Add unmodified qsort from glibc (`qsort_sanity`) as a sanity check.
+- [x] Add unmodified `qsort` from glibc (`qsort_sanity`) as a sanity check.
 - [x] Run some small tests to discern the impact of comparator functions.
 - [x] Run some small tests to measure the performance gain of compiler
       optimization (in-lining of the aforementioned comparator functions).
@@ -193,6 +192,9 @@ Very work in progress...
       _very_ challenging to effectively measure.
 - [ ] Investigate this block quicksort implementation in this
       [paper](https://arxiv.org/abs/1604.06697).
+- [ ] Determine why `qsort_c` is running so slow. Looks like a missing brace in
+      the insertion sort implementation.
+- [ ] Try modifying `qsort_c` to use my insertion sort routine.
 
 ### Side Goals - Mostly For Experience and Fun
 
@@ -206,8 +208,6 @@ Very work in progress...
       using insertion sort for everything is not particularly efficient.
 - [ ] Test the runtime of worst-case inputs;
       [paper](https://arxiv.org/abs/1604.06697).
-- [ ] Automate the entire testing processes across multiple machines using
-      ansible.
 
 ## Sources
 
@@ -219,5 +219,7 @@ Very work in progress...
 - [Quicksort is Optimal](https://www.cs.princeton.edu/~rs/talks/QuicksortIsOptimal.pdf)
 - [Sedgewick Quicksort](https://algs4.cs.princeton.edu/23quicksort/)
 - [The Analysis of Quicksort Programs](https://link.springer.com/content/pdf/10.1007/BF00289467.pdf)
+- [`qsort` (glibc)](https://sourceware.org/git/?p=glibc.git;a=blob;f=stdlib/qsort.c;h=23f2d283147073ac5bcb6e4bf2c9d6ea994d629c;hb=HEAD)
+- [`qsort` (musl)](https://git.musl-libc.org/cgit/musl/tree/src/stdlib/qsort.c)
 - [`std::sort` (libc++)](https://github.com/llvm-mirror/libcxx/blob/a12cb9d211019d99b5875b6d8034617cbc24c2cc/include/algorithm#L3901)
 - [`std::sort` (libstdc++)](https://github.com/gcc-mirror/gcc/blob/d9375e490072d1aae73a93949aa158fcd2a27018/libstdc%2B%2B-v3/include/bits/stl_algo.h#L1950)
