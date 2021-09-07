@@ -53,6 +53,12 @@ size_t time(const std::string& method, const size_t& threshold,
     start_time = std::chrono::steady_clock::now();
     qsort_cpp_no_comp(vec.data(), vec.size(), threshold);
   }
+  else if (method == "qsort_c_improved")
+  {
+    start_time = std::chrono::steady_clock::now();
+    qsort_c_improved(vec.data(), vec.size(), sizeof(T),
+                     (compar_d_fn_t)compare<T>, threshold);
+  }
   else if (method == "qsort_sanity")
   {
     start_time = std::chrono::steady_clock::now();

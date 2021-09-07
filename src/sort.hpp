@@ -14,7 +14,8 @@
 namespace bmp = boost::multiprecision;
 
 static const std::set<std::string> THRESHOLD_METHODS{
-    "qsort_asm", "qsort_c", "qsort_cpp", "qsort_cpp_no_comp"};
+    "qsort_asm", "qsort_c", "qsort_cpp", "qsort_cpp_no_comp",
+    "qsort_c_improved"};
 
 #ifdef ARCH_X86
 extern "C" void insertion_sort_asm(uint64_t input[], const uint64_t size);
@@ -25,6 +26,9 @@ extern "C" void qsort_asm(uint64_t arr[], const uint64_t n,
 typedef int (*compar_d_fn_t)(const void *, const void *);
 void qsort_c(void *const pbase, size_t total_elems, size_t size,
              compar_d_fn_t cmp, const size_t &thresh);
+
+void qsort_c_improved(void *const pbase, size_t total_elems, size_t size,
+                      compar_d_fn_t cmp, const size_t &thresh);
 
 /* Comparator for qsort_* */
 template <typename T>

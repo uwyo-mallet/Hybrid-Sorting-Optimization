@@ -7,13 +7,6 @@
 
 namespace bmp = boost::multiprecision;
 
-/* Stack node declarations used to store unfulfilled partition obligations. */
-typedef struct
-{
-  char *lo;
-  char *hi;
-} stack_node_c;
-
 #define SWAP(a, b, size)         \
   do                             \
   {                              \
@@ -79,8 +72,8 @@ void qsort_c(void *const pbase, size_t total_elems, size_t size,
     char *lo = base_ptr;
     char *hi = &lo[size * (total_elems - 1)];
 
-    stack_node_c stack[STACK_SIZE];
-    stack_node_c *top = stack;
+    stack_node<char> stack[STACK_SIZE];
+    stack_node<char> *top = stack;
 
     PUSH(NULL, NULL);
 
