@@ -56,6 +56,9 @@ void qsort_c_improved(void *const arr, const size_t n, const size_t size,
   char *lo;
   char *hi;
 
+  char *left_ptr;
+  char *right_ptr;
+
   const size_t max_thresh = thresh * size;
 
   PUSH(base_ptr, &base_ptr[size * (n - 1)]);
@@ -83,8 +86,9 @@ void qsort_c_improved(void *const arr, const size_t n, const size_t size,
     }
 
   jump_over:
-    char *left_ptr = lo + size;
-    char *right_ptr = hi - size;
+
+    left_ptr = lo + size;
+    right_ptr = hi - size;
 
     do
     {
