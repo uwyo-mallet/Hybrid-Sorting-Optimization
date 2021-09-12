@@ -15,6 +15,8 @@ Compiling QST and setting up the required python environment on ARCC.
 
 1. Load the required modules
 
+   This project requires both a C and C++ compiler, each supporting version 11 of their respective standards.
+
    ```
    $ module load gcc
    $ module load swset
@@ -35,11 +37,12 @@ Compiling QST and setting up the required python environment on ARCC.
    $ make
 
    $ ./QST --version
-   1.5.2
-       Compiled with: GNU 11.2.1
-       Type: RELEASE
-       BOOST CPP INT: [-]
-       ASM Methods: [+]
+   1.6.0
+   	C COMPILER : GNU 11.2.1
+   	CXX COMPILER : GNU 11.2.1
+   	Type: RELEASE
+   	BOOST CPP INT: [-]
+   	ASM Methods: [+]
    ```
 
 3. Setup the python environment
@@ -53,7 +56,7 @@ Compiling QST and setting up the required python environment on ARCC.
 
 ## Running Tests
 
-Assuming that everything is compiled and the Miniconda environment is active,
+Assuming that everything is compiled and the miniconda environment is active,
 this procedure is used to generate and run the tests.
 
 1. Generating the input data.
@@ -182,6 +185,8 @@ Very work in progress...
 - [x] Run some small tests to discern the impact of comparator functions.
 - [x] Run some small tests to measure the performance gain of compiler
       optimization (in-lining of the aforementioned comparator functions).
+- [x] Decouple C code entirely from C++ code. See [this](https://gitlab.com/uwyo-mallet/quicksort-tuning/-/commit/27b37eeae9cb1d4912f33d6847035f08a27288db) commit for more info.
+- [x] Run tests on smaller inputs.
 - [ ] Investigate introsort (worst case O(nlog(n)), more specifically
       implementations of `std::sort`.
 - [ ] Potentially analyze cache hits and misses, but generally quicksort does
