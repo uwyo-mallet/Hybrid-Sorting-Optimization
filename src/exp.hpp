@@ -23,8 +23,8 @@ size_t time(const std::string& method, const size_t& threshold,
     start_time = std::chrono::steady_clock::now();
     insertion_sort(vec.data(), vec.size(), compare<T>);
   }
+// These methods require x86 and only support uint64_t.
 #ifdef ARCH_X86
-  // insertion sort asm only works with uint64_t
   else if (method == "insertion_sort_asm")
   {
     start_time = std::chrono::steady_clock::now();
@@ -40,8 +40,7 @@ size_t time(const std::string& method, const size_t& threshold,
   {
     start_time = std::chrono::steady_clock::now();
     // qsort_c(vec.data(), vec.size(), threshold);
-    qsort_c(vec.data(), vec.size(), sizeof(T), (compar_d_fn_t)compare<T>,
-            threshold);
+    qsort_c(vec.data(), vec.size(), sizeof(T), compare<T>, threshold);
   }
   else if (method == "qsort_cpp")
   {
@@ -56,13 +55,12 @@ size_t time(const std::string& method, const size_t& threshold,
   else if (method == "qsort_c_improved")
   {
     start_time = std::chrono::steady_clock::now();
-    qsort_c_improved(vec.data(), vec.size(), sizeof(T),
-                     (compar_d_fn_t)compare<T>, threshold);
+    qsort_c_improved(vec.data(), vec.size(), sizeof(T), compare<T>, threshold);
   }
   else if (method == "qsort_sanity")
   {
     start_time = std::chrono::steady_clock::now();
-    qsort(vec.data(), vec.size(), sizeof(T), (compar_d_fn_t)compare<T>);
+    qsort(vec.data(), vec.size(), sizeof(T), compare<T>);
   }
   else if (method == "std")
   {

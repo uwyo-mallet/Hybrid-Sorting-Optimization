@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+/*
+ * Swap any two same sized value in-place by using stack allocation.
+ */
 void swap_any(void *a, void *b, size_t size)
 {
   void *tmp = alloca(size);
@@ -14,6 +17,9 @@ void swap_any(void *a, void *b, size_t size)
   memcpy(b, tmp, size);
 }
 
+/*
+ * Pure C implementation of insertion sort
+ */
 void insertion_sort_c(void *const arr, size_t n, size_t size, compar_d_fn_t cmp)
 {
   if (n <= 1)
@@ -35,8 +41,11 @@ void insertion_sort_c(void *const arr, size_t n, size_t size, compar_d_fn_t cmp)
   }
 }
 
-void qsort_c_improved(void *const arr, size_t n, size_t size, compar_d_fn_t cmp,
-                      const size_t &thresh)
+/*
+ * Attempted optimization of qsort_c while maintaining pure C compatibility.
+ */
+void qsort_c_improved(void *const arr, const size_t n, const size_t size,
+                      compar_d_fn_t cmp, const size_t thresh)
 {
   char *base_ptr = (char *)arr;
 
@@ -51,6 +60,8 @@ void qsort_c_improved(void *const arr, size_t n, size_t size, compar_d_fn_t cmp,
 
   char *lo;
   char *hi;
+
+  const size_t max_thresh = thresh * size;
 
   PUSH(base_ptr, &base_ptr[size * (n - 1)]);
   while (STACK_NOT_EMPTY)
@@ -77,7 +88,6 @@ void qsort_c_improved(void *const arr, size_t n, size_t size, compar_d_fn_t cmp,
     }
 
   jump_over:
-
     char *left_ptr = lo + size;
     char *right_ptr = hi - size;
 
@@ -114,12 +124,11 @@ void qsort_c_improved(void *const arr, size_t n, size_t size, compar_d_fn_t cmp,
       }
     } while (left_ptr <= right_ptr);
 
-    // TODO: Pull out thresh * size to max_thresh
-    if ((right_ptr - lo) > (thresh * size) && right_ptr > lo)
+    if ((right_ptr - lo) > max_thresh && right_ptr > lo)
     {
       PUSH(lo, right_ptr);
     }
-    if ((hi - left_ptr) > (thresh * size) && left_ptr < hi)
+    if ((hi - left_ptr) > max_thresh && left_ptr < hi)
     {
       PUSH(left_ptr, hi);
     }

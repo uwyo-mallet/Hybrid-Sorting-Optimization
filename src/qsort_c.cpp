@@ -1,11 +1,8 @@
-#include <boost/multiprecision/cpp_int.hpp>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
 
 #include "sort.hpp"
-
-namespace bmp = boost::multiprecision;
 
 #define SWAP(a, b, size)         \
   do                             \
@@ -54,8 +51,8 @@ namespace bmp = boost::multiprecision;
   @param cmp: Comparator function
   (https://www.cplusplus.com/reference/cstdlib/qsort/)
 */
-void qsort_c(void *const pbase, size_t total_elems, size_t size,
-             compar_d_fn_t cmp, const size_t &thresh)
+void qsort_c(void *const pbase, const size_t total_elems, const size_t size,
+             compar_d_fn_t cmp, const size_t thresh)
 {
   char *base_ptr = (char *)pbase;
 
@@ -226,7 +223,6 @@ void qsort_c(void *const pbase, size_t total_elems, size_t size,
     }
 
     /* Insertion sort, running from left-hand-side up to right-hand-side.  */
-
     run_ptr = base_ptr + size;
     while ((run_ptr += size) <= end_ptr)
     {

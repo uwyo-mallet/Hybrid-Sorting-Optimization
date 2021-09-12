@@ -23,17 +23,20 @@ extern "C" void qsort_asm(uint64_t arr[], const uint64_t n,
                           const size_t threshold);
 #endif  // ARCH_X86
 
+// Legacy fully C compatible sort functions.
 typedef int (*compar_d_fn_t)(const void *, const void *);
-void qsort_c(void *const pbase, size_t total_elems, size_t size,
-             compar_d_fn_t cmp, const size_t &thresh);
+void qsort_c(void *const pbase, const size_t total_elems, const size_t size,
+             compar_d_fn_t cmp, const size_t thresh);
+void qsort_c_improved(void *const arr, const size_t n, const size_t size,
+                      compar_d_fn_t cmp, const size_t thresh);
 
-void qsort_c_improved(void *const pbase, size_t total_elems, size_t size,
-                      compar_d_fn_t cmp, const size_t &thresh);
-
-/* Comparator for qsort_* */
+/* Comparator for any qsort_ */
 template <typename T>
-int compare(const T *a, const T *b)
+int compare(const void *ap, const void *bp)
 {
+  T *a = (T *)ap;
+  T *b = (T *)bp;
+
   if (*a < *b) return -1;
   if (*a > *b) return 1;
   return 0;
@@ -48,10 +51,10 @@ bool compare_std(const T &a, const T &b)
 
 /* The next 4 #defines implement a very fast in-line stack abstraction. */
 /* The stack needs log(total_elements) entries (we could even subtract
-   log(QSORT_MAX_THRESH)). Since total_elements has type size_t, we get as
+   log(THRESHOLD)). Since total_elements has type size_t, we get as
    upper bound for log(total_elements): bits per byte (CHAR_BIT) *
-   sizeof(size_t).  */
-
+   sizeof(size_t).
+ */
 #define STACK_SIZE (CHAR_BIT * sizeof(size_t))
 #define PUSH(low, high) (((top->lo = (low)), (top->hi = (high)), ++top))
 #define POP(low, high) ((--top, (low = top->lo), (high = top->hi)))
@@ -95,7 +98,7 @@ void swap(T *a, T *b)
 
   @param input: Input array to sort.
   @param len: Length of input array.
-  @param compare: TODO
+  @param compare: Comparator function, follows STL qsort_c convention.
 */
 template <typename T, typename Comparator>
 void insertion_sort(T input[], const size_t &n, Comparator comp)
@@ -120,10 +123,10 @@ void insertion_sort(T input[], const size_t &n, Comparator comp)
 
 /*
   Iterative implementation of insertion sort
+  without a comparator function.
 
   @param input: Input array to sort.
   @param len: Length of input array.
-  @param compare: TODO
 */
 template <typename T>
 void insertion_sort(T input[], const size_t &n)
