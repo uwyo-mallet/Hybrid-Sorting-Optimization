@@ -11,7 +11,7 @@
 #include <string>
 
 #include "platform.hpp"
-namespace bmp = boost::multiprecision;
+#include "sort.h"
 
 static const std::set<std::string> THRESHOLD_METHODS{
     "qsort_asm", "qsort_c", "qsort_cpp", "qsort_cpp_no_comp",
@@ -22,13 +22,6 @@ extern "C" void insertion_sort_asm(uint64_t input[], const uint64_t size);
 extern "C" void qsort_asm(uint64_t arr[], const uint64_t n,
                           const size_t threshold);
 #endif  // ARCH_X86
-
-// Legacy fully C compatible sort functions.
-typedef int (*compar_d_fn_t)(const void *, const void *);
-void qsort_c(void *const pbase, const size_t total_elems, const size_t size,
-             compar_d_fn_t cmp, const size_t thresh);
-void qsort_c_improved(void *const arr, const size_t n, const size_t size,
-                      compar_d_fn_t cmp, const size_t thresh);
 
 /* Comparator for any qsort_ */
 template <typename T>
@@ -48,19 +41,6 @@ bool compare_std(const T &a, const T &b)
 {
   return (a < b);
 }
-
-/* The next 4 #defines implement a very fast in-line stack abstraction. */
-/* The stack needs log(total_elements) entries (we could even subtract
-   log(THRESHOLD)). Since total_elements has type size_t, we get as
-   upper bound for log(total_elements): bits per byte (CHAR_BIT) *
-   sizeof(size_t).
- */
-#define STACK_SIZE (CHAR_BIT * sizeof(size_t))
-#define PUSH(low, high) (((top->lo = (low)), (top->hi = (high)), ++top))
-#define POP(low, high) ((--top, (low = top->lo), (high = top->hi)))
-#define STACK_NOT_EMPTY (stack < top)
-#define min(x, y) ((x) < (y) ? (x) : (y))
-
 /*
   Determine if an array is sorted by checking every value.
 
@@ -150,7 +130,7 @@ void insertion_sort(T input[], const size_t &n)
 }
 
 template <typename T>
-struct stack_node
+struct node
 {
   T *lo;
   T *hi;
@@ -165,8 +145,8 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
     return;
   }
 
-  stack_node<T> stack[STACK_SIZE];
-  stack_node<T> *top = stack;
+  node<T> stack[STACK_SIZE];
+  node<T> *top = stack;
 
   PUSH(arr, arr + n - 1);
 
@@ -278,8 +258,8 @@ void qsort_cpp_no_comp(T arr[], const size_t &n, const size_t &thresh)
     return;
   }
 
-  stack_node<T> stack[STACK_SIZE];
-  stack_node<T> *top = stack;
+  node<T> stack[STACK_SIZE];
+  node<T> *top = stack;
 
   PUSH(arr, arr + n - 1);
 

@@ -1,21 +1,5 @@
-#include <climits>
-#include <cstddef>
-#include <cstdint>
 
-#include "sort.hpp"
-
-#define SWAP(a, b, size)         \
-  do                             \
-  {                              \
-    size_t __size = (size);      \
-    char *__a = (a), *__b = (b); \
-    do                           \
-    {                            \
-      char __tmp = *__a;         \
-      *__a++ = *__b;             \
-      *__b++ = __tmp;            \
-    } while (--__size > 0);      \
-  } while (0)
+#include "sort.h"
 
 /*
   Iterative, extremely optimized implementation of quicksort.
@@ -69,8 +53,8 @@ void qsort_c(void *const pbase, const size_t total_elems, const size_t size,
     char *lo = base_ptr;
     char *hi = &lo[size * (total_elems - 1)];
 
-    stack_node<char> stack[STACK_SIZE];
-    stack_node<char> *top = stack;
+    stack_node stack[STACK_SIZE];
+    stack_node *top = stack;
 
     PUSH(NULL, NULL);
 

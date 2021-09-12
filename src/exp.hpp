@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "platform.hpp"
+#include "sort.h"
 #include "sort.hpp"
 
 template <typename T>

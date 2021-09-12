@@ -1,10 +1,11 @@
-#include "sort.hpp"
+#include "sort.h"
 
 // Stack allocation
 #include <alloca.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 /*
  * Swap any two same sized value in-place by using stack allocation.
@@ -17,9 +18,6 @@ void swap_any(void *a, void *b, size_t size)
   memcpy(b, tmp, size);
 }
 
-/*
- * Pure C implementation of insertion sort
- */
 void insertion_sort_c(void *const arr, size_t n, size_t size, compar_d_fn_t cmp)
 {
   if (n <= 1)
@@ -41,9 +39,6 @@ void insertion_sort_c(void *const arr, size_t n, size_t size, compar_d_fn_t cmp)
   }
 }
 
-/*
- * Attempted optimization of qsort_c while maintaining pure C compatibility.
- */
 void qsort_c_improved(void *const arr, const size_t n, const size_t size,
                       compar_d_fn_t cmp, const size_t thresh)
 {
@@ -55,8 +50,8 @@ void qsort_c_improved(void *const arr, const size_t n, const size_t size,
     return;
   }
 
-  stack_node<char> stack[STACK_SIZE];
-  stack_node<char> *top = stack;
+  stack_node stack[STACK_SIZE];
+  stack_node *top = stack;
 
   char *lo;
   char *hi;

@@ -16,11 +16,13 @@
 #include "exp.hpp"
 #include "io.hpp"
 #include "platform.hpp"
+#include "sort.h"
 
 namespace fs = boost::filesystem;
 
 #define VERSION                                                              \
-  QST_VERSION "\n\tCompiled with: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION \
+  QST_VERSION "\n\tC COMPILER : " C_COMPILER_ID " " C_COMPILER_VERSION       \
+              "\n\tCXX COMPILER : " CXX_COMPILER_ID " " CXX_COMPILER_VERSION \
               "\n\tType: " CMAKE_BUILD_TYPE                                  \
               "\n\tBOOST CPP INT: [" BOOST_CPP_INT                           \
               "]"                                                            \
@@ -276,13 +278,23 @@ void version_json()
             << "\"" QST_VERSION "\""
             << "," << std::endl;
 
-  // compiler id
-  std::cout << "\t\"compiler_id\": "
+  // C compiler id
+  std::cout << "\t\"c_compiler_id\": "
+            << "\"" C_COMPILER_ID "\""
+            << "," << std::endl;
+
+  // C compiler version
+  std::cout << "\t\"c_compiler_version\": "
+            << "\"" C_COMPILER_VERSION "\""
+            << "," << std::endl;
+
+  // C++ compiler id
+  std::cout << "\t\"cxx_compiler_id\": "
             << "\"" CXX_COMPILER_ID "\""
             << "," << std::endl;
 
-  // compiler version
-  std::cout << "\t\"compiler_version\": "
+  // C++ compiler version
+  std::cout << "\t\"cxx_compiler_version\": "
             << "\"" CXX_COMPILER_VERSION "\""
             << "," << std::endl;
 

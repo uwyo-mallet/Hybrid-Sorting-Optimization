@@ -2,13 +2,19 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.5.5
+  VERSION 1.6.0
   DESCRIPTION "Optimizing Quicksort"
-  LANGUAGES CXX ASM)
+  LANGUAGES C CXX ASM)
 configure_file(src/config.h.in config.hpp)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED True)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+message("C Compiler Path: " ${CMAKE_C_COMPILER})
+message("C Compiler ID: " ${CMAKE_C_COMPILER_ID})
 
 message("CXX Compiler Path: " ${CMAKE_CXX_COMPILER})
 message("CXX Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
@@ -19,8 +25,8 @@ include_directories(${BOOST_INCLUDE_DIRS})
 
 # Add src files
 set(SRC_FILES
-    ${PROJECT_SOURCE_DIR}/src/main.cpp ${PROJECT_SOURCE_DIR}/src/qsort_c.cpp
-    ${PROJECT_SOURCE_DIR}/src/qsort_c_improved.cpp)
+    ${PROJECT_SOURCE_DIR}/src/main.cpp ${PROJECT_SOURCE_DIR}/src/qsort_c.c
+    ${PROJECT_SOURCE_DIR}/src/qsort_c_improved.c)
 
 if(USE_BOOST_CPP_INT)
   add_definitions(-DUSE_BOOST_CPP_INT)
