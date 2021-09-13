@@ -12,12 +12,14 @@ Options:
     -w, --wait=N             Time to wait in seconds between slurm submissions
                              [default: 30]
 """
-from docopt import docopt
-from pathlib import Path
+import shutil
 import subprocess
-from datetime import datetime
-from itertools import takewhile, repeat
 import time
+from datetime import datetime
+from itertools import repeat, takewhile
+from pathlib import Path
+
+from docopt import docopt
 
 
 def fast_line_count(filename):
@@ -46,8 +48,9 @@ PARTITION = args["PARTITION"].lower()
 DRY_RUN = args["--dry-run"]
 WAIT = float(args["--wait"])
 
-RESULTS_DIR = Path(CWD, "results", datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-
+RESULTS_DIR = Path(
+    CWD, "results", datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + "_" + PARTITION
+)
 
 # Validate user inputs
 if not JOB_SBATCH.is_file():
@@ -68,11 +71,21 @@ except ValueError:
     pass
 
 # All user inputs are valid, prep for job submission.
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+if not DRY_RUN:
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    shutil.copy(Path(SLURM_DIR, "job_details.json"), RESULTS_DIR)
+    shutil.copytree(SLURM_DIR, Path(RESULTS_DIR, SLURM_DIR.name))
+    Path(RESULTS_DIR, "partition").write_text(PARTITION + "\n")
+
 
 total_num_jobs = 0
 for batch in input_files:
     num_lines = fast_line_count(batch)
+
+    if num_lines == 0:
+        print(f"[Warning]: Skipping empty data file: {batch}")
+        continue
+
     print(f"{batch.name}: {num_lines}")
     command = [
         "sbatch",
@@ -87,9 +100,10 @@ for batch in input_files:
     print("\t" + " ".join(command))
     if not DRY_RUN:
         subprocess.run(command)
-
     total_num_jobs += num_lines
 
     # Wait between submissions, otherwise slurm fails many jobs.
     if batch != input_files[-1]:
         time.sleep(WAIT)
+
+print(f"Total number of jobs: {total_num_jobs}")
