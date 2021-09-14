@@ -252,8 +252,7 @@ void write(struct arguments args, const size_t& size,
     if (out_file.tellg() == 0)
     {
       out_file.clear();
-      out_file << "Method,Input,Description,Size,Elapsed Time "
-                  "(microseconds),Threshold"
+      out_file << "method,input,description,size,elapsed_usecs,threshold"
                << std::endl;
     }
 
