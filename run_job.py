@@ -20,6 +20,23 @@ from itertools import repeat, takewhile
 from pathlib import Path
 
 from docopt import docopt
+import os
+
+
+class cd:
+    """Context manager for changing the current working directory"""
+
+    # https://stackoverflow.com/a/13197763/8846676
+
+    def __init__(self, newPath):
+        self.newPath = os.path.expanduser(newPath)
+
+    def __enter__(self):
+        self.savedPath = os.getcwd()
+        os.chdir(self.newPath)
+
+    def __exit__(self, etype, value, traceback):
+        os.chdir(self.savedPath)
 
 
 def fast_line_count(filename):
@@ -79,31 +96,32 @@ if not DRY_RUN:
 
 
 total_num_jobs = 0
-for batch in input_files:
-    num_lines = fast_line_count(batch)
+with cd(RESULTS_DIR):
+    for batch in input_files:
+        num_lines = fast_line_count(batch)
 
-    if num_lines == 0:
-        print(f"[Warning]: Skipping empty data file: {batch}")
-        continue
+        if num_lines == 0:
+            print(f"[Warning]: Skipping empty data file: {batch}")
+            continue
 
-    print(f"{batch.name}: {num_lines}")
-    command = [
-        "sbatch",
-        "--array",
-        f"0-{num_lines}",
-        "--partition",
-        PARTITION,
-        str(JOB_SBATCH),
-        str(batch),
-    ]
+        print(f"{batch.name}: {num_lines}")
+        command = [
+            "sbatch",
+            "--array",
+            f"0-{num_lines}",
+            "--partition",
+            PARTITION,
+            str(JOB_SBATCH),
+            str(batch),
+        ]
 
-    print("\t" + " ".join(command))
-    if not DRY_RUN:
-        subprocess.run(command)
-    total_num_jobs += num_lines
+        print("\t" + " ".join(command))
+        if not DRY_RUN:
+            subprocess.run(command)
+        total_num_jobs += num_lines
 
-    # Wait between submissions, otherwise slurm fails many jobs.
-    if batch != input_files[-1]:
-        time.sleep(WAIT)
+        # Wait between submissions, otherwise slurm fails many jobs.
+        if batch != input_files[-1]:
+            time.sleep(WAIT)
 
 print(f"Total number of jobs: {total_num_jobs}")
