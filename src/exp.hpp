@@ -19,7 +19,6 @@ size_t time(const std::string& method, const size_t& threshold,
 {
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 
-  print(to_sort);
   if (method == "insertion_sort")
   {
     start_time = std::chrono::steady_clock::now();
