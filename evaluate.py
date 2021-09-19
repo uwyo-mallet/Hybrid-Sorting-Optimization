@@ -1,22 +1,15 @@
 #!/usr/bin/env python3
 
+import ast
 import json
 from dataclasses import dataclass
 from pathlib import Path
 
 import dash
-from dash import dcc
-from dash import html
-
-# import dash_core_components as dcc
-# import dash_html_components as html
-
-# import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
-
-import ast
+from dash import dcc, html
 
 pd.set_option("display.max_columns", None)
 
@@ -151,16 +144,16 @@ app.layout = html.Div(
                         html.H6(
                             "Info",
                             style={
-                                "margin-top": "0",
-                                "font-weight": "bold",
-                                "text-align": "center",
+                                "marginTop": "0",
+                                "fontWeight": "bold",
+                                "textAlign": "center",
                             },
                         ),
                         html.Div(id="info"),
                     ],
                     className="pretty_container",
                     id="cross-filter-options",
-                    style={"text-align": "left"},
+                    style={"textAlign": "left"},
                 ),
                 html.Div(
                     [
@@ -175,7 +168,7 @@ app.layout = html.Div(
                                                         html.Label(
                                                             "Result:",
                                                             style={
-                                                                "margin-right": "1em",
+                                                                "marginRight": "1em",
                                                             },
                                                         )
                                                     ]
@@ -198,8 +191,8 @@ app.layout = html.Div(
                                             ],
                                             style={
                                                 "display": "flex",
-                                                "text-align": "left",
-                                                "vertical-align": "baseline",
+                                                "textAlign": "left",
+                                                "verticalAlign": "baseline",
                                             },
                                         ),
                                     ],
@@ -224,16 +217,14 @@ app.layout = html.Div(
                                     ],
                                     value=next(iter(UNITS.keys())),
                                 ),
-                                html.Label("Threshold"),
-                                dcc.Slider(
-                                    id="threshold-slider",
-                                    min=0,
-                                    max=1000,
-                                    value=0,
+                                dcc.Checklist(
+                                    id="error-bars-checkbox",
+                                    options=[
+                                        {"label": "Error Bars", "value": "error_bars"}
+                                    ],
                                 ),
                             ],
                             className="pretty_container",
-                            # style={"columnCount": 1},
                         ),
                     ],
                     id="right-column",
@@ -244,223 +235,66 @@ app.layout = html.Div(
         ),
         html.Div(
             [
-                dcc.Graph(
-                    id="size-vs-runtime-scatter",
-                ),
-            ],
-            className="row pretty_container",
-        ),
-        html.Div(
-            [
-                html.Div(
-                    # cor_behav,
-                    [
-                        html.H6(
-                            "Exploring correlations",
-                            style={
-                                "margin-top": "0",
-                                "font-weight": "bold",
-                                "text-align": "center",
-                            },
-                        ),
-                        html.P(
-                            "In the heatmap below, the correlations between the 5 health variables and the 18 food variables can be explored.",
-                            className="control_label",
-                            style={"text-align": "justify"},
-                        ),
-                        # html.P("""<br>"""),
-                        html.P(
-                            "Select a health variable",
-                            style={"font-weight": "bold", "text-align": "center"},
-                        ),
-                        # cor_behav,
-                        html.Div(
-                            [dcc.Graph(id="cor_ma")],
-                            className="pretty_container twelve columns",
-                        ),
-                    ],  # ,cor_behav,
-                    className="pretty_container four columns",
-                ),
                 html.Div(
                     [
-                        html.H6(
-                            "Analysing the correlations between food consumption and health",
-                            style={
-                                "margin-top": "0",
-                                "font-weight": "bold",
-                                "text-align": "center",
-                            },
-                        ),
-                        html.P(
-                            "Below, the correlations can be analysed in more detail. It is important to note that correlation in this case does not necessarily mean causation. For example, the wealth level of a country might often influence the variables, which is why it is represented through the size of the dots as GDP per capita. Furthermore, outliers should also be watched out for.",
-                            className="control_label",
-                            style={"text-align": "justify"},
-                        ),
                         html.Div(
                             [
                                 html.P(
-                                    "Select a food category",
+                                    "Threshold",
                                     className="control_label",
                                     style={
-                                        "font-weight": "bold",
-                                        "text-align": "center",
+                                        "fontWeight": "bold",
+                                        "textAlign": "center",
                                     },
                                 ),
-                                dcc.Dropdown(
-                                    id="xaxis-column",
-                                    options=[
-                                        {"label": i, "value": i} for i in [1, 2, 3, 4]
-                                    ],
-                                    value="Alcoholic Beverages",  # ,className="pretty_container four columns",
-                                ),
-                                dcc.RadioItems(
-                                    id="xaxis-type",
-                                    options=[
-                                        {"label": i, "value": i}
-                                        for i in ["Box", "Violin"]
-                                    ],
-                                    value="Box",
-                                    labelStyle={
-                                        "display": "inline-block"
-                                    },  # ,className="pretty_container four columns",
-                                    style={"padding-left": "34%"},
-                                ),
+                                dcc.Slider(id="threshold-slider", step=None, value=0),
                             ],
-                            className="pretty_container sixish columns",
+                            className="pretty_container",
                         ),
+                        dcc.Graph(
+                            id="size-vs-runtime-scatter",
+                        ),
+                    ]
+                )
+            ],
+            className="row pretty_container",
+        ),
+        html.Div(
+            [
+                html.Div(
+                    [
                         html.Div(
                             [
                                 html.P(
-                                    "Select a health variable",
+                                    "Size",
                                     className="control_label",
                                     style={
-                                        "font-weight": "bold",
-                                        "text-align": "center",
+                                        "fontWeight": "bold",
+                                        "textAlign": "center",
                                     },
                                 ),
-                                dcc.Dropdown(
-                                    id="yaxis-column",
-                                    options=[
-                                        {"label": i, "value": i} for i in [1, 2, 2]
-                                    ],
-                                    value=1,
-                                ),
-                                dcc.RadioItems(
-                                    id="yaxis-type",
-                                    options=[
-                                        {"label": i, "value": i}
-                                        for i in ["Box", "Violin"]
-                                    ],
-                                    value="Box",
-                                    labelStyle={"display": "inline-block"},
-                                    style={"padding-left": "34%"},
-                                ),
+                                dcc.Slider(id="size-slider", step=None, value=0),
                             ],
-                            className="pretty_container sixish columns",
+                            className="pretty_container",
                         ),
-                        html.Div(
-                            [
-                                dcc.Graph(id="indicator-graphic"),
-                            ],
-                            className="pretty_container almost columns",
+                        dcc.Graph(
+                            id="threshold-vs-runtime-scatter",
                         ),
-                    ],
-                    className="pretty_container eight columns",
-                ),
-            ],
-            className="row flex-display",
-        ),
-        html.Div(
-            [
-                html.H6(
-                    "K-means clustering",
-                    style={
-                        "margin-top": "0",
-                        "font-weight": "bold",
-                        "text-align": "center",
-                    },
-                ),
-                html.P(
-                    "Finally, k-means clustering is carried out. The criterion can be selected on the left side, whereby either the 18 food variables, the 5 health variables or all of them in combination may be chosen for the clustering. On the right side, the resulting clusters can then be compared with respect to a chosen variable.",
-                    className="control_label",
-                    style={"text-align": "justify"},
-                ),
-                html.Div(
-                    [
-                        html.P(
-                            "Select a clustering criterion",
-                            className="control_label",
-                            style={"text-align": "center", "font-weight": "bold"},
-                        ),
-                        # radio_clust_behaviour,
-                        dcc.Graph(id="cluster_map"),
-                    ],
-                    className="pretty_container sixish columns",
-                ),
-                html.Div(
-                    [
-                        html.P(
-                            "Select a variable for cluster comparison",
-                            className="control_label",
-                            style={"text-align": "center", "font-weight": "bold"},
-                        ),
-                        # ots_behaviour,
-                        dcc.Graph(id="boxes"),
-                    ],
-                    className="pretty_container sixish columns",
-                ),
-            ],
-            className="row pretty_container",
-        ),
-        html.Div(
-            [
-                html.H6(
-                    "Authors",
-                    style={
-                        "margin-top": "0",
-                        "font-weight": "bold",
-                        "text-align": "center",
-                    },
-                ),
-                html.P(
-                    "fOO",
-                    style={"text-align": "center", "font-size": "10pt"},
-                ),
-            ],
-            className="row pretty_container",
-        ),
-        html.Div(
-            [
-                html.H6(
-                    "Sources",
-                    style={
-                        "margin-top": "0",
-                        "font-weight": "bold",
-                        "text-align": "center",
-                    },
-                ),
-                dcc.Markdown(
-                    """\
-                         - Eurostat: https://ec.europa.eu/eurostat/databrowser/view/HLTH_SHA11_HF__custom_227597/bookmark/table?lang=en&bookmarkId=1530a1e6-767e-4661-9e15-0ed2f7fae0d5
-                         - Food and Agriculture Organization of the United Nations: http://www.fao.org/faostat/en/#data/FBS
-                         - Opendatasoft: https://data.opendatasoft.com/explore/dataset/european-union-countries@public/export/
-                         - Our World in Data: https://covid.ourworldindata.org/data/owid-covid-data.csv?v=2021-03-11
-                        """,
-                    style={"font-size": "10pt"},
-                ),
+                    ]
+                )
             ],
             className="row pretty_container",
         ),
     ],
     id="mainContainer",
-    style={"display": "flex", "flex-direction": "column"},
+    style={"display": "flex", "flexDirection": "column"},
 )
 
 
 @app.callback(
     dash.dependencies.Output("stat-data", "data"),
     dash.dependencies.Output("info-data", "data"),
-    dash.dependencies.Input("result-dropdown", "value"),
+    [dash.dependencies.Input("result-dropdown", "value")],
 )
 def load_result(results_dir):
     res = load(Path(results_dir))
@@ -469,15 +303,12 @@ def load_result(results_dir):
 
 @app.callback(
     dash.dependencies.Output("info", "children"),
-    dash.dependencies.Input("info-data", "data"),
+    [dash.dependencies.Input("info-data", "data")],
 )
 def update_info(info_json):
     info = json.loads(info_json)
     arch = info["Processor"]
     command = info["Command"]
-    data_min = info["Data Details"]["minimum"]
-    data_max = info["Data Details"]["maximum"]
-    data_inc = info["Data Details"]["increment"]
     node = info["Node"]
     num_cpus = info["Number of CPUs"]
     num_concurrent = info["Number of concurrent jobs"]
@@ -516,26 +347,67 @@ QST Version:
 {qst_version}
 ```
 """
-    return [dcc.Markdown(md, style={"line-height": 12})]
+    return [dcc.Markdown(md, style={"lineHeight": 0.9})]
+
+
+@app.callback(
+    dash.dependencies.Output("threshold-slider", "min"),
+    dash.dependencies.Output("threshold-slider", "max"),
+    dash.dependencies.Output("threshold-slider", "marks"),
+    [dash.dependencies.Input("stat-data", "data")],
+)
+def update_threshold_slider(json_df):
+    df = pd.read_json(json_df)
+    tuples = [ast.literal_eval(i) for i in df.columns]
+    df.columns = pd.MultiIndex.from_tuples(tuples)
+    marks = {int(i): str(i) for i in sorted(df["threshold"].unique())}
+    return (
+        int(df["threshold"].unique().min()),
+        int(df["threshold"].unique().max()),
+        marks,
+    )
+
+
+@app.callback(
+    dash.dependencies.Output("size-slider", "min"),
+    dash.dependencies.Output("size-slider", "max"),
+    dash.dependencies.Output("size-slider", "marks"),
+    [dash.dependencies.Input("stat-data", "data")],
+)
+def update_size_slider(json_df):
+    df = pd.read_json(json_df)
+    tuples = [ast.literal_eval(i) for i in df.columns]
+    df.columns = pd.MultiIndex.from_tuples(tuples)
+    marks = {int(i): str(i) for i in sorted(df["size"].unique())}
+    return (
+        int(df["size"].unique().min()),
+        int(df["size"].unique().max()),
+        marks,
+    )
 
 
 @app.callback(
     dash.dependencies.Output("size-vs-runtime-scatter", "figure"),
-    dash.dependencies.Input("stat-data", "data"),
-    dash.dependencies.Input("time-unit", "value"),
-    dash.dependencies.Input("threshold-slider", "value"),
+    [
+        dash.dependencies.Input("stat-data", "data"),
+        dash.dependencies.Input("time-unit", "value"),
+        dash.dependencies.Input("threshold-slider", "value"),
+        dash.dependencies.Input("error-bars-checkbox", "value"),
+    ],
 )
-def update_graph(json_df, time_unit, threshold=4):
+def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
     df = pd.read_json(json_df)
     tuples = [ast.literal_eval(i) for i in df.columns]
     df.columns = pd.MultiIndex.from_tuples(tuples)
+
     df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
+    df.sort_values(["size"], inplace=True)
 
     fig = px.line(
         df,
         x=df["size"],
         y=list(df[(UNITS[time_unit], "mean")]),
-        error_y=list(df[(UNITS[time_unit], "std")]),
+        error_y=list(df[(UNITS[time_unit], "std")]) if error_bars else None,
         facet_col="description",
         facet_col_wrap=1,
         facet_row_spacing=0.04,
@@ -546,14 +418,22 @@ def update_graph(json_df, time_unit, threshold=4):
         height=2000,
     )
 
-    fig.update_xaxes(showticklabels=True, title="Input Size")
-    fig.update_yaxes(automargin=True, matches=None)
+    fig.update_xaxes(
+        showticklabels=True,
+        # title="Input Size",
+    )
+    fig.update_yaxes(automargin=True, matches=None, title=f"Runtime ({time_unit})")
     fig.update_layout(
+        xaxis_title="Size",
         legend_title_text="Sorting Method",
         title={
             "text": f"Size vs. Runtime, threshold = {threshold}",
             "xanchor": "left",
         },
+        font=dict(
+            family="Courier New, monospace",
+            size=18,
+        ),
     )
     # Fix facet titles
     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
@@ -561,52 +441,59 @@ def update_graph(json_df, time_unit, threshold=4):
     return fig
 
 
-# @app.callback(
-#     dash.dependencies.Output("size-vs-runtime-scatter", "figure"),
-#     dash.dependencies.Output("info", "children"),
-#     dash.dependencies.Input("result-dropdown", "value"),
-#     dash.dependencies.Input("time-unit", "value"),
-#     # dash.dependencies.Input("threshold-slider", "value"),
-#     # dash.dependencies.Input("crossfilter-yaxis-column", "value"),
-#     # dash.dependencies.Input("crossfilter-xaxis-type", "value"),
-#     # dash.dependencies.Input("crossfilter-yaxis-type", "value"),
-#     # dash.dependencies.Input("crossfilter-year--slider", "value"),
-# )
-# def update_graph(result_dir, time_unit, threshold=4):
-#     res = load(Path(result_dir))
-#     df = res.stat_df
-#     df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
+@app.callback(
+    dash.dependencies.Output("threshold-vs-runtime-scatter", "figure"),
+    [
+        dash.dependencies.Input("stat-data", "data"),
+        dash.dependencies.Input("time-unit", "value"),
+        dash.dependencies.Input("size-slider", "value"),
+        dash.dependencies.Input("error-bars-checkbox", "value"),
+    ],
+)
+def update_threshold_v_runtime(json_df, time_unit, size=4, error_bars=False):
+    df = pd.read_json(json_df)
+    tuples = [ast.literal_eval(i) for i in df.columns]
+    df.columns = pd.MultiIndex.from_tuples(tuples)
 
-#     fig = px.line(
-#         df,
-#         x=df["size"],
-#         y=list(df[(UNITS[time_unit], "mean")]),
-#         error_y=list(df[(UNITS[time_unit], "std")]),
-#         facet_col="description",
-#         facet_col_wrap=1,
-#         facet_row_spacing=0.04,
-#         category_orders={"description": list(sorted(df["description"].unique()))},
-#         color=df["method"],
-#         markers=True,
-#         labels={"x": "Size", "y": f"Runtime ({time_unit})"},
-#         height=2000,
-#     )
+    df = df[(df["size"] == size) & (df["threshold"] != 0)]
+    df.sort_values(["threshold"], inplace=True)
 
-#     fig.update_xaxes(showticklabels=True, title="Input Size")
-#     fig.update_yaxes(automargin=True, matches=None)
-#     fig.update_layout(
-#         legend_title_text="Sorting Method",
-#         title={
-#             # "x": 0.5,
-#             # "y": 0.9,
-#             "text": f"Size vs. Runtime, threshold = {threshold}",
-#             "xanchor": "left",
-#             # "yanchor": "top",
-#         },
-#     )
-#     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
+    fig = px.line(
+        df,
+        x=df["threshold"],
+        y=list(df[(UNITS[time_unit], "mean")]),
+        error_y=list(df[(UNITS[time_unit], "std")]) if error_bars else None,
+        facet_col="description",
+        facet_col_wrap=1,
+        facet_row_spacing=0.04,
+        category_orders={"description": list(sorted(df["description"].unique()))},
+        color=df["method"],
+        markers=True,
+        labels={"x": "Threshold", "y": f"Runtime ({time_unit})"},
+        height=2000,
+    )
 
-#     return fig, [html.H6("foo")]
+    fig.update_xaxes(
+        showticklabels=True,
+    )
+    fig.update_yaxes(automargin=True, matches=None, title=f"Runtime ({time_unit})")
+    fig.update_layout(
+        xaxis_title="Threshold",
+        legend_title_text="Sorting Method",
+        title={
+            "text": f"Threshold vs. Runtime, size = {size:,}",
+            "xanchor": "left",
+        },
+        font=dict(
+            family="Courier New, monospace",
+            size=18,
+        ),
+        legend=dict(yanchor="top", xanchor="left"),
+    )
+    # Fix facet titles
+    fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
+
+    return fig
 
 
 if __name__ == "__main__":
