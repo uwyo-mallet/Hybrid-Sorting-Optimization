@@ -15,62 +15,64 @@
 
 template <typename T>
 size_t time(const std::string& method, const size_t& threshold,
-            std::vector<T>& vec)
+            std::vector<T>& to_sort, const std::vector<T>& sorted)
 {
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 
+  print(to_sort);
   if (method == "insertion_sort")
   {
     start_time = std::chrono::steady_clock::now();
-    insertion_sort(vec.data(), vec.size(), compare<T>);
+    insertion_sort(to_sort.data(), to_sort.size(), compare<T>);
   }
 // These methods require x86 and only support uint64_t.
 #ifdef ARCH_X86
   else if (method == "insertion_sort_asm")
   {
     start_time = std::chrono::steady_clock::now();
-    insertion_sort_asm(vec.data(), vec.size());
+    insertion_sort_asm(to_sort.data(), to_sort.size());
   }
   else if (method == "qsort_asm")
   {
     start_time = std::chrono::steady_clock::now();
-    qsort_asm(vec.data(), vec.size(), threshold);
+    qsort_asm(to_sort.data(), to_sort.size(), threshold);
   }
 #endif  // ARCH_X86
   else if (method == "qsort_c")
   {
     start_time = std::chrono::steady_clock::now();
     // qsort_c(vec.data(), vec.size(), threshold);
-    qsort_c(vec.data(), vec.size(), sizeof(T), compare<T>, threshold);
+    qsort_c(to_sort.data(), to_sort.size(), sizeof(T), compare<T>, threshold);
   }
   else if (method == "qsort_cpp")
   {
     start_time = std::chrono::steady_clock::now();
-    qsort_cpp(vec.data(), vec.size(), threshold, compare<T>);
+    qsort_cpp(to_sort.data(), to_sort.size(), threshold, compare<T>);
   }
   else if (method == "qsort_cpp_no_comp")
   {
     start_time = std::chrono::steady_clock::now();
-    qsort_cpp_no_comp(vec.data(), vec.size(), threshold);
+    qsort_cpp_no_comp(to_sort.data(), to_sort.size(), threshold);
   }
   else if (method == "qsort_c_improved")
   {
     start_time = std::chrono::steady_clock::now();
-    qsort_c_improved(vec.data(), vec.size(), sizeof(T), compare<T>, threshold);
+    qsort_c_improved(to_sort.data(), to_sort.size(), sizeof(T), compare<T>,
+                     threshold);
   }
   else if (method == "qsort_sanity")
   {
     start_time = std::chrono::steady_clock::now();
-    qsort(vec.data(), vec.size(), sizeof(T), compare<T>);
+    qsort(to_sort.data(), to_sort.size(), sizeof(T), compare<T>);
   }
   else if (method == "std")
   {
     start_time = std::chrono::steady_clock::now();
 #ifdef USE_BOOST_CPP_INT
-    std::sort(vec.begin(), vec.end(),
+    std::sort(to_sort.begin(), to_sort.end(),
               compare_std<boost::multiprecision::cpp_int>);
 #else
-    std::sort(vec.begin(), vec.end(), compare_std<uint64_t>);
+    std::sort(to_sort.begin(), to_sort.end(), compare_std<uint64_t>);
 #endif
   }
   else
@@ -85,9 +87,9 @@ size_t time(const std::string& method, const size_t& threshold,
       end_time - start_time);
 
   // Ensure the data is actually sorted
-  if (!is_sorted(vec.data(), vec.size()))
+  if (to_sort != sorted)
   {
-    throw std::runtime_error("Not valid sort");
+    throw std::runtime_error("Post sort array was not properly sorted");
   }
 
   return (size_t)runtime.count();

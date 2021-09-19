@@ -20,7 +20,7 @@ void print(const std::vector<T> &arr)
   std::cout << "[ ";
   for (T i : arr)
   {
-    std::copy << i << " ";
+    std::cout << i << " ";
   }
   std::cout << "]" << std::endl;
 }

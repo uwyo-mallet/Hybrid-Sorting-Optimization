@@ -100,13 +100,16 @@ int main(int argc, char** argv)
 #ifdef USE_BOOST_CPP_INT
   const std::vector<bmp::cpp_int> orig_data =
       from_disk<bmp::cpp_int>(arguments.in_file);
+  std::vector<bmp::cpp_int> sorted_data = orig_data;
   std::vector<bmp::cpp_int> data;
 #else
   const std::vector<uint64_t> orig_data =
       from_disk<uint64_t>(arguments.in_file);
+  std::vector<uint64_t> sorted_data = orig_data;
   std::vector<uint64_t> data;
 #endif
 
+  std::sort(sorted_data.begin(), sorted_data.end());
   size = orig_data.size();
 
   // Signal handlers
@@ -116,8 +119,8 @@ int main(int argc, char** argv)
   for (size_t i = 0; i < arguments.runs; i++)
   {
     data = orig_data;
-    times.push_back(
-        std::to_string(time(arguments.method, arguments.threshold, data)));
+    times.push_back(std::to_string(
+        time(arguments.method, arguments.threshold, data, sorted_data)));
     data.clear();
   }
 
