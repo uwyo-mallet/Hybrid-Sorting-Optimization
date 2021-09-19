@@ -5,13 +5,20 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
+
+# import dash_core_components as dcc
+# import dash_html_components as html
 
 # import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
+
+import ast
+
+pd.set_option("display.max_columns", None)
 
 RESULTS_DIR = Path("./results")
 dirs = list(RESULTS_DIR.iterdir())
@@ -52,7 +59,6 @@ class Result:
     raw_df: pd.DataFrame
     stat_df: pd.DataFrame
     info: dict
-    partition: str
 
 
 def load(in_dir=None):
@@ -127,102 +133,17 @@ def load(in_dir=None):
         partition = partition_path.read_text()
     else:
         partition = None
+    info["partition"] = partition
+    info["actual_num_sorts"] = len(raw_df)
 
-    return Result(raw_df, stat_df, info, partition)
+    return Result(raw_df, stat_df, info)
 
 
-# external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
-# app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app = dash.Dash(__name__)
-
-"""
 app.layout = html.Div(
     [
-        html.Div(
-            [
-                html.Div(
-                    [
-                        dcc.Dropdown(
-                            id="result-dropdown",
-                            options=[{"label": str(i), "value": str(i)} for i in dirs],
-                            value=str(dirs[-1]),
-                        ),
-                        dcc.RadioItems(
-                            id="time-unit",
-                            options=[
-                                {"label": i.capitalize(), "value": i}
-                                for i in UNITS.keys()
-                            ],
-                            value=tuple(UNITS.keys())[0],
-                            labelStyle={"display": "inline-block"},
-                        ),
-                    ],
-                    style={"width": "49", "display": "inline-block"},
-                ),
-                # html.Div(
-                #     [
-                #         dcc.Dropdown(
-                #             id="crossfilter-yaxis-column",
-                #             options=[{"label": i, "value": i} for i in [1, 2, 3]],
-                #             value="Life expectancy at birth, total (years)",
-                #         ),
-                #         dcc.RadioItems(
-                #             id="crossfilter-yaxis-type",
-                #             options=[
-                #                 {"label": i, "value": i} for i in ["Linear", "Log"]
-                #             ],
-                #             value="Linear",
-                #             labelStyle={"display": "inline-block"},
-                #         ),
-                #     ],
-                #     style={"width": "49%", "float": "right", "display": "inline-block"},
-                # ),
-            ],
-            style={
-                "borderBottom": "thin lightgrey solid",
-                "backgroundColor": "rgb(250, 250, 250)",
-                "padding": "10px 5px",
-            },
-        ),
-        html.Div(
-            [
-                dcc.Slider(
-                    id="size-vs-runtime-slider",
-                ),
-                dcc.Graph(
-                    id="size-vs-runtime-scatter",
-                    # hoverData={"points": [{"customdata": "Japan"}]},
-                ),
-            ],
-            style={"width": "98%", "display": "inline-block", "padding": "0 20"},
-        ),
-        # html.Div(
-        #     [
-        #         dcc.Graph(id="x-time-series"),
-        #         dcc.Graph(id="y-time-series"),
-        #     ],
-        #     style={"display": "inline-block", "width": "49%"},
-        # ),
-        # html.Div(
-        #     dcc.Slider(
-        #         id="crossfilter-year--slider",
-        #         min=df["Year"].min(),
-        #         max=df["Year"].max(),
-        #         value=df["Year"].max(),
-        #         marks={str(year): str(year) for year in df["Year"].unique()},
-        #         step=None,
-        #     ),
-        #     style={"width": "49%", "padding": "0px 20px 20px 20px"},
-        # ),
-    ]
-)
-"""
-
-app.layout = html.Div(
-    [
-        dcc.Store(id="aggregate_data"),
-        # empty Div to trigger javascript file for graph resizing
-        html.Div(id="output-clientside"),
+        dcc.Store(id="stat-data"),
+        dcc.Store(id="info-data"),
         html.Div(
             [
                 html.Div(
@@ -235,23 +156,11 @@ app.layout = html.Div(
                                 "text-align": "center",
                             },
                         ),
-                        html.P(
-                            "The cultures and customs of the 27 EU countries differ widely. The same applies to their eating and drinking habits."
-                            " The map on the right explores the food supply in kilograms per capita per year.",
-                            className="control_label",
-                            style={"text-align": "justify"},
-                        ),
-                        html.P(),
-                        html.P(
-                            "Select a food category",
-                            className="control_label",
-                            style={"text-align": "center", "font-weight": "bold"},
-                        ),
-                        # radio_food_behaviour,
+                        html.Div(id="info"),
                     ],
-                    className="pretty_container four columns",
+                    className="pretty_container",
                     id="cross-filter-options",
-                    style={"text-align": "justify"},
+                    style={"text-align": "left"},
                 ),
                 html.Div(
                     [
@@ -549,20 +458,77 @@ app.layout = html.Div(
 
 
 @app.callback(
-    dash.dependencies.Output("size-vs-runtime-scatter", "figure"),
-    [
-        dash.dependencies.Input("result-dropdown", "value"),
-        dash.dependencies.Input("time-unit", "value"),
-        # dash.dependencies.Input("threshold-slider", "value"),
-        # dash.dependencies.Input("crossfilter-yaxis-column", "value"),
-        # dash.dependencies.Input("crossfilter-xaxis-type", "value"),
-        # dash.dependencies.Input("crossfilter-yaxis-type", "value"),
-        # dash.dependencies.Input("crossfilter-year--slider", "value"),
-    ],
+    dash.dependencies.Output("stat-data", "data"),
+    dash.dependencies.Output("info-data", "data"),
+    dash.dependencies.Input("result-dropdown", "value"),
 )
-def update_graph(result_dir, time_unit, threshold=4):
-    res = load(Path(result_dir))
-    df = res.stat_df
+def load_result(results_dir):
+    res = load(Path(results_dir))
+    return res.stat_df.to_json(), json.dumps(res.info)
+
+
+@app.callback(
+    dash.dependencies.Output("info", "children"),
+    dash.dependencies.Input("info-data", "data"),
+)
+def update_info(info_json):
+    info = json.loads(info_json)
+    arch = info["Processor"]
+    command = info["Command"]
+    data_min = info["Data Details"]["minimum"]
+    data_max = info["Data Details"]["maximum"]
+    data_inc = info["Data Details"]["increment"]
+    node = info["Node"]
+    num_cpus = info["Number of CPUs"]
+    num_concurrent = info["Number of concurrent jobs"]
+    platform = info["Platform"]
+    partition = info["partition"]
+    qst_version = info["QST Version"]
+    runs = info["Runs"]
+    total_num_sorts = info["Total number of sorts"]
+
+    actual_num_sorts = info["actual_num_sorts"]
+    if actual_num_sorts != total_num_sorts:
+        actual_num_sorts = f"\[Warning\] {actual_num_sorts}"
+
+    md = f""" `{command}`
+
+Architecture: {arch}
+
+Node: {node}
+
+Platform: {platform}
+
+Partition: {partition}
+
+Cores: {num_cpus}
+
+Concurrent jobs: {num_concurrent}
+
+Runs: {runs}
+
+Expected \# of sorts: {total_num_sorts}
+
+Actual \# of sorts: {actual_num_sorts}
+
+QST Version:
+```txt
+{qst_version}
+```
+"""
+    return [dcc.Markdown(md, style={"line-height": 12})]
+
+
+@app.callback(
+    dash.dependencies.Output("size-vs-runtime-scatter", "figure"),
+    dash.dependencies.Input("stat-data", "data"),
+    dash.dependencies.Input("time-unit", "value"),
+    dash.dependencies.Input("threshold-slider", "value"),
+)
+def update_graph(json_df, time_unit, threshold=4):
+    df = pd.read_json(json_df)
+    tuples = [ast.literal_eval(i) for i in df.columns]
+    df.columns = pd.MultiIndex.from_tuples(tuples)
     df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
 
     fig = px.line(
@@ -585,51 +551,63 @@ def update_graph(result_dir, time_unit, threshold=4):
     fig.update_layout(
         legend_title_text="Sorting Method",
         title={
-            # "x": 0.5,
-            # "y": 0.9,
             "text": f"Size vs. Runtime, threshold = {threshold}",
             "xanchor": "left",
-            # "yanchor": "top",
         },
     )
+    # Fix facet titles
     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
 
     return fig
 
 
+# @app.callback(
+#     dash.dependencies.Output("size-vs-runtime-scatter", "figure"),
+#     dash.dependencies.Output("info", "children"),
+#     dash.dependencies.Input("result-dropdown", "value"),
+#     dash.dependencies.Input("time-unit", "value"),
+#     # dash.dependencies.Input("threshold-slider", "value"),
+#     # dash.dependencies.Input("crossfilter-yaxis-column", "value"),
+#     # dash.dependencies.Input("crossfilter-xaxis-type", "value"),
+#     # dash.dependencies.Input("crossfilter-yaxis-type", "value"),
+#     # dash.dependencies.Input("crossfilter-year--slider", "value"),
+# )
+# def update_graph(result_dir, time_unit, threshold=4):
+#     res = load(Path(result_dir))
+#     df = res.stat_df
+#     df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
+
+#     fig = px.line(
+#         df,
+#         x=df["size"],
+#         y=list(df[(UNITS[time_unit], "mean")]),
+#         error_y=list(df[(UNITS[time_unit], "std")]),
+#         facet_col="description",
+#         facet_col_wrap=1,
+#         facet_row_spacing=0.04,
+#         category_orders={"description": list(sorted(df["description"].unique()))},
+#         color=df["method"],
+#         markers=True,
+#         labels={"x": "Size", "y": f"Runtime ({time_unit})"},
+#         height=2000,
+#     )
+
+#     fig.update_xaxes(showticklabels=True, title="Input Size")
+#     fig.update_yaxes(automargin=True, matches=None)
+#     fig.update_layout(
+#         legend_title_text="Sorting Method",
+#         title={
+#             # "x": 0.5,
+#             # "y": 0.9,
+#             "text": f"Size vs. Runtime, threshold = {threshold}",
+#             "xanchor": "left",
+#             # "yanchor": "top",
+#         },
+#     )
+#     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
+
+#     return fig, [html.H6("foo")]
+
+
 if __name__ == "__main__":
-    res = load()
-
-    df = res.stat_df
-    # df = df[df["method"] == "qsort_c"]
-    # df = df[df["description"] == "random"]
-    df = df[df["threshold"] == 4]
-
-    print(df)
-
-    # fig = px.line(
-    #     df,
-    #     x=df["size"],
-    #     y=list(df[("elapsed_usecs", "mean")]),
-    #     error_y=list(df[("elapsed_usecs", "std")]),
-    #     color=df["method"],
-    #     symbol=df["method"],
-    #     labels={"x": "Size", "y": "Runtime (microseconds)"},
-    # )
-    # fig.show()
-
-    # fig = px.line(
-    #     df,
-    #     x=df["size"],
-    #     y=list(df[("elapsed_usecs", "mean")]),
-    #     error_y=list(df[("elapsed_usecs", "std")]),
-    #     color=df["method"],
-    #     symbol=df["method"],
-    #     labels={"x": "Size", "y": "Runtime (microseconds)"},
-    #     facet_col="description",
-    #     facet_col_wrap=1,
-    #     height=2500,
-    # )
-    # fig.show()
-
     app.run_server(debug=True)
