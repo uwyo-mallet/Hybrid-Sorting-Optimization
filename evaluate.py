@@ -32,6 +32,12 @@ INPUT_TYPES = (
     "single_num",
     "N/A",
 )
+GRAPH_ORDER = (
+    "random",
+    "ascending",
+    "descending",
+    "single_num",
+)
 UNITS = {
     "seconds": "elapsed_secs",
     "milliseconds": "elapsed_msecs",
@@ -297,7 +303,11 @@ app.layout = html.Div(
     [dash.dependencies.Input("result-dropdown", "value")],
 )
 def load_result(results_dir):
-    res = load(Path(results_dir))
+    try:
+        res = load(Path(results_dir))
+    except FileNotFoundError as e:
+        return dash.no_update, str(e)
+
     return res.stat_df.to_json(), json.dumps(res.info)
 
 
@@ -347,7 +357,7 @@ QST Version:
 {qst_version}
 ```
 """
-    return [dcc.Markdown(md, style={"lineHeight": 0.9})]
+    return [dcc.Markdown(md)]
 
 
 @app.callback(
@@ -411,7 +421,7 @@ def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
         facet_col="description",
         facet_col_wrap=1,
         facet_row_spacing=0.04,
-        category_orders={"description": list(sorted(df["description"].unique()))},
+        category_orders={"description": GRAPH_ORDER},
         color=df["method"],
         markers=True,
         labels={"x": "Size", "y": f"Runtime ({time_unit})"},
@@ -466,7 +476,7 @@ def update_threshold_v_runtime(json_df, time_unit, size=4, error_bars=False):
         facet_col="description",
         facet_col_wrap=1,
         facet_row_spacing=0.04,
-        category_orders={"description": list(sorted(df["description"].unique()))},
+        category_orders={"description": GRAPH_ORDER},
         color=df["method"],
         markers=True,
         labels={"x": "Threshold", "y": f"Runtime ({time_unit})"},
