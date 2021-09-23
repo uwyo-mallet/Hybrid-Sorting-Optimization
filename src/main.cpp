@@ -20,12 +20,12 @@
 
 namespace fs = boost::filesystem;
 
-#define VERSION                                                              \
-  QST_VERSION "\n\tC COMPILER : " C_COMPILER_ID " " C_COMPILER_VERSION       \
-              "\n\tCXX COMPILER : " CXX_COMPILER_ID " " CXX_COMPILER_VERSION \
-              "\n\tType: " CMAKE_BUILD_TYPE                                  \
-              "\n\tBOOST CPP INT: [" BOOST_CPP_INT                           \
-              "]"                                                            \
+#define VERSION                                                             \
+  QST_VERSION "\n\tC COMPILER: " C_COMPILER_ID " " C_COMPILER_VERSION       \
+              "\n\tCXX COMPILER: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION \
+              "\n\tType: " CMAKE_BUILD_TYPE                                 \
+              "\n\tBOOST CPP INT: [" BOOST_CPP_INT                          \
+              "]"                                                           \
               "\n\tASM Methods: [" ASM_ENABLED "]"
 
 const char* argp_program_version = VERSION;
