@@ -24,6 +24,17 @@ size_t time(const std::string& method, const size_t& threshold,
     start_time = std::chrono::steady_clock::now();
     insertion_sort(to_sort.data(), to_sort.size(), compare<T>);
   }
+  else if (method == "insertion_sort_c")
+  {
+    start_time = std::chrono::steady_clock::now();
+    insertion_sort_c(to_sort.data(), to_sort.size(), sizeof(T), compare<T>);
+  }
+  else if (method == "insertion_sort_c_swp")
+  {
+    start_time = std::chrono::steady_clock::now();
+    insertion_sort_c_swp(to_sort.data(), to_sort.size(), sizeof(T), swap<T>,
+                         compare<T>);
+  }
 // These methods require x86 and only support uint64_t.
 #ifdef ARCH_X86
   else if (method == "insertion_sort_asm")
@@ -53,11 +64,16 @@ size_t time(const std::string& method, const size_t& threshold,
     start_time = std::chrono::steady_clock::now();
     qsort_cpp_no_comp(to_sort.data(), to_sort.size(), threshold);
   }
-  else if (method == "qsort_c_improved")
+  // else if (method == "qsort_cpp_iter")
+  // {
+  //   start_time = std::chrono::steady_clock::now();
+  //   qsort_cpp(to_sort.begin(), to_sort.end(), threshold, compare<T>);
+  // }
+  else if (method == "qsort_c_swp")
   {
     start_time = std::chrono::steady_clock::now();
-    qsort_c_improved(to_sort.data(), to_sort.size(), sizeof(T), compare<T>,
-                     threshold);
+    qsort_c_swp(to_sort.data(), to_sort.size(), sizeof(T), swap<T>, compare<T>,
+                threshold);
   }
   else if (method == "qsort_sanity")
   {

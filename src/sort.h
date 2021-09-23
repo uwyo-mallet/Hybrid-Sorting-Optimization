@@ -43,10 +43,16 @@ extern "C"
 
   // Legacy fully C compatible sort functions.
   typedef int (*compar_d_fn_t)(const void *, const void *);
+  typedef void (*swp_fn_t)(void *, void *);
+
+  void insertion_sort_c(void *const arr, size_t n, size_t size,
+                        compar_d_fn_t cmp);
+  void insertion_sort_c_swp(void *const arr, size_t n, size_t size,
+                            swp_fn_t swp, compar_d_fn_t cmp);
   void qsort_c(void *const pbase, const size_t total_elems, const size_t size,
                compar_d_fn_t cmp, const size_t thresh);
-  void qsort_c_improved(void *const arr, const size_t n, const size_t size,
-                        compar_d_fn_t cmp, const size_t thresh);
+  void qsort_c_swp(void *const arr, const size_t n, const size_t size,
+                   swp_fn_t swp, compar_d_fn_t cmp, const size_t thresh);
 
 #if defined(__cplusplus)
 }

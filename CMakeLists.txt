@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.6.3
+  VERSION 1.6.4
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES C CXX ASM)
 configure_file(src/config.h.in config.hpp)
@@ -52,6 +52,17 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(${EXECUTABLE_NAME} Boost::iostreams Boost::filesystem
                       Boost::boost)
 
+add_compile_options(
+  -Wall
+  -Wextra
+  -Wconversion
+  -Wsign-conversion
+  -pedantic
+  $<$<CONFIG:DEBUG>:-g3>
+  $<$<CONFIG:DEBUG>:-Og>
+  $<$<CONFIG:RELEASE>:-O3>
+)
+
 # Compiler warnings, platform specific.
-add_compile_options("$<$<CONFIG:RELEASE>:-W;-Wall;-O2;-pedantic>")
-add_compile_options("$<$<CONFIG:DEBUG>:-W;-Wall;-O0;-ggdb3;-pedantic>")
+# add_compile_options("$<$<CONFIG:RELEASE>:-W;-Wall;-O2;-pedantic>")
+# add_compile_options("$<$<CONFIG:DEBUG>:-W;-Wall;-O0;-ggdb3;-pedantic>")

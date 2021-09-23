@@ -7,6 +7,7 @@
 #include <climits>
 #include <cstdint>
 #include <iostream>
+#include <iterator>
 #include <set>
 #include <string>
 
@@ -25,7 +26,7 @@ extern "C" void qsort_asm(uint64_t arr[], const uint64_t n,
 
 /* Comparator for any qsort_ */
 template <typename T>
-int compare(const void *ap, const void *bp)
+int __attribute__((noinline)) compare(const void *ap, const void *bp)
 {
   T *a = (T *)ap;
   T *b = (T *)bp;
@@ -37,7 +38,7 @@ int compare(const void *ap, const void *bp)
 
 /* Comparator for std::sort */
 template <typename T>
-bool compare_std(const T &a, const T &b)
+bool __attribute__((noinline)) compare_std(const T &a, const T &b)
 {
   return (a < b);
 }
@@ -65,6 +66,17 @@ bool is_sorted(T input[], const size_t &len)
 /*
   Swap two values in-place
 */
+template <typename T>
+void swap(void *ap, void *bp)
+{
+  T *a = (T *)ap;
+  T *b = (T *)bp;
+
+  T tmp = *a;
+  *a = *b;
+  *b = tmp;
+}
+
 template <typename T>
 void swap(T *a, T *b)
 {
@@ -249,6 +261,13 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
   insertion_sort(arr, n, comp);
 }
 
+/*
+ * Hard code the comparison function (int < int).
+ * In theory, this is already done for the simple test case through compiler
+ * optimization, __attribute__ ((noinline)) on the comparison functions should
+ * ensure this doesn't happen. Thus, we manually add a guaranteed inline'ed
+ * test.
+ */
 template <typename T>
 void qsort_cpp_no_comp(T arr[], const size_t &n, const size_t &thresh)
 {
@@ -361,5 +380,12 @@ void qsort_cpp_no_comp(T arr[], const size_t &n, const size_t &thresh)
   // One pass of insertion sort.
   insertion_sort(arr, n);
 }
+
+// template <typename RandomAccessIterator, typename Comparator>
+// void qsort_cpp(RandomAccessIterator first, RandomAccessIterator last,
+//                const size_t &thresh, Comparator comp)
+// {
+//   const size_t n = std::distance(first, last);
+// }
 
 #endif /* SORT_HPP_ */
