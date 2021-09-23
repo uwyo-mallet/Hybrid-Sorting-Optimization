@@ -15,8 +15,7 @@
 #include "sort.h"
 
 static const std::set<std::string> THRESHOLD_METHODS{
-    "qsort_asm", "qsort_c", "qsort_cpp", "qsort_cpp_no_comp",
-    "qsort_c_improved"};
+    "qsort_asm", "qsort_c", "qsort_cpp", "qsort_cpp_no_comp", "qsort_c_cmp"};
 
 #ifdef ARCH_X86
 extern "C" void insertion_sort_asm(uint64_t input[], const uint64_t size);

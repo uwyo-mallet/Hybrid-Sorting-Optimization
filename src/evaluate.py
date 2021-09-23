@@ -20,7 +20,7 @@ dirs.sort()
 THRESHOLD_METHODS = (
     "qsort_asm",
     "qsort_c",
-    "qort_c_improved",
+    "qsort_c_swp",
     "qsort_cpp",
     "qsort_cpp_no_comp",
 )

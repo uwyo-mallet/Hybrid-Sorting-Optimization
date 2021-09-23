@@ -40,14 +40,15 @@ from tqdm import tqdm
 
 from info import write_info
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 VALID_METHODS = (
     "insertion_sort",
     "insertion_sort_asm",
+    "insertion_sort_c",
     "qsort_asm",
     "qsort_c",
-    "qsort_c_improved",
+    "qsort_c_swp",
     "qsort_cpp",
     "qsort_cpp_no_comp",
     "qsort_sanity",
@@ -56,7 +57,7 @@ VALID_METHODS = (
 THRESHOLD_METHODS = (
     "qsort_asm",
     "qsort_c",
-    "qsort_c_improved",
+    "qsort_c_swp",
     "qsort_cpp",
     "qsort_cpp_no_comp",
 )
