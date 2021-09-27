@@ -146,11 +146,10 @@ this procedure is used to generate and run the tests.
 
 5. Post-processing and Evaluation.
 
-   Once all the slurm jobs are complete, you can use the `evaluate.ipynb`
-   jupyter notebook to view the results.
+   Once all the slurm jobs are complete, you can use the `evaluate.py` script to view the results.
 
    ```
-   $ jupyter notebook evaluate.ipynb
+   $ python evaluate.py
    ```
 
 ## Road Map
@@ -161,10 +160,10 @@ Very work in progress...
 - [x] Implement iterative insertion sort.
 - [x] Implement vanilla, recursive quicksort.
 - [x] Implement glibc [`qsort`](https://github.com/lattera/glibc/blob/master/stdlib/qsort.c).
-- Only **some** standard libraries use quicksort in conjunction with insertion
-  sort. One of which is glibc's qsort. To ensure consistency between tests on
-  varying systems, architectures, and compilers, this _specific implementation_
-  is included.
+  - Only **some** standard libraries use quicksort in conjunction with insertion
+    sort. One of which is glibc's qsort. To ensure consistency between tests on
+    varying systems, architectures, and compilers, this _specific implementation_
+    is included.
 - [x] Implement my own rendition of qsort using modern C++ features.
 - [x] Support arbitrary precision integers (`boost::multiprecision::cpp_int`),
       although for now just use `uint64_t` to avoid the extra overhead.
@@ -187,6 +186,42 @@ Very work in progress...
       optimization (in-lining of the aforementioned comparator functions).
 - [x] Decouple C code entirely from C++ code. See [this](https://gitlab.com/uwyo-mallet/quicksort-tuning/-/commit/27b37eeae9cb1d4912f33d6847035f08a27288db) commit for more info.
 - [x] Run tests on smaller inputs.
+- [x] Better plotting scripts (Dash + Plotly)
+- [x] Evaluate how swapping optimization affects runtime.
+- [x] Investigate other hybridized sort value thresholds and why:
+
+  - Python uses TimSort, an adaptation of mergesort. If array is less than 32
+    elements, uses binary insertion sort.
+
+        If N < 64, minrun is N.  IOW, binary insertion sort is used for the whole
+        array then; it's hard to beat that given the overheads of trying something
+        fancier (see note BINSORT).
+
+        When N is a power of 2, testing on random data showed that minrun values of
+        16, 32, 64 and 128 worked about equally well.  At 256 the data-movement cost
+        in binary insertion sort clearly hurt, and at 8 the increase in the number
+        of function calls clearly hurt.  Picking *some* power of 2 is important
+        here, so that the merges end up perfectly balanced (see next section).  We
+        pick 32 as a good value in the sweet range; picking a value at the low end
+        allows the adaptive gimmicks more opportunity to exploit shorter natural
+        runs. - Tim Peters, 2002.
+
+  - NodeJS and Spidermonkey use C++ `std::sort`.
+  - WebKit uses `qsort`.
+  - V8 used to use `std::sort` and `qsort` / insertion sort, but now uses
+    TimSort.
+  - Glibc (libstdc++) `std::sort` uses introsort. Quicksort till depth > 3, then
+    heapsort.
+  - Clang (llvm libc++) `std::sort` hardcodes sorts for arrays smaller than 5, then
+    uses heapsort.
+  - Glibc (gcc) qsort uses threshold 4. "_Discontinue quicksort algorithm when
+    partition gets below this size [4].
+    This particular magic number was chosen to work best on a Sun 4/260._" -
+    Douglas C. Schmidt, 1995.
+  - musl `qsort` uses smoothsort, an adaptation of heapsort. No threshold.
+  - Clang (llvm libc++) `qsort` uses a simple, standard, _recursive_ implementation using
+    the Hoare partition scheme (needs further investigation).
+
 - [ ] Investigate introsort (worst case O(nlog(n)), more specifically
       implementations of `std::sort`.
 - [ ] Potentially analyze cache hits and misses, but generally quicksort does
@@ -195,11 +230,12 @@ Very work in progress...
       branch prediction errors are common, but performance may still be
       generally good. In which case, it is a waste to analyze this since it is
       _very_ challenging to effectively measure.
-- [ ] Investigate this block quicksort implementation in this
+- [ ] Investigate block quicksort implementation in this
       [paper](https://arxiv.org/abs/1604.06697).
-- [ ] Determine why `qsort_c` is running so slow. Looks like a missing brace in
-      the insertion sort implementation.
-- [ ] Try modifying `qsort_c` to use my insertion sort routine.
+- [ ] Determine why `qsort_c` is running so slow. ~~Looks like a missing brace
+      in the insertion sort implementation.~~ I have absolutely no idea why
+      this runs so slow.
+- [x] Try modifying `qsort_c` to use my insertion sort routine.
 
 ### Side Goals - Mostly For Experience and Fun
 
@@ -207,7 +243,7 @@ Very work in progress...
       compiler?
 - [ ] Implement quicksort in x86 assembly (this is currently broken and very
       slow) This remains near the lowest priority item for this entire project.
-- [ ] Increase threshold significantly thousands to tens of thousands.
+- [x] Increase threshold significantly thousands to tens of thousands.
       Interval of like 500? This doesn't make sense practically, as most inputs
       for standard sorting algorithms are under 100 million inputs, and
       using insertion sort for everything is not particularly efficient.
@@ -218,13 +254,15 @@ Very work in progress...
 
 - [A Killer Advisory for Quicksort](https://algs4.cs.princeton.edu/references/papers/mcilroy.pdf)
 - [Block Quicksort](https://arxiv.org/abs/1604.06697)
+- [CPython Listsort Explanation](https://github.com/python/cpython/blob/main/Objects/listsort.txt)
+- [CPython Listsort Implementation](https://github.com/python/cpython/blob/main/Objects/listobject.c#L1058)
 - [General Iterative Quicksort](https://www.geeksforgeeks.org/iterative-quick-sort/)
-- [Glibc Qsort](https://github.com/lattera/glibc/blob/master/stdlib/qsort.c)
 - [Quicksort Basic Overview](https://www.youtube.com/watch?v=7h1s2SojIRw)
 - [Quicksort is Optimal](https://www.cs.princeton.edu/~rs/talks/QuicksortIsOptimal.pdf)
 - [Sedgewick Quicksort](https://algs4.cs.princeton.edu/23quicksort/)
 - [The Analysis of Quicksort Programs](https://link.springer.com/content/pdf/10.1007/BF00289467.pdf)
 - [`qsort` (glibc)](https://sourceware.org/git/?p=glibc.git;a=blob;f=stdlib/qsort.c;h=23f2d283147073ac5bcb6e4bf2c9d6ea994d629c;hb=HEAD)
+- [`qsort` (llvm C++)](https://github.com/llvm/llvm-project/blob/main/libc/src/stdlib/qsort.cpp)
 - [`qsort` (musl)](https://git.musl-libc.org/cgit/musl/tree/src/stdlib/qsort.c)
 - [`std::sort` (libc++)](https://github.com/llvm-mirror/libcxx/blob/a12cb9d211019d99b5875b6d8034617cbc24c2cc/include/algorithm#L3901)
 - [`std::sort` (libstdc++)](https://github.com/gcc-mirror/gcc/blob/d9375e490072d1aae73a93949aa158fcd2a27018/libstdc%2B%2B-v3/include/bits/stl_algo.h#L1950)
