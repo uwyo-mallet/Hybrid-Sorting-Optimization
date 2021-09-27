@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.6.4
+  VERSION 1.6.5
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES C CXX ASM)
 configure_file(src/config.h.in config.hpp)
@@ -60,9 +60,5 @@ add_compile_options(
   -pedantic
   $<$<CONFIG:DEBUG>:-g3>
   $<$<CONFIG:DEBUG>:-Og>
-  $<$<CONFIG:RELEASE>:-O3>
+  $<$<CONFIG:RELEASE>:-O2>
 )
-
-# Compiler warnings, platform specific.
-# add_compile_options("$<$<CONFIG:RELEASE>:-W;-Wall;-O2;-pedantic>")
-# add_compile_options("$<$<CONFIG:DEBUG>:-W;-Wall;-O0;-ggdb3;-pedantic>")

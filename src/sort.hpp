@@ -14,16 +14,20 @@
 #include "platform.hpp"
 #include "sort.h"
 
+// Hybrid methods which support a threshold value.
 static const std::set<std::string> THRESHOLD_METHODS{
     "qsort_asm", "qsort_c", "qsort_cpp", "qsort_cpp_no_comp", "qsort_c_cmp"};
 
+// Assembly methods
 #ifdef ARCH_X86
-extern "C" void insertion_sort_asm(uint64_t input[], const uint64_t size);
-extern "C" void qsort_asm(uint64_t arr[], const uint64_t n,
+extern "C" void insertion_sort_asm(uint64_t *input, const uint64_t size);
+extern "C" void qsort_asm(uint64_t *arr, const uint64_t n,
                           const size_t threshold);
 #endif  // ARCH_X86
 
 /* Comparator for any qsort_ */
+// Reference cmp parameter for more info:
+// https://en.cppreference.com/w/c/algorithm/qsort
 template <typename T>
 int __attribute__((noinline)) compare(const void *ap, const void *bp)
 {
@@ -41,6 +45,7 @@ bool __attribute__((noinline)) compare_std(const T &a, const T &b)
 {
   return (a < b);
 }
+
 /*
   Determine if an array is sorted by checking every value.
 
@@ -49,7 +54,7 @@ bool __attribute__((noinline)) compare_std(const T &a, const T &b)
   @return: Whether or not the array is sorted.
 */
 template <typename T>
-bool is_sorted(T input[], const size_t &len)
+bool is_sorted(const T *input, const size_t &len)
 {
   for (size_t i = 0; i < len - 1; i++)
   {
@@ -76,23 +81,15 @@ void swap(void *ap, void *bp)
   *b = tmp;
 }
 
-template <typename T>
-void swap(T *a, T *b)
-{
-  T tmp = *a;
-  *a = *b;
-  *b = tmp;
-}
-
 /*
   Iterative implementation of insertion sort
 
   @param input: Input array to sort.
-  @param len: Length of input array.
-  @param compare: Comparator function, follows STL qsort_c convention.
+  @param n: Length of input array.
+  @param comp: Comparator function, follows STL qsort convention.
 */
 template <typename T, typename Comparator>
-void insertion_sort(T input[], const size_t &n, Comparator comp)
+void insertion_sort(T *input, const size_t &n, Comparator comp)
 {
   if (n <= 1)
   {
@@ -106,21 +103,21 @@ void insertion_sort(T input[], const size_t &n, Comparator comp)
     T *j = i;
     while (j > input && comp(j, (j - 1)) < 0)
     {
-      swap(j, j - 1);
+      swap<T>(j, j - 1);
       j--;
     }
   }
 }
 
 /*
-  Iterative implementation of insertion sort
-  without a comparator function.
-
-  @param input: Input array to sort.
-  @param len: Length of input array.
-*/
+ * Iterative implementation of insertion sort
+ * without a comparator function.
+ *
+ * @param input: Input array to sort.
+ * @param len: Length of input array.
+ */
 template <typename T>
-void insertion_sort(T input[], const size_t &n)
+void insertion_sort(T *input, const size_t &n)
 {
   if (n <= 1)
   {
@@ -134,12 +131,16 @@ void insertion_sort(T input[], const size_t &n)
     T *j = i;
     while (*j < *(j - 1))
     {
-      swap(j, j - 1);
+      swap<T>(j, j - 1);
       j--;
     }
   }
 }
 
+/*
+ * A node to 'push' onto stack for iterative quicksort.
+ * Lo and hi pointers for subarrays.
+ */
 template <typename T>
 struct node
 {
@@ -147,8 +148,16 @@ struct node
   T *hi;
 };
 
+/*
+ * Hybrid quicksort-insertion sort using modern C++ features.
+ *
+ * @param arr: Input array to sort.
+ * @param n: Length of arr.
+ * @param thresh: Threshold at which to switch to insertion sort.
+ * @param comp: Comparator function, follows STL qsort conventions.
+ */
 template <typename T, typename Comparator>
-void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
+void qsort_cpp(T *arr, const size_t &n, const size_t &thresh, Comparator comp)
 {
   if (n < thresh)
   {
@@ -172,11 +181,11 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
 
     if (comp(mid, lo) < 0)
     {
-      swap(mid, lo);
+      swap<T>(mid, lo);
     }
     if (comp(hi, mid) < 0)
     {
-      swap(mid, hi);
+      swap<T>(mid, hi);
     }
     else
     {
@@ -184,7 +193,7 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
     }
     if (comp(mid, lo) < 0)
     {
-      swap(mid, lo);
+      swap<T>(mid, lo);
     }
 
   jump_over:
@@ -204,7 +213,7 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
       }
       if (left_ptr < right_ptr)
       {
-        swap(left_ptr, right_ptr);
+        swap<T>(left_ptr, right_ptr);
         if (mid == left_ptr)
         {
           mid = right_ptr;
@@ -253,7 +262,7 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
   }
   if (tmp_ptr != arr)
   {
-    swap(tmp_ptr, arr);
+    swap<T>(tmp_ptr, arr);
   }
 
   // One pass of insertion sort.
@@ -266,9 +275,13 @@ void qsort_cpp(T arr[], const size_t &n, const size_t &thresh, Comparator comp)
  * optimization, __attribute__ ((noinline)) on the comparison functions should
  * ensure this doesn't happen. Thus, we manually add a guaranteed inline'ed
  * test.
+ *
+ * @param arr: Input array to sort.
+ * @param n: Length of arr.
+ * @param thresh: Threshold at which to switch to insertion sort.
  */
 template <typename T>
-void qsort_cpp_no_comp(T arr[], const size_t &n, const size_t &thresh)
+void qsort_cpp_no_comp(T *arr, const size_t &n, const size_t &thresh)
 {
   if (n < thresh)
   {
@@ -292,11 +305,11 @@ void qsort_cpp_no_comp(T arr[], const size_t &n, const size_t &thresh)
 
     if (*mid < *lo)
     {
-      swap(mid, lo);
+      swap<T>(mid, lo);
     }
     if (*hi < *mid)
     {
-      swap(mid, hi);
+      swap<T>(mid, hi);
     }
     else
     {
@@ -304,7 +317,7 @@ void qsort_cpp_no_comp(T arr[], const size_t &n, const size_t &thresh)
     }
     if (*mid < *lo)
     {
-      swap(mid, lo);
+      swap<T>(mid, lo);
     }
 
   jump_over:
@@ -324,7 +337,7 @@ void qsort_cpp_no_comp(T arr[], const size_t &n, const size_t &thresh)
       }
       if (left_ptr < right_ptr)
       {
-        swap(left_ptr, right_ptr);
+        swap<T>(left_ptr, right_ptr);
         if (mid == left_ptr)
         {
           mid = right_ptr;
@@ -373,18 +386,11 @@ void qsort_cpp_no_comp(T arr[], const size_t &n, const size_t &thresh)
   }
   if (tmp_ptr != arr)
   {
-    swap(tmp_ptr, arr);
+    swap<T>(tmp_ptr, arr);
   }
 
   // One pass of insertion sort.
   insertion_sort(arr, n);
 }
-
-// template <typename RandomAccessIterator, typename Comparator>
-// void qsort_cpp(RandomAccessIterator first, RandomAccessIterator last,
-//                const size_t &thresh, Comparator comp)
-// {
-//   const size_t n = std::distance(first, last);
-// }
 
 #endif /* SORT_HPP_ */

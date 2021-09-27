@@ -1,3 +1,4 @@
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -6,7 +7,7 @@
 #include "sort.h"
 
 /*
- * Swap any two same sized value in-place by using static static allocation.
+ * Swap any two same sized value in-place by using a static allocation.
  */
 void swap_any(void *a, void *b, size_t size)
 {
@@ -16,16 +17,14 @@ void swap_any(void *a, void *b, size_t size)
   memcpy(b, tmp, size);
 }
 
-/* void swap_uint64(void *a, void *b, size_t size) */
-/* { */
-/*   uint64_t *ap = (uint64_t *)a; */
-/*   uint64_t *bp = (uint64_t *)b; */
-
-/*   uint64_t tmp = *ap; */
-/*   *ap = *bp; */
-/*   *bp = tmp; */
-/* } */
-
+/*
+ * In-place Insertion sort.
+ *
+ * @param arr: Array to be sorted.
+ * @param n: Length of array.
+ * @param size: Size of an individual element in arr.
+ * @param comp: Comparator function, follows STL qsort convention.
+ */
 void insertion_sort_c(void *const arr, size_t n, size_t size, compar_d_fn_t cmp)
 {
   if (n <= 1)
@@ -47,6 +46,15 @@ void insertion_sort_c(void *const arr, size_t n, size_t size, compar_d_fn_t cmp)
   }
 }
 
+/*
+ * In-place Insertion sort with a parameterized function.
+ *
+ * @param arr: Array to be sorted.
+ * @param n: Length of array.
+ * @param size: Size of an individual element in arr.
+ * @param swp: Swap function.
+ * @param comp: Comparator function, follows STL qsort convention.
+ */
 void insertion_sort_c_swp(void *const arr, size_t n, size_t size, swp_fn_t swp,
                           compar_d_fn_t cmp)
 {
@@ -57,6 +65,7 @@ void insertion_sort_c_swp(void *const arr, size_t n, size_t size, swp_fn_t swp,
 
   char *const base_ptr = (char *)arr;
   char *const end = &base_ptr[size * (n - 1)];
+
   for (char *i = base_ptr + size; i <= end; i += size)
   {
     char *j = i;
@@ -68,18 +77,27 @@ void insertion_sort_c_swp(void *const arr, size_t n, size_t size, swp_fn_t swp,
   }
 }
 
+/*
+ * STL Qsort with an parameterized swap function.
+ *
+ * @param arr: Array to be sorted.
+ * @param n: Length of array.
+ * @param size: Size of an individual element in arr.
+ * @param swp: Swap function.
+ * @param comp: Comparator function, follows STL qsort convention.
+ * @param thresh: Threshold to switch to insertion_sort_swp.
+ */
 void qsort_c_swp(void *const pbase, const size_t total_elems, const size_t size,
                  swp_fn_t swp, compar_d_fn_t cmp, const size_t thresh)
 {
-  char *base_ptr = (char *)pbase;
-
-  const size_t max_thresh = thresh * size;
-
+  /* Avoid lossage with unsigned arithmetic below. */
   if (total_elems == 0)
   {
-    /* Avoid lossage with unsigned arithmetic below. */
     return;
   }
+
+  char *base_ptr = (char *)pbase;
+  const size_t max_thresh = thresh * size;
 
   if (total_elems > thresh)
   {
@@ -103,17 +121,14 @@ void qsort_c_swp(void *const pbase, const size_t total_elems, const size_t size,
         skips a comparison for both the LEFT_PTR and RIGHT_PTR in
         the while loops.
       */
-
       char *mid = lo + size * ((hi - lo) / size >> 1);
 
       if ((*cmp)((void *)mid, (void *)lo) < 0)
       {
-        /* SWAP(mid, lo, size); */
         (*swp)((void *)mid, (void *)lo);
       }
       if ((*cmp)((void *)hi, (void *)mid) < 0)
       {
-        /* SWAP(mid, hi, size); */
         (*swp)((void *)mid, (void *)hi);
       }
       else
@@ -122,9 +137,9 @@ void qsort_c_swp(void *const pbase, const size_t total_elems, const size_t size,
       }
       if ((*cmp)((void *)mid, (void *)lo) < 0)
       {
-        /* SWAP(mid, lo, size); */
         (*swp)((void *)mid, (void *)lo);
       }
+
     jump_over:
 
       left_ptr = lo + size;
@@ -219,7 +234,6 @@ void qsort_c_swp(void *const pbase, const size_t total_elems, const size_t size,
   */
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
-
   {
     char *const end_ptr = &base_ptr[size * (total_elems - 1)];
     char *tmp_ptr = base_ptr;
@@ -233,15 +247,14 @@ void qsort_c_swp(void *const pbase, const size_t total_elems, const size_t size,
     */
 
     for (run_ptr = tmp_ptr + size; run_ptr <= thresh; run_ptr += size)
+    {
       if ((*cmp)((void *)run_ptr, (void *)tmp_ptr) < 0)
       {
         tmp_ptr = run_ptr;
       }
-
+    }
     if (tmp_ptr != base_ptr)
     {
-      /* SWAP(tmp_ptr, base_ptr, size); */
-
       (*swp)((void *)tmp_ptr, (void *)base_ptr);
     }
 

@@ -65,11 +65,11 @@ static struct argp argp = {options, parse_opt, args_doc, doc};
 
 void signal_handler(int signum);
 void write(struct arguments args, const size_t& size,
-           const std::vector<std::string>& times);
+           const std::vector<size_t>& times);
 void version_json();
 
 struct arguments arguments;
-std::vector<std::string> times;
+std::vector<size_t> times;
 size_t size = 0;
 
 int main(int argc, char** argv)
@@ -90,8 +90,8 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
-  // The only sort with a supported threshold is qsort_c,
-  // so otherwise, just set to 0.
+  // Check if the input method supports a threshold.
+  // If not set to 0 for output.
   if (!THRESHOLD_METHODS.count(arguments.method))
   {
     arguments.threshold = 0;
@@ -119,9 +119,8 @@ int main(int argc, char** argv)
   for (size_t i = 0; i < arguments.runs; i++)
   {
     data = orig_data;
-    times.push_back(std::to_string(
-        time(arguments.method, arguments.threshold, data, sorted_data)));
-    data.clear();
+    size_t res = time(arguments.method, arguments.threshold, data, sorted_data);
+    times.push_back(res);
   }
 
   // Output
@@ -225,7 +224,7 @@ void signal_handler(int signum)
 }
 
 void write(struct arguments args, const size_t& size,
-           const std::vector<std::string>& times)
+           const std::vector<size_t>& times)
 {
   if (args.out_file == "-")
   {
@@ -233,7 +232,7 @@ void write(struct arguments args, const size_t& size,
     std::cout << "Input: " << args.in_file << std::endl;
     std::cout << "Description: " << args.description << std::endl;
     std::cout << "Size: " << size << std::endl;
-    for (std::string time : times)
+    for (size_t time : times)
     {
       std::cout << "Elapsed Time (microseconds): " << time << std::endl;
     }
@@ -251,6 +250,7 @@ void write(struct arguments args, const size_t& size,
     }
 
     // Check if file is empty, if so, add the CSV header.
+    // There's a potential race here, but the OS usually handles it for me...
     out_file.seekg(0, std::ios::end);
     if (out_file.tellg() == 0)
     {
@@ -260,7 +260,7 @@ void write(struct arguments args, const size_t& size,
     }
 
     // Write the actual data
-    for (std::string time : times)
+    for (size_t time : times)
     {
       out_file << args.method << "," << args.in_file << "," << args.description
                << "," << size << "," << time << "," << args.threshold

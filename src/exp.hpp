@@ -13,6 +13,14 @@
 #include "sort.h"
 #include "sort.hpp"
 
+/*
+ * Time the runtime of a sort algorithm.
+ *
+ * @param method: Name of method to sort with.
+ * @param threshold: Threshold if applicable, otherwise ignored.
+ * @param to_sort: Data to sort.
+ * @param sorted: Sorted version of to_sort to use to validate sorting function.
+ */
 template <typename T>
 size_t time(const std::string& method, const size_t& threshold,
             std::vector<T>& to_sort, const std::vector<T>& sorted)
@@ -64,11 +72,6 @@ size_t time(const std::string& method, const size_t& threshold,
     start_time = std::chrono::steady_clock::now();
     qsort_cpp_no_comp(to_sort.data(), to_sort.size(), threshold);
   }
-  // else if (method == "qsort_cpp_iter")
-  // {
-  //   start_time = std::chrono::steady_clock::now();
-  //   qsort_cpp(to_sort.begin(), to_sort.end(), threshold, compare<T>);
-  // }
   else if (method == "qsort_c_swp")
   {
     start_time = std::chrono::steady_clock::now();
