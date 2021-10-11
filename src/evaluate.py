@@ -11,6 +11,8 @@ import pandas as pd
 import plotly.express as px
 from dash import dcc, html
 
+from pprint import pprint
+
 pd.set_option("display.max_columns", None)
 
 RESULTS_DIR = Path("./results")
@@ -253,7 +255,7 @@ app.layout = html.Div(
                                         "textAlign": "center",
                                     },
                                 ),
-                                dcc.Slider(id="threshold-slider", step=None, value=0),
+                                dcc.Slider(id="threshold-slider", step=None, value=1),
                             ],
                             className="pretty_container",
                         ),
@@ -360,6 +362,13 @@ QST Version:
     return [dcc.Markdown(md)]
 
 
+def df_from_json(json_df):
+    df = pd.read_json(json_df)
+    tuples = [ast.literal_eval(i) for i in df.columns]
+    df.columns = pd.MultiIndex.from_tuples(tuples)
+    return df
+
+
 @app.callback(
     dash.dependencies.Output("threshold-slider", "min"),
     dash.dependencies.Output("threshold-slider", "max"),
@@ -367,9 +376,7 @@ QST Version:
     [dash.dependencies.Input("stat-data", "data")],
 )
 def update_threshold_slider(json_df):
-    df = pd.read_json(json_df)
-    tuples = [ast.literal_eval(i) for i in df.columns]
-    df.columns = pd.MultiIndex.from_tuples(tuples)
+    df = df_from_json(json_df)
     marks = {int(i): str(i) for i in sorted(df["threshold"].unique())}
     return (
         int(df["threshold"].unique().min()),
@@ -385,9 +392,7 @@ def update_threshold_slider(json_df):
     [dash.dependencies.Input("stat-data", "data")],
 )
 def update_size_slider(json_df):
-    df = pd.read_json(json_df)
-    tuples = [ast.literal_eval(i) for i in df.columns]
-    df.columns = pd.MultiIndex.from_tuples(tuples)
+    df = df_from_json(json_df)
     marks = {int(i): str(i) for i in sorted(df["size"].unique())}
     return (
         int(df["size"].unique().min()),
@@ -406,9 +411,7 @@ def update_size_slider(json_df):
     ],
 )
 def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
-    df = pd.read_json(json_df)
-    tuples = [ast.literal_eval(i) for i in df.columns]
-    df.columns = pd.MultiIndex.from_tuples(tuples)
+    df = df_from_json(json_df)
 
     df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
     df.sort_values(["size"], inplace=True)
@@ -461,12 +464,24 @@ def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
     ],
 )
 def update_threshold_v_runtime(json_df, time_unit, size=4, error_bars=False):
-    df = pd.read_json(json_df)
-    tuples = [ast.literal_eval(i) for i in df.columns]
-    df.columns = pd.MultiIndex.from_tuples(tuples)
+    df = df_from_json(json_df)
+
+    ins_sort_df = df[
+        (df["size"] == size)
+        & (df["method"] == "insertion_sort")
+        & (df["description"] == "single_num")
+    ].reset_index()
 
     df = df[(df["size"] == size) & (df["threshold"] != 0)]
     df.sort_values(["threshold"], inplace=True)
+
+    if not len(df):
+        return dash.no_update
+
+    print("************************")
+    print(df)
+    print(df[(UNITS[time_unit], "mean")])
+    print("************************")
 
     fig = px.line(
         df,
@@ -502,6 +517,13 @@ def update_threshold_v_runtime(json_df, time_unit, size=4, error_bars=False):
     )
     # Fix facet titles
     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
+
+    # fig.add_hline(
+    #     y=ins_sort_df.loc[0, (UNITS[time_unit], "mean")],
+    #     line_dash="dot",
+    #     annotation_text="Insertion Sort",
+    #     annotation_position="bottom right",
+    # )
 
     return fig
 
