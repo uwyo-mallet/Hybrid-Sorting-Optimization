@@ -12,6 +12,7 @@ Options:
     -w, --wait=N             Time to wait in seconds between slurm submissions
                              [default: 30]
 """
+import os
 import shutil
 import subprocess
 import time
@@ -20,11 +21,10 @@ from itertools import repeat, takewhile
 from pathlib import Path
 
 from docopt import docopt
-import os
 
 
 class cd:
-    """Context manager for changing the current working directory"""
+    """Context manager for changing the current working directory."""
 
     # https://stackoverflow.com/a/13197763/8846676
 
@@ -47,14 +47,15 @@ def fast_line_count(filename):
     return num_lines
 
 
-PARTITIONS = (
+# All valid partition names for job submission.
+PARTITIONS = {
     "teton",
     "teton-cascade",
     "teton-hugemem",
     "teton-massmem",
     "teton-knl",
     "moran",
-)
+}
 
 args = docopt(__doc__)
 
