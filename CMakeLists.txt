@@ -28,6 +28,10 @@ set(SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/main.cpp ${PROJECT_SOURCE_DIR}/src/qsort_c.c
     ${PROJECT_SOURCE_DIR}/src/qsort_c_improved.c)
 
+set(HEADER_FILES ${PROJECT_SOURCE_DIR}/src/exp.hpp
+    ${PROJECT_SOURCE_DIR}/src/io.hpp ${PROJECT_SOURCE_DIR}/src/platform.hpp
+    ${PROJECT_SOURCE_DIR}/src/sort.h ${PROJECT_SOURCE_DIR}/src/sort.hpp)
+
 if(USE_BOOST_CPP_INT)
   add_definitions(-DUSE_BOOST_CPP_INT)
   set(DISABLE_ASM ON)
@@ -60,5 +64,28 @@ add_compile_options(
   -pedantic
   $<$<CONFIG:DEBUG>:-g3>
   $<$<CONFIG:DEBUG>:-Og>
+  $<$<CONFIG:DEBUG>:-pg>
+  $<$<CONFIG:DEBUG>:-p>
   $<$<CONFIG:RELEASE>:-O2>
 )
+
+# Docs
+find_package(Doxygen REQUIRED)
+set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/src)
+set(DOXYGEN_OUTPUT_DIR ${PROJECT_SOURCE_DIR}/docs/doxygen)
+set(DOXYGEN_INDEX_FILE ${CMAKE_CURRENT_SOURCE_DIR}/docs/html/index.html)
+set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in)
+set(DOXYFILE_OUT ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile)
+
+configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
+
+file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
+add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
+                   DEPENDS ${HEADER_FILES}
+                   DEPENDS ${SRC_FILES}
+                   COMMAND ${DOXYGEN_EXECUTABLE}
+                   ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile
+                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                   MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile
+                   COMMENT "Generating docs")
+add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
