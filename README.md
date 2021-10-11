@@ -15,7 +15,8 @@ Compiling QST and setting up the required python environment on ARCC.
 
 1. Load the required modules
 
-   This project requires both a C and C++ compiler, each supporting version 11 of their respective standards.
+   This project requires both a C and C++ compiler, each supporting version 11
+   of their respective standards.
 
    ```
    $ module load gcc
@@ -95,9 +96,10 @@ this procedure is used to generate and run the tests.
    truncates each file to 4,500 lines by default, then creates another file with
    the remaining jobs.
 
-   For example, the following command generates `slurm.d/` which specifies the sorting
-   methods (`qsort_c` and `std::sort`), threshold values (1 - 20), number of
-   times to run the same input data (20) and, input data (`data/`) to test.
+   For example, the following command generates `slurm.d/` which specifies the
+   sorting methods (`qsort_c` and `std::sort`), threshold values (1 - 20),
+   number of times to run the same input data (20) and, input data (`data/`) to
+   test.
 
    ```
    $ python src/job.py --slurm ./slurm.d/ -m qsort_c,std -t 1,20 -r 20 data/
@@ -146,11 +148,19 @@ this procedure is used to generate and run the tests.
 
 5. Post-processing and Evaluation.
 
-   Once all the slurm jobs are complete, you can use the `evaluate.py` script to view the results.
+   Once all the slurm jobs are complete, you can use the `evaluate.py` script
+   to view the results.
 
    ```
    $ python evaluate.py
    ```
+
+## Docs
+
+All source code docs are auto-built with Sphinx. Install
+[sphinx](https://www.sphinx-doc.org/en/master/) (> v1.9) and build QST. The
+docs should be auto built as well, as long as all dependencies are met.
+Open `docs/doxygen/html/index.html` to browse source code documentation.
 
 ## Road Map
 
@@ -184,7 +194,9 @@ Very work in progress...
 - [x] Run some small tests to discern the impact of comparator functions.
 - [x] Run some small tests to measure the performance gain of compiler
       optimization (in-lining of the aforementioned comparator functions).
-- [x] Decouple C code entirely from C++ code. See [this](https://gitlab.com/uwyo-mallet/quicksort-tuning/-/commit/27b37eeae9cb1d4912f33d6847035f08a27288db) commit for more info.
+- [x] Decouple C code entirely from C++ code. See
+      [this](https://gitlab.com/uwyo-mallet/quicksort-tuning/-/commit/27b37eeae9cb1d4912f33d6847035f08a27288db)
+      commit for more info.
 - [x] Run tests on smaller inputs.
 - [x] Better plotting scripts (Dash + Plotly)
 - [x] Evaluate how swapping optimization affects runtime.
@@ -206,7 +218,7 @@ Very work in progress...
         allows the adaptive gimmicks more opportunity to exploit shorter natural
         runs. - Tim Peters, 2002.
 
-  - NodeJS and Spidermonkey use C++ `std::sort`.
+  - NodeJS and Spider-monkey use C++ `std::sort`.
   - WebKit uses `qsort`.
   - V8 used to use `std::sort` and `qsort` / insertion sort, but now uses
     TimSort.
