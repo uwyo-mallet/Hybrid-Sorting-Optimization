@@ -16,7 +16,8 @@
 
 // Hybrid methods which support a threshold value.
 static const std::set<std::string> THRESHOLD_METHODS{
-    "qsort_asm", "qsort_c", "qsort_cpp", "qsort_cpp_no_comp", "qsort_c_cmp"};
+    "qsort_asm",         "qsort_c",     "qsort_cpp",
+    "qsort_cpp_no_comp", "qsort_c_cmp", "qsort_c_sep_ins"};
 
 // Assembly methods
 #ifdef ARCH_X86
@@ -25,9 +26,9 @@ extern "C" void qsort_asm(uint64_t *arr, const uint64_t n,
                           const size_t threshold);
 #endif  // ARCH_X86
 
-/* Comparator for any qsort_ */
-// Reference cmp parameter for more info:
-// https://en.cppreference.com/w/c/algorithm/qsort
+/** Comparator for any qsort_*
+@see https://en.cppreference.com/w/c/algorithm/qsort
+*/
 template <typename T>
 int __attribute__((noinline)) compare(const void *ap, const void *bp)
 {
@@ -39,19 +40,19 @@ int __attribute__((noinline)) compare(const void *ap, const void *bp)
   return 0;
 }
 
-/* Comparator for std::sort */
+/** Comparator for std::sort */
 template <typename T>
 bool __attribute__((noinline)) compare_std(const T &a, const T &b)
 {
   return (a < b);
 }
 
-/*
+/**
   Determine if an array is sorted by checking every value.
 
   @param input: Input array to validate.
   @param len: Length of input array.
-  @return: Whether or not the array is sorted.
+  @return Whether or not the array is sorted.
 */
 template <typename T>
 bool is_sorted(const T *input, const size_t &len)
@@ -67,7 +68,7 @@ bool is_sorted(const T *input, const size_t &len)
   return true;
 }
 
-/*
+/**
   Swap two values in-place
 */
 template <typename T>
@@ -81,7 +82,7 @@ void swap(void *ap, void *bp)
   *b = tmp;
 }
 
-/*
+/**
   Iterative implementation of insertion sort
 
   @param input: Input array to sort.
@@ -109,12 +110,12 @@ void insertion_sort(T *input, const size_t &n, Comparator comp)
   }
 }
 
-/*
+/**
  * Iterative implementation of insertion sort
  * without a comparator function.
  *
  * @param input: Input array to sort.
- * @param len: Length of input array.
+ * @param n: Length of input array.
  */
 template <typename T>
 void insertion_sort(T *input, const size_t &n)
@@ -137,24 +138,25 @@ void insertion_sort(T *input, const size_t &n)
   }
 }
 
-/*
+/**
  * A node to 'push' onto stack for iterative quicksort.
  * Lo and hi pointers for subarrays.
  */
 template <typename T>
 struct node
 {
-  T *lo;
-  T *hi;
+  T *lo; /** Lower bound of subarray */
+  T *hi; /** Upper bound of subarray */
 };
 
-/*
+/**
  * Hybrid quicksort-insertion sort using modern C++ features.
  *
  * @param arr: Input array to sort.
  * @param n: Length of arr.
  * @param thresh: Threshold at which to switch to insertion sort.
  * @param comp: Comparator function, follows STL qsort conventions.
+ * @see compare()
  */
 template <typename T, typename Comparator>
 void qsort_cpp(T *arr, const size_t &n, const size_t &thresh, Comparator comp)
@@ -269,7 +271,7 @@ void qsort_cpp(T *arr, const size_t &n, const size_t &thresh, Comparator comp)
   insertion_sort(arr, n, comp);
 }
 
-/*
+/**
  * Hard code the comparison function (int < int).
  * In theory, this is already done for the simple test case through compiler
  * optimization, __attribute__ ((noinline)) on the comparison functions should

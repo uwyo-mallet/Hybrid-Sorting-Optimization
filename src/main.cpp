@@ -136,7 +136,7 @@ int main(int argc, char** argv)
   return EXIT_SUCCESS;
 }
 
-/* Parse a single option. */
+/** Parse a single CLI option. */
 static error_t parse_opt(int key, char* arg, struct argp_state* state)
 {
   struct arguments* args = (struct arguments*)state->input;
@@ -209,6 +209,10 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
   return 0;
 }
 
+/** Attempt to preserve output on signal.
+ *
+ * @param signum: Signal type
+ */
 void signal_handler(int signum)
 {
   // Try to write the output on failure.
@@ -223,6 +227,12 @@ void signal_handler(int signum)
   exit(EXIT_FAILURE);
 }
 
+/** Write results out to a file.
+ *
+ * @param args: Input arguments when this binary was called
+ * @param size: Total number of input elements from the loaded file
+ * @param times: All sort times
+ */
 void write(struct arguments args, const size_t& size,
            const std::vector<size_t>& times)
 {
@@ -271,6 +281,7 @@ void write(struct arguments args, const size_t& size,
   }
 }
 
+/** Output version in machine-readable JSON to STDOUT. */
 void version_json()
 {
   std::cout << "{" << std::endl;

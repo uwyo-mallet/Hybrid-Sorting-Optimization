@@ -14,6 +14,11 @@
 
 namespace fs = boost::filesystem;
 
+/**
+ * Print a vector to stdout
+ *
+ * @param arr: Vector to print
+ */
 template <typename T>
 void print(const std::vector<T> &arr)
 {
@@ -25,6 +30,13 @@ void print(const std::vector<T> &arr)
   std::cout << "]" << std::endl;
 }
 
+/**
+ * Load a text file to a vector.
+ * Assumes that each element is either space or newline delimited.
+ *
+ * @param filename: Path to file to load.
+ * @return Vector with contents of file.
+ */
 template <typename T>
 std::vector<T> from_disk_txt(const fs::path &filename)
 {
@@ -48,6 +60,13 @@ std::vector<T> from_disk_txt(const fs::path &filename)
   return vec;
 }
 
+/**
+ * Load a compressed text file to a vector.
+ * Assumes that each element is either space or newline delimited.
+ *
+ * @param filename: Path to file to load.
+ * @return Vector with contents of file.
+ */
 template <typename T>
 std::vector<T> from_disk_gz(const fs::path &filename)
 {
@@ -78,6 +97,15 @@ std::vector<T> from_disk_gz(const fs::path &filename)
   return vec;
 }
 
+/**
+ * Load a file to a vector based on the file extension.
+ * Supports either .gz or .txt. Other extensions are assumed to be plain text.
+ *
+ * @param filename: Path to file to load.
+ * @return Vector with contents of file.
+ * @see from_disk_txt()
+ * @see from_disk_gz()
+ */
 template <typename T>
 std::vector<T> from_disk(const fs::path &filename)
 {

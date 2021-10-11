@@ -1,7 +1,7 @@
 
 #include "sort.h"
 
-/*
+/**
   Iterative, extremely optimized implementation of quicksort.
   Pivot is the median of 3 (first, mid, last) values of array.
 
@@ -33,7 +33,9 @@
   @param total_elems: Total number of elements in array.
   @param size: Size of element in array.
   @param cmp: Comparator function
-  (https://www.cplusplus.com/reference/cstdlib/qsort/)
+  @param thresh: Smallest subarray size to use qsort for.
+  Otherwise switch to insertion_sort.
+  @see https://www.cplusplus.com/reference/cstdlib/qsort/
 */
 void qsort_c(void *const pbase, const size_t total_elems, const size_t size,
              compar_d_fn_t cmp, const size_t thresh)
