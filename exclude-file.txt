@@ -5,3 +5,4 @@ old_results/
 .vscode/
 __pycache__/
 .ipynb_checkpoints/
+docs/*
