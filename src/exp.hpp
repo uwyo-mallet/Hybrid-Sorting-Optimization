@@ -13,7 +13,7 @@
 #include "sort.h"
 #include "sort.hpp"
 
-/*
+/**
  * Time the runtime of a sort algorithm.
  *
  * @param method: Name of method to sort with.
@@ -77,6 +77,12 @@ size_t time(const std::string& method, const size_t& threshold,
     start_time = std::chrono::steady_clock::now();
     qsort_c_swp(to_sort.data(), to_sort.size(), sizeof(T), swap<T>, compare<T>,
                 threshold);
+  }
+  else if (method == "qsort_c_sep_ins")
+  {
+    start_time = std::chrono::steady_clock::now();
+    qsort_c_sep_ins(to_sort.data(), to_sort.size(), sizeof(T), compare<T>,
+                    threshold);
   }
   else if (method == "qsort_sanity")
   {
