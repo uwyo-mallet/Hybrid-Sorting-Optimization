@@ -39,7 +39,18 @@ def write_info(
     total_num_jobs=0,
     total_num_sorts=0,
 ):
-    """Write system information to output_folder/job_details.json."""
+    """!
+    Write system information to disk.
+
+    @param output_folder: Directory to write `job_details.json` to.
+    @param command: Command used to create the job (src/jobs.py).
+    @param concurrent: The number of threads used to run jobs concurrently.
+    @param data_details_path: Path to input data metadata file.
+    @param qst_vers: Version of QST executable.
+    @param runs: Number of times this particular dataset is rerun.
+    @param total_num_jobs: Total number of jobs to be submitted.
+    @param total_num_sorts: Total number of sorts to take place across all jobs.
+    """
     if data_details_path is not None and data_details_path.is_file():
         with open(data_details_path, "r") as data_details_file:
             data_details = json.load(data_details_file)
