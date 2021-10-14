@@ -25,7 +25,7 @@ from docopt import docopt
 
 
 class cd:
-    """
+    """!
     Change directories safely, go back to the previous CWD when exiting.
 
     @see https://stackoverflow.com/a/13197763/8846676
@@ -43,7 +43,7 @@ class cd:
 
 
 def fast_line_count(filename: Path) -> int:
-    """
+    """!
     Quickly count the number of lines in a text file.
 
     @param filename: Input file to count lines of
