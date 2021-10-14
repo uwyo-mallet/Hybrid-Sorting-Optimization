@@ -40,9 +40,9 @@ from tqdm import tqdm
 
 from info import write_info
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
-VALID_METHODS = (
+VALID_METHODS = {
     "insertion_sort",
     "insertion_sort_asm",
     "insertion_sort_c",
@@ -53,15 +53,15 @@ VALID_METHODS = (
     "qsort_cpp_no_comp",
     "qsort_sanity",
     "std",
-)
-THRESHOLD_METHODS = (
+}
+THRESHOLD_METHODS = {
     "qsort_asm",
     "qsort_c",
     "qsort_c_swp",
     "qsort_cpp",
     "qsort_cpp_no_comp",
-)
-DATA_TYPES = ("ascending", "descending", "random", "single_num")
+}
+DATA_TYPES = {"ascending", "descending", "random", "single_num"}
 
 # Maximum array index supported by slurm
 # https://slurm.schedmd.com/job_array.html
@@ -70,7 +70,7 @@ MAX_BATCH = 4_500
 
 @dataclass
 class Job:
-    """Dataclass storing the parameters of a single call to the QST subprocess."""
+    """! Store the parameters of a single call to the QST subprocess."""
 
     exec_path: Path
     infile_path: Path
@@ -82,7 +82,7 @@ class Job:
 
     @property
     def command(self):
-        """Return the appropiate format for subprocess.Popen."""
+        """! Return the appropiate format for subprocess.Popen."""
         return [
             str(self.exec_path.absolute()),
             str(self.infile_path.absolute()),
@@ -100,11 +100,11 @@ class Job:
 
     @property
     def cli(self):
-        """Return the raw CLI equivalent of the subprocess.Popen command."""
+        """! Return the raw CLI equivalent of the subprocess.Popen command."""
         return " ".join(self.command)
 
     def run(self, quiet=False):
-        """Call the subprocess and run the job."""
+        """! Call the subprocess and run the job."""
         to_run = self.command
         if not quiet:
             print(to_run)
@@ -113,7 +113,7 @@ class Job:
 
 
 def parse_args(args):
-    """Parse CLI args from docopt."""
+    """! Parse CLI args from docopt."""
     parsed = {}
 
     # Data dir
@@ -210,9 +210,22 @@ def parse_args(args):
 
 
 class Scheduler:
-    """Utility class allowing for easy job generation and scheduling across many threads."""
+    """! Utility class allowing for easy job generation and scheduling across many threads."""
 
     def __init__(self, **kwargs):
+        """!
+        Define the base parameters
+
+        @param data_dir: Path to input data.
+        @param exec: Path to QST executable.
+        @param jobs: Number of jobs to run concurrently.
+        @param methods: List of all the methods to test.
+        @param runs: Number of times to repeat sorts on the given data.
+        @param slurm: Optional path to output slurm.d/ folder. Only provide if
+                      if not running jobs on local machine.
+        @param threshold: List of thresholds to test with each method.
+        @param progress: Optionally enable a progress bar.
+        """
         self.data_dir = kwargs["data_dir"]
         self.exec = kwargs["exec"]
         self.jobs = kwargs["jobs"]
@@ -229,13 +242,14 @@ class Scheduler:
         self._gen_jobs()
 
     def _get_exec_version(self):
+        """! Call the QST process and parse the version output."""
         cmd = [self.exec, "--version"]
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         stdout, _ = p.communicate()
         return stdout.decode()
 
     def _gen_jobs(self):
-        """Populate the queue with jobs."""
+        """! Populate the queue with jobs."""
         files = self.data_dir.glob(r"**/*.gz")
         self.job_queue: "Queue[Job]" = Queue()
 
@@ -279,10 +293,11 @@ class Scheduler:
         self.active_queue = self.job_queue
 
     def _restore_jobs(self):
+        """! Bring all the jbos from the last _gen_jobs() back into the active queue."""
         self.active_queue = self.job_queue
 
     def _worker(self):
-        """Worker function for each thread."""
+        """! Worker function for each thread."""
         while True:
             job = self.active_queue.get()
             job.run(quiet=self.progress)
@@ -291,7 +306,7 @@ class Scheduler:
             self.pbar.update()
 
     def run_jobs(self):
-        """Run all the jobs on the local machine."""
+        """! Run all the jobs on the local machine."""
         print("===========================", file=sys.stderr)
         print(f"About to run {self.active_queue.qsize()} jobs", file=sys.stderr)
         print("===========================", file=sys.stderr)
@@ -322,7 +337,7 @@ class Scheduler:
             os.killpg(0, signal.SIGKILL)
 
     def gen_slurm(self):
-        """Create the slurm.d/ directory with all necessary parameters."""
+        """! Create the slurm.d/ directory with all necessary parameters."""
         if self.slurm.exists() and self.slurm.is_dir():
             shutil.rmtree(self.slurm)
         elif self.slurm.is_file():

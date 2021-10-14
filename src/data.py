@@ -37,20 +37,18 @@ MAX_ELEMENTS = 1_000_000
 
 
 class DataGen:
-    """Utility class for generating lots of data really fast."""
+    """! Utility class for generating lots of data really fast."""
 
     def __init__(self, output: Path, minimum: int, maximum: int, increment: int):
-        """
+        """!
         Initialize range and output parameters.
 
-        Args:
-            output: Path to folder to output data.
-            minimum: Minimum size data to create.
-            maximum: Maximum size data to create.
-            increment: Increments of data to create, should evenly divise maximum.
+        @param output: Path to folder to output data.
+        @param minimum: Minimum size data to create.
+        @param maximum: Maximum size data to create.
+        @param increment: Increments of data to create, should evenly divise maximum.
 
-        Raises:
-            NotADirectoryError: Output requires a directory, not a file
+        @exception NotADirectoryError Output requires a directory, not a file
         """
         random.seed()
         self.dirs = {
@@ -70,23 +68,22 @@ class DataGen:
         if self.base_path.is_file():
             raise NotADirectoryError("Output requires a directory, not a file")
 
-        self.create_dirs()
+        self._create_dirs()
 
-    def create_dirs(self):
-        """Create all the directories for output files from self.dirs."""
+    def _create_dirs(self):
+        """! Create all the directories for output files."""
         self.base_path.mkdir(parents=True, exist_ok=True)
         for d in self.dirs:
             real_path = Path(self.base_path, d)
             real_path.mkdir(exist_ok=True)
 
     def _copy_and_append(self, prev: Path, current: Path, data):
-        """
+        """!
         Copy a .gz file and append to the new file assuming the data is an Iterable
 
-        Args:
-            prev: Path to prev file.
-            current: Path to new file to be created.
-            data: Data to be appended to current.
+        @param prev: Path to prev file.
+        @param current: Path to new file to be created.
+        @param data: Data to be appended to current.
         """
         data_str = ""
         for i in data:
@@ -98,11 +95,16 @@ class DataGen:
 
     @staticmethod
     def _save(output: Path, data):
-        """Save an np array as either txt or gz depending on the extension."""
+        """! Save a np array as either txt or gz depending on the extension."""
         np.savetxt(output, data, fmt="%u", delimiter="\n", comments="")
 
     def _generic(self, output: Path, data):
-        """Generic save routine for all other methods."""
+        """!
+        Generic save routine for all other methods.
+
+        @param output: Path to folder to save outputs (0.EXT, 1.EXT, ...).
+        @param data: Iterable to write to disk.
+        """
         self._save(Path(output, "0.gz"), data[: self.inc])
 
         for i, n in enumerate(range(self.min, self.max - self.inc, self.inc), 1):
@@ -112,19 +114,19 @@ class DataGen:
             self._copy_and_append(prev, current, data[n : n + self.inc])
 
     def ascending(self, output: Path):
-        """Ascending data, 0, 1, 2, 3, 4."""
+        """! Ascending data, 0, 1, 2, 3, 4."""
         data = np.arange(self.min - self.inc, self.max - self.inc, dtype=np.uint64)
         self._generic(output, data)
 
     def descending(self, output: Path):
-        """Descending data, 4, 3, 2, 1, 0."""
+        """! Descending data, 4, 3, 2, 1, 0."""
         data = np.arange(
             self.max - self.inc - 1, self.min - self.inc - 1, -1, dtype=np.uint64
         )
         self._generic(output, data)
 
     def random(self, output: Path):
-        """Random data bounded by the min and max."""
+        """! Random data bounded by the min and max."""
         data = np.random.randint(
             low=self.min - self.inc,
             high=self.max - self.inc,
@@ -134,13 +136,17 @@ class DataGen:
         self._generic(output, data)
 
     def single_num(self, output: Path):
-        """The number 42 repeated."""
+        """! The number 42 repeated."""
         data = np.empty(self.max + 1, dtype=np.int64)
         data.fill(42)
         self._generic(output, data)
 
     def generate(self, t=None):
-        """Generate all types of data in parallel."""
+        """!
+        Generate data in parallel.
+
+        @param t: Singular type of data to generate. If none, generate all types.
+        """
         # Save some details about the data
         with open(Path(self.base_path, "details.json"), "w") as f:
             data = {
