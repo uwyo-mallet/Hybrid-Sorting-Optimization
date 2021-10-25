@@ -318,9 +318,22 @@ def update_threshold_v_runtime(json_df, time_unit, size=None, error_bars=False):
     if size is None or not any(df["size"] == size):
         size = df["size"].min()
 
+    df = df[(df["size"] == size)]
+
+    # Try to use insertion sort as a baseline
+    ins_sort_df = df[(df["method"] == "insertion_sort")]
+
     # Get all methods that support a varying threshold.
-    df = df[(df["size"] == size) & (df["threshold"] != 0)]
+    df = df[(df["threshold"] != 0)]
     df.sort_values(["threshold"], inplace=True)
+
+    # Create dummy values for insertion sort, since it isn't affected by threshold,
+    # we are just illustrating a comparison. It is okay to manually iterate over the
+    # rows here, since there should only ever be one row per input data type.
+    for _, row in ins_sort_df.iterrows():
+        for t in df["threshold"].unique():
+            row["threshold"] = t
+            df = df.append(row)
 
     fig = px.line(
         df,
