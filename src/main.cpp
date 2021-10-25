@@ -60,6 +60,7 @@ struct arguments
 };
 
 // Option parser
+static std::string& trim(std::string&);
 static error_t parse_opt(int key, char* arg, struct argp_state* state);
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
@@ -90,10 +91,17 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
+  // Cleanup, remove whitespace and lowercase.
+  trim(arguments.method);
+  std::transform(arguments.method.begin(), arguments.method.end(),
+                 arguments.method.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+
   // Check if the input method supports a threshold.
   // If not set to 0 for output.
-  if (!THRESHOLD_METHODS.count(arguments.method))
+  if (THRESHOLD_METHODS.find(arguments.method) == THRESHOLD_METHODS.end())
   {
+    std::cerr << "Ignoring threshold: " << arguments.method << std::endl;
     arguments.threshold = 0;
   }
 
@@ -134,6 +142,15 @@ int main(int argc, char** argv)
   }
 
   return EXIT_SUCCESS;
+}
+
+/** Remove leading and trailing whitespace. */
+std::string& trim(std::string& s)
+{
+  const char* t = " \t\n\r\f\v";
+  s = s.erase(s.find_last_not_of(t) + 1);
+  s = s.erase(0, s.find_first_not_of(t));
+  return s;
 }
 
 /** Parse a single CLI option. */

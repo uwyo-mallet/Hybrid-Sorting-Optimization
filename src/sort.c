@@ -1,10 +1,11 @@
+/** Contains various sorting functions in pure C */
+
+#include "sort.h"
 
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "sort.h"
 
 /**
  * Swap any two same sized value in-place by using a static allocation.

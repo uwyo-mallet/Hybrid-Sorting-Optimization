@@ -15,11 +15,19 @@
 #include "sort.h"
 
 // Hybrid methods which support a threshold value.
+// clang-format off
 static const std::set<std::string> THRESHOLD_METHODS{
-    "qsort_asm",         "qsort_c",     "qsort_cpp",
-    "qsort_cpp_no_comp", "qsort_c_cmp", "qsort_c_sep_ins"};
+    "qsort_asm",
+    "qsort_c",
+    "qsort_c_no_comp",
+    "qsort_c_sep_ins",
+    "qsort_c_swp",
+    "qsort_cpp",
+    "qsort_cpp_no_comp",
+};
+// clang-format on
 
-// Assembly methods
+// x86 assembly methods
 #ifdef ARCH_X86
 extern "C" void insertion_sort_asm(uint64_t *input, const uint64_t size);
 extern "C" void qsort_asm(uint64_t *arr, const uint64_t n,
