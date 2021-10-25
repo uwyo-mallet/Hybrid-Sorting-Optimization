@@ -9,31 +9,23 @@ import dash
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from dash import dcc, html
+from dash import dcc
 
-from pprint import pprint
+from .layout import gen_layout
 
 pd.set_option("display.max_columns", None)
 
 RESULTS_DIR = Path("./results")
-dirs = list(RESULTS_DIR.iterdir())
-dirs.sort()
+dirs = sorted(list(RESULTS_DIR.iterdir()))
 
-THRESHOLD_METHODS = (
+THRESHOLD_METHODS = {
     "qsort_asm",
     "qsort_c",
     "qsort_c_swp",
     "qsort_cpp",
     "qsort_cpp_no_comp",
-)
+}
 DEFAULT_METHOD = "qsort_c"
-INPUT_TYPES = (
-    "ascending",
-    "descending",
-    "random",
-    "single_num",
-    "N/A",
-)
 GRAPH_ORDER = (
     "random",
     "ascending",
@@ -69,19 +61,34 @@ def load(in_dir=None):
         except IndexError as e:
             raise FileNotFoundError("No result directories found") from e
 
-    # TODO: Refactor this to support just having a parquet file.
-    try:
-        csvs = tuple(in_dir.glob("*.csv"))
-        in_csv = csvs[0]
-    except IndexError as e:
-        raise FileNotFoundError("No csv found") from e
+    parqs = tuple(in_dir.glob("*.parquet"))
+    csvs = tuple(in_dir.glob("*.csv"))
 
-    # If not already in parquet form, create new parquet version
-    # to save load time on subsequent runs.
-    in_raw_parq = Path(in_csv.parent, in_csv.stem + ".parquet")
-    in_stat_parq = Path(in_csv.parent, in_csv.stem + "_stat.parquet")
+    in_raw_parq = None
+    in_stat_parq = None
+    in_csv = None
 
-    if not in_raw_parq.exists():
+    if len(csvs):
+        in_csv = Path(csvs[0])
+
+    for i in parqs:
+        if str(i).endswith("_stat.parquet"):
+            in_stat_parq = Path(i)
+        elif str(i).endswith(".parquet"):
+            in_raw_parq = Path(i)
+        if in_raw_parq is not None and in_stat_parq is not None:
+            # Cache files found, load them and move on.
+            raw_df = pd.read_parquet(in_raw_parq)
+            stat_df = pd.read_parquet(in_stat_parq)
+            break
+    else:
+        if in_csv is None:
+            raise FileNotFoundError("Neither CSV nor parquet data files found.")
+
+        # CSV is found, parquets not found, generate them to serve as a cache.
+        in_raw_parq = Path(in_csv.parent, in_csv.stem + ".parquet")
+        in_stat_parq = Path(in_csv.parent, in_csv.stem + "_stat.parquet")
+
         raw_df = pd.read_csv(in_csv, dtype=COLUMNS, engine="c")
         # Cleanup and add some additional columns
         raw_df["elapsed_msecs"] = raw_df["elapsed_usecs"] / 1000
@@ -101,11 +108,6 @@ def load(in_dir=None):
             ]
         ]
 
-        raw_df.to_parquet(in_raw_parq)
-    else:
-        raw_df = pd.read_parquet(in_raw_parq)
-
-    if not in_stat_parq.exists():
         stats = ("mean", "std")
         stat_df = raw_df
         stat_df = stat_df.groupby(
@@ -119,9 +121,10 @@ def load(in_dir=None):
         )
         stat_df = stat_df.reset_index()
         stat_df.sort_values(["size"], inplace=True)
+
+        # Save to disk as cache
+        raw_df.to_parquet(in_raw_parq)
         stat_df.to_parquet(in_stat_parq)
-    else:
-        stat_df = pd.read_parquet(in_stat_parq)
 
     info_path = in_dir / "job_details.json"
     if info_path.is_file():
@@ -141,162 +144,7 @@ def load(in_dir=None):
 
 
 app = dash.Dash(__name__)
-app.layout = html.Div(
-    [
-        dcc.Store(id="stat-data"),
-        dcc.Store(id="info-data"),
-        html.Div(
-            [
-                html.Div(
-                    [
-                        html.H6(
-                            "Info",
-                            style={
-                                "marginTop": "0",
-                                "fontWeight": "bold",
-                                "textAlign": "center",
-                            },
-                        ),
-                        html.Div(id="info"),
-                    ],
-                    className="pretty_container",
-                    id="cross-filter-options",
-                    style={"textAlign": "left"},
-                ),
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.Div(
-                                    [
-                                        html.Div(
-                                            [
-                                                html.Div(
-                                                    [
-                                                        html.Label(
-                                                            "Result:",
-                                                            style={
-                                                                "marginRight": "1em",
-                                                            },
-                                                        )
-                                                    ]
-                                                ),
-                                                dcc.Dropdown(
-                                                    id="result-dropdown",
-                                                    options=[
-                                                        {
-                                                            "label": str(i),
-                                                            "value": str(i),
-                                                        }
-                                                        for i in dirs
-                                                    ],
-                                                    value=str(dirs[-1]),
-                                                    style=dict(
-                                                        width="100%",
-                                                        verticalAlign="baseline",
-                                                    ),
-                                                ),
-                                            ],
-                                            style={
-                                                "display": "flex",
-                                                "textAlign": "left",
-                                                "verticalAlign": "baseline",
-                                            },
-                                        ),
-                                    ],
-                                    className="mini_container",
-                                    id="wells",
-                                ),
-                            ],
-                            id="info-container",
-                            className="row container-display",
-                        ),
-                        html.Div(
-                            [
-                                html.Label("Time Unit"),
-                                dcc.RadioItems(
-                                    id="time-unit",
-                                    options=[
-                                        {
-                                            "label": i.capitalize(),
-                                            "value": i,
-                                        }
-                                        for i in UNITS
-                                    ],
-                                    value=next(iter(UNITS.keys())),
-                                ),
-                                dcc.Checklist(
-                                    id="error-bars-checkbox",
-                                    options=[
-                                        {"label": "Error Bars", "value": "error_bars"}
-                                    ],
-                                ),
-                            ],
-                            className="pretty_container",
-                        ),
-                    ],
-                    id="right-column",
-                    className="eight columns",
-                ),
-            ],
-            className="row flex-display",
-        ),
-        html.Div(
-            [
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.P(
-                                    "Threshold",
-                                    className="control_label",
-                                    style={
-                                        "fontWeight": "bold",
-                                        "textAlign": "center",
-                                    },
-                                ),
-                                dcc.Slider(id="threshold-slider", step=None, value=1),
-                            ],
-                            className="pretty_container",
-                        ),
-                        dcc.Graph(
-                            id="size-vs-runtime-scatter",
-                        ),
-                    ]
-                )
-            ],
-            className="row pretty_container",
-        ),
-        html.Div(
-            [
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.P(
-                                    "Size",
-                                    className="control_label",
-                                    style={
-                                        "fontWeight": "bold",
-                                        "textAlign": "center",
-                                    },
-                                ),
-                                dcc.Slider(id="size-slider", step=None, value=0),
-                            ],
-                            className="pretty_container",
-                        ),
-                        dcc.Graph(
-                            id="threshold-vs-runtime-scatter",
-                        ),
-                    ]
-                )
-            ],
-            className="row pretty_container",
-        ),
-    ],
-    id="mainContainer",
-    style={"display": "flex", "flexDirection": "column"},
-)
+app.layout = gen_layout(UNITS, dirs)
 
 
 @app.callback(
@@ -334,7 +182,8 @@ def update_info(info_json):
     if actual_num_sorts != total_num_sorts:
         actual_num_sorts = f"\[Warning\] {actual_num_sorts}"
 
-    md = f""" `{command}`
+    md = f"""\
+`{command}`
 
 Architecture: {arch}
 
@@ -393,7 +242,7 @@ def update_threshold_slider(json_df):
 )
 def update_size_slider(json_df):
     df = df_from_json(json_df)
-    marks = {int(i): str(i) for i in sorted(df["size"].unique())}
+    marks = {int(i): format(i, "g") for i in sorted(df["size"].unique())}
     return (
         int(df["size"].unique().min()),
         int(df["size"].unique().max()),
@@ -463,25 +312,35 @@ def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
         dash.dependencies.Input("error-bars-checkbox", "value"),
     ],
 )
-def update_threshold_v_runtime(json_df, time_unit, size=4, error_bars=False):
+def update_threshold_v_runtime(json_df, time_unit, size=None, error_bars=False):
     df = df_from_json(json_df)
 
+    if size is None:
+        size = df["size"].min()
+
+    # Add insertion sort as a baseline if available.
     ins_sort_df = df[
-        (df["size"] == size)
-        & (df["method"] == "insertion_sort")
-        & (df["description"] == "single_num")
+        (df["size"] == size) & (df["method"] == "insertion_sort")
     ].reset_index()
 
     df = df[(df["size"] == size) & (df["threshold"] != 0)]
     df.sort_values(["threshold"], inplace=True)
 
+    min_thresh = df["threshold"].min()
+    max_thresh = df["threshold"].max()
+
+    # Create dummy values for the thresholds of insertion_sort
+    descrips = ins_sort_df["description"].unique()
+    for d in descrips:
+        ins_sort_res = list(ins_sort_df[ins_sort_df["description"] == d].iterrows())[0][
+            1
+        ]
+        for dummy_thresh in range(min_thresh, max_thresh):
+            ins_sort_res["threshold"] = dummy_thresh
+            df = df.append(ins_sort_res)
+
     if not len(df):
         return dash.no_update
-
-    print("************************")
-    print(df)
-    print(df[(UNITS[time_unit], "mean")])
-    print("************************")
 
     fig = px.line(
         df,
@@ -515,15 +374,9 @@ def update_threshold_v_runtime(json_df, time_unit, size=4, error_bars=False):
         ),
         legend=dict(yanchor="top", xanchor="left"),
     )
+
     # Fix facet titles
     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
-
-    # fig.add_hline(
-    #     y=ins_sort_df.loc[0, (UNITS[time_unit], "mean")],
-    #     line_dash="dot",
-    #     annotation_text="Insertion Sort",
-    #     annotation_position="bottom right",
-    # )
 
     return fig
 
