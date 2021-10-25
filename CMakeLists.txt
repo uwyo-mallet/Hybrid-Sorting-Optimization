@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.6.6
+  VERSION 1.6.7
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES C CXX ASM)
 configure_file(src/config.h.in config.hpp)
@@ -26,7 +26,7 @@ include_directories(${BOOST_INCLUDE_DIRS})
 # Add src files
 set(SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/main.cpp ${PROJECT_SOURCE_DIR}/src/qsort_c.c
-    ${PROJECT_SOURCE_DIR}/src/qsort_c_improved.c)
+    ${PROJECT_SOURCE_DIR}/src/sort.c)
 
 set(HEADER_FILES
     ${PROJECT_SOURCE_DIR}/src/exp.hpp ${PROJECT_SOURCE_DIR}/src/io.hpp
@@ -72,8 +72,8 @@ add_compile_options(
 # Docs
 find_package(Doxygen)
 if(${DOXYGEN_FOUND} AND ${DOXYGEN_VERSION} VERSION_GREATER "1.9.0")
-    set(DOXYGEN_INPUT_DIR
-        ${PROJECT_SOURCE_DIR}/src,${PROJECT_SOURCE_DIR}/evaluator)
+  set(DOXYGEN_INPUT_DIR
+      ${PROJECT_SOURCE_DIR}/src,${PROJECT_SOURCE_DIR}/evaluator)
   set(DOXYGEN_OUTPUT_DIR ${PROJECT_SOURCE_DIR}/docs/doxygen)
   set(DOXYGEN_INDEX_FILE ${CMAKE_CURRENT_SOURCE_DIR}/docs/html/index.html)
   set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in)
