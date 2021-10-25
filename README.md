@@ -196,8 +196,6 @@ Supported sorting methods for QST. Essentially the possible options for
 - `qsort_c` - Pure C version of quicksort ripped directly from glibc for the
   sake of consistency between compiler implementations. Also makes the threshold
   a parameter instead of a compile time constant.
-- `qsort_c_no_comp` - Same as `qsort_c` but has a hardcoded comparison
-  function for integers.
 - `qsort_c_sep_ins` - Same as `qsort_c` but uses a different insertion sort
   routine for subarrays.
 - `qsort_c_swp` - Same as `qsort_c` but uses a parameterized swap function,
