@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Evaluator for QST data collection."""
 
 import ast
 import json
@@ -11,7 +12,7 @@ import pandas as pd
 import plotly.express as px
 from dash import dcc
 
-from .layout import gen_layout
+from .layout import gen_layout, md_template
 
 pd.set_option("display.max_columns", None)
 
@@ -45,6 +46,9 @@ COLUMNS = {
     "elapsed_usecs": np.uint64,
     "threshold": np.uint64,
 }
+
+app = dash.Dash(__name__)
+app.layout = gen_layout(UNITS, dirs)
 
 
 @dataclass
@@ -90,6 +94,7 @@ def load(in_dir=None):
         in_stat_parq = Path(in_csv.parent, in_csv.stem + "_stat.parquet")
 
         raw_df = pd.read_csv(in_csv, dtype=COLUMNS, engine="c")
+
         # Cleanup and add some additional columns
         raw_df["elapsed_msecs"] = raw_df["elapsed_usecs"] / 1000
         raw_df["elapsed_secs"] = raw_df["elapsed_msecs"] / 1000
@@ -143,10 +148,6 @@ def load(in_dir=None):
     return Result(raw_df, stat_df, info)
 
 
-app = dash.Dash(__name__)
-app.layout = gen_layout(UNITS, dirs)
-
-
 @app.callback(
     dash.dependencies.Output("stat-data", "data"),
     dash.dependencies.Output("info-data", "data"),
@@ -182,33 +183,21 @@ def update_info(info_json):
     if actual_num_sorts != total_num_sorts:
         actual_num_sorts = f"\[Warning\] {actual_num_sorts}"
 
-    md = f"""\
-`{command}`
+    formatted_md = md_template.format(
+        arch=arch,
+        command=command,
+        node=node,
+        num_cpus=num_cpus,
+        num_concurrent=num_concurrent,
+        platform=platform,
+        partition=partition,
+        qst_version=qst_version,
+        runs=runs,
+        total_num_sorts=total_num_sorts,
+        actual_num_sorts=actual_num_sorts,
+    )
 
-Architecture: {arch}
-
-Node: {node}
-
-Platform: {platform}
-
-Partition: {partition}
-
-Cores: {num_cpus}
-
-Concurrent jobs: {num_concurrent}
-
-Runs: {runs}
-
-Expected \# of sorts: {total_num_sorts}
-
-Actual \# of sorts: {actual_num_sorts}
-
-QST Version:
-```txt
-{qst_version}
-```
-"""
-    return [dcc.Markdown(md)]
+    return [dcc.Markdown(formatted_md)]
 
 
 def df_from_json(json_df):
@@ -242,6 +231,8 @@ def update_threshold_slider(json_df):
 )
 def update_size_slider(json_df):
     df = df_from_json(json_df)
+    # Format marks as 'general'
+    # https://docs.python.org/3.4/library/string.html#format-string-syntax
     marks = {int(i): format(i, "g") for i in sorted(df["size"].unique())}
     return (
         int(df["size"].unique().min()),
@@ -280,11 +271,17 @@ def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
         height=2000,
     )
 
+    # Axis formatting
     fig.update_xaxes(
         showticklabels=True,
-        # title="Input Size",
     )
-    fig.update_yaxes(automargin=True, matches=None, title=f"Runtime ({time_unit})")
+    fig.update_yaxes(
+        automargin=True,
+        matches=None,
+        title=f"Runtime ({time_unit})",
+    )
+
+    # General other formatting
     fig.update_layout(
         xaxis_title="Size",
         legend_title_text="Sorting Method",
@@ -298,6 +295,7 @@ def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
         ),
     )
     # Fix facet titles
+    # TODO: Find a less gross way to do this...
     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
 
     return fig
@@ -315,32 +313,14 @@ def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
 def update_threshold_v_runtime(json_df, time_unit, size=None, error_bars=False):
     df = df_from_json(json_df)
 
-    if size is None:
+    # Check to ensure that a size is provided, and that the size is valid within the DF.
+    # This is used to catch a nasty bug that, on startup, leaves the graph empty.
+    if size is None or not any(df["size"] == size):
         size = df["size"].min()
 
-    # Add insertion sort as a baseline if available.
-    ins_sort_df = df[
-        (df["size"] == size) & (df["method"] == "insertion_sort")
-    ].reset_index()
-
+    # Get all methods that support a varying threshold.
     df = df[(df["size"] == size) & (df["threshold"] != 0)]
     df.sort_values(["threshold"], inplace=True)
-
-    min_thresh = df["threshold"].min()
-    max_thresh = df["threshold"].max()
-
-    # Create dummy values for the thresholds of insertion_sort
-    descrips = ins_sort_df["description"].unique()
-    for d in descrips:
-        ins_sort_res = list(ins_sort_df[ins_sort_df["description"] == d].iterrows())[0][
-            1
-        ]
-        for dummy_thresh in range(min_thresh, max_thresh):
-            ins_sort_res["threshold"] = dummy_thresh
-            df = df.append(ins_sort_res)
-
-    if not len(df):
-        return dash.no_update
 
     fig = px.line(
         df,
@@ -357,10 +337,17 @@ def update_threshold_v_runtime(json_df, time_unit, size=None, error_bars=False):
         height=2000,
     )
 
+    # Axis formatting
     fig.update_xaxes(
         showticklabels=True,
     )
-    fig.update_yaxes(automargin=True, matches=None, title=f"Runtime ({time_unit})")
+    fig.update_yaxes(
+        automargin=True,
+        matches=None,
+        title=f"Runtime ({time_unit})",
+    )
+
+    # General other formatting
     fig.update_layout(
         xaxis_title="Threshold",
         legend_title_text="Sorting Method",
@@ -376,6 +363,7 @@ def update_threshold_v_runtime(json_df, time_unit, size=None, error_bars=False):
     )
 
     # Fix facet titles
+    # TODO: Find a less gross way to do this...
     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
 
     return fig

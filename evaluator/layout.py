@@ -1,5 +1,32 @@
 from dash import dcc, html
 
+md_template = """\
+`{command}`
+
+Architecture: {arch}
+
+Node: {node}
+
+Platform: {platform}
+
+Partition: {partition}
+
+Cores: {num_cpus}
+
+Concurrent jobs: {num_concurrent}
+
+Runs: {runs}
+
+Expected \# of sorts: {total_num_sorts}
+
+Actual \# of sorts: {actual_num_sorts}
+
+QST Version:
+```txt
+{qst_version}
+```
+"""
+
 
 def gen_layout(units, dirs):
     res = html.Div(
