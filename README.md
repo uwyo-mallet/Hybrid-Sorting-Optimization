@@ -148,17 +148,31 @@ this procedure is used to generate and run the tests.
 
 5. Post-processing and Evaluation.
 
-   Once all the slurm jobs are complete, you can use the `evaluate.py` script
-   to view the results.
+   Once all the slurm jobs are complete, you can use the `evaluator` python
+   module to view the results. Ensure you copy all the data back to your local
+   machine.
+
+   For the sake of compatibility with older Python versions (mostly for HPCs),
+   dependencies for the `evaluator` are kept separate from the core testing
+   module. Install them with:
 
    ```
-   $ python evaluate.py
+   $ pip install -r eval_requirements.txt
    ```
+
+   Then run the module with:
+
+   ```
+   $ python -m evaluator
+   ```
+
+   Open a web browser to [http://localhost:8050](http://localhost:8050) and
+   you should be able to pick various parameters to visualize your results.
 
 ## Docs
 
-All source code docs are auto-built with Sphinx. Install
-[sphinx](https://www.sphinx-doc.org/en/master/) (> v1.9) and build QST. The
+All source code docs are auto-built with Doxygen. Install
+[doxygen](https://www.doxygen.nl/index.html) (> v1.9) and build QST. The
 docs should be auto built as well, as long as all dependencies are met.
 Open `docs/doxygen/html/index.html` to browse source code documentation.
 
