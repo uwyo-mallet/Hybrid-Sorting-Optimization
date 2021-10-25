@@ -72,7 +72,8 @@ add_compile_options(
 # Docs
 find_package(Doxygen)
 if(${DOXYGEN_FOUND} AND ${DOXYGEN_VERSION} VERSION_GREATER "1.9.0")
-  set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/src)
+    set(DOXYGEN_INPUT_DIR
+        ${PROJECT_SOURCE_DIR}/src,${PROJECT_SOURCE_DIR}/evaluator)
   set(DOXYGEN_OUTPUT_DIR ${PROJECT_SOURCE_DIR}/docs/doxygen)
   set(DOXYGEN_INDEX_FILE ${CMAKE_CURRENT_SOURCE_DIR}/docs/html/index.html)
   set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in)
