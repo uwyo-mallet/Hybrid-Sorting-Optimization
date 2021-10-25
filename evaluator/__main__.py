@@ -320,8 +320,9 @@ def update_threshold_v_runtime(json_df, time_unit, size=None, error_bars=False):
 
     df = df[(df["size"] == size)]
 
-    # Try to use insertion sort as a baseline
+    # Try to use insertion sort and std as baselines
     ins_sort_df = df[(df["method"] == "insertion_sort")]
+    std_sort_df = df[(df["method"] == "std")]
 
     # Get all methods that support a varying threshold.
     df = df[(df["threshold"] != 0)]
@@ -330,7 +331,12 @@ def update_threshold_v_runtime(json_df, time_unit, size=None, error_bars=False):
     # Create dummy values for insertion sort, since it isn't affected by threshold,
     # we are just illustrating a comparison. It is okay to manually iterate over the
     # rows here, since there should only ever be one row per input data type.
+    # TODO: Find a way to generalize / make the user pick baselines.
     for _, row in ins_sort_df.iterrows():
+        for t in df["threshold"].unique():
+            row["threshold"] = t
+            df = df.append(row)
+    for _, row in std_sort_df.iterrows():
         for t in df["threshold"].unique():
             row["threshold"] = t
             df = df.append(row)
