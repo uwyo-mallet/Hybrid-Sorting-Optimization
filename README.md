@@ -169,6 +169,48 @@ this procedure is used to generate and run the tests.
    Open a web browser to [http://localhost:8050](http://localhost:8050) and
    you should be able to pick various parameters to visualize your results.
 
+### QST Supported Sorting Methods
+
+Supported sorting methods for QST. Essentially the possible options for
+`--method/-m`:
+
+#### No Threshold
+
+- `insertion_sort` - C++ iterative insertion sort using templates and a
+  parameterized compare function.
+- `insertion_sort_c` - Pure C version of `insertion_sort` using `void` pointers.
+- `insertion_sort_c_swp` - Same as `insertion_sort_c` but uses a parameterized
+  swap function instead of preprocessor based bitwise swap (used in `qsort` in
+  glibc).
+- `insertion_sort_asm` - Pure x86 assembly version of insertion sort. Only
+  supports `uint64_t`.
+- `qsort_sanity` - Literally just calls `qsort`. May be different methods
+  internally depending on the compiler implementation.
+- `std` - Literally just calls `std::sort`. May be different methods
+  internally depending on the compiler implementation.
+
+#### Threshold
+
+- `qsort_asm` - Pure x86 assembly version of glibc quicksort. Only supports
+  `uint64_t`. (_Currently broken and runs very slowly._)
+- `qsort_c` - Pure C version of quicksort ripped directly from glibc for the
+  sake of consistency between compiler implementations. Also makes the threshold
+  a parameter instead of a compile time constant.
+- `qsort_c_no_comp` - Same as `qsort_c` but has a hardcoded comparison
+  function for integers.
+- `qsort_c_sep_ins` - Same as `qsort_c` but uses a different insertion sort
+  routine for subarrays.
+- `qsort_c_swp` - Same as `qsort_c` but uses a parameterized swap function,
+  similar to `insertion_sort_c_swp`.
+- `qsort_cpp` - C++ version of quicksort. Contains all the same optimizations
+  as quicksort from glibc, but uses modern language features such as
+  templates.
+- `qsort_cpp_no_comp` - Same as `qsort_cpp` but has a hardcoded comparison
+  function for integers.
+
+More detailed information about the methods and the specific optimizations can
+be found in the generated doxygen docs, and directly in the source code.
+
 ## Docs
 
 All source code docs are auto-built with Doxygen. Install
