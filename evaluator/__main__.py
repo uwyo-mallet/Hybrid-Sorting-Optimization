@@ -14,6 +14,7 @@ from dash import dcc
 
 from .layout import gen_layout, md_template
 
+
 pd.set_option("display.max_columns", None)
 
 RESULTS_DIR = Path("./results")
@@ -34,17 +35,40 @@ GRAPH_ORDER = (
     "single_num",
 )
 UNITS = {
-    "seconds": "elapsed_secs",
-    "milliseconds": "elapsed_msecs",
-    "microseconds": "elapsed_usecs",
+    "seconds": "wall_secs",
+    "milliseconds": "wall_msecs",
+    "microseconds": "wall_usecs",
+    "nanoseconds": "wall_nsecs",
 }
-COLUMNS = {
+RAW_COLUMNS = {
     "method": str,
     "input": str,
     "description": str,
     "size": np.uint64,
-    "elapsed_usecs": np.uint64,
     "threshold": np.uint64,
+    "wall_nsecs": np.uint64,  # Elapsed wall time
+    "user_nsecs": np.uint64,  # Elapsed user cpu time
+    "system_nsecs": np.uint64,  # Elapsed system cpu time
+}
+
+POST_PROCESS_COLUMNS = {
+    "input": str,
+    "method": str,
+    "description": str,
+    "threshold": np.uint64,
+    "size": np.uint64,
+    "wall_nsecs": np.uint64,
+    "wall_usecs": np.uint64,
+    "wall_msecs": np.uint64,
+    "wall_secs": np.uint64,
+    "user_nsecs": np.uint64,
+    "user_usecs": np.uint64,
+    "user_msecs": np.uint64,
+    "user_secs": np.uint64,
+    "system_nsecs": np.uint64,
+    "system_usecs": np.uint64,
+    "system_msecs": np.uint64,
+    "system_secs": np.uint64,
 }
 
 app = dash.Dash(__name__)
@@ -93,25 +117,23 @@ def load(in_dir=None):
         in_raw_parq = Path(in_csv.parent, in_csv.stem + ".parquet")
         in_stat_parq = Path(in_csv.parent, in_csv.stem + "_stat.parquet")
 
-        raw_df = pd.read_csv(in_csv, dtype=COLUMNS, engine="c")
+        raw_df = pd.read_csv(in_csv, dtype=RAW_COLUMNS, engine="c")
 
         # Cleanup and add some additional columns
-        raw_df["elapsed_msecs"] = raw_df["elapsed_usecs"] / 1000
-        raw_df["elapsed_secs"] = raw_df["elapsed_msecs"] / 1000
+        raw_df["wall_usecs"] = raw_df["wall_nsecs"] / 1000
+        raw_df["user_usecs"] = raw_df["user_nsecs"] / 1000
+        raw_df["system_usecs"] = raw_df["system_nsecs"] / 1000
+
+        raw_df["wall_msecs"] = raw_df["wall_usecs"] / 1000
+        raw_df["user_msecs"] = raw_df["user_usecs"] / 1000
+        raw_df["system_msecs"] = raw_df["system_usecs"] / 1000
+
+        raw_df["wall_secs"] = raw_df["wall_msecs"] / 1000
+        raw_df["user_secs"] = raw_df["user_msecs"] / 1000
+        raw_df["system_secs"] = raw_df["system_msecs"] / 1000
 
         # Reorder columns
-        raw_df = raw_df[
-            [
-                "input",
-                "method",
-                "description",
-                "threshold",
-                "size",
-                "elapsed_usecs",
-                "elapsed_msecs",
-                "elapsed_secs",
-            ]
-        ]
+        raw_df = raw_df[POST_PROCESS_COLUMNS.keys()]
 
         stats = ("mean", "std")
         stat_df = raw_df
@@ -119,9 +141,15 @@ def load(in_dir=None):
             ["input", "method", "description", "size", "threshold"]
         ).agg(
             {
-                "elapsed_usecs": stats,
-                "elapsed_msecs": stats,
-                "elapsed_secs": stats,
+                "wall_nsecs": stats,
+                "user_nsecs": stats,
+                "system_nsecs": stats,
+                "wall_msecs": stats,
+                "user_msecs": stats,
+                "system_msecs": stats,
+                "wall_secs": stats,
+                "user_secs": stats,
+                "system_secs": stats,
             }
         )
         stat_df = stat_df.reset_index()
