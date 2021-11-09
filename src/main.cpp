@@ -4,8 +4,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/directory.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/multiprecision/cpp_int.hpp>
-#include <csignal>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -64,17 +62,17 @@ static std::string& trim(std::string&);
 static error_t parse_opt(int key, char* arg, struct argp_state* state);
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
-void signal_handler(int signum);
 void write(struct arguments args, const size_t& size,
-           const std::vector<size_t>& times);
+           const std::vector<boost::timer::cpu_times>& times);
 void version_json();
 
 struct arguments arguments;
-std::vector<size_t> times;
 size_t size = 0;
 
 int main(int argc, char** argv)
 {
+  std::vector<boost::timer::cpu_times> times;
+
   // Default CLI options
   arguments.description = "N/A";
   arguments.method = "qsort_c";
@@ -101,7 +99,6 @@ int main(int argc, char** argv)
   // If not set to 0 for output.
   if (THRESHOLD_METHODS.find(arguments.method) == THRESHOLD_METHODS.end())
   {
-    std::cerr << "Ignoring threshold: " << arguments.method << std::endl;
     arguments.threshold = 0;
   }
 
@@ -120,14 +117,11 @@ int main(int argc, char** argv)
   std::sort(sorted_data.begin(), sorted_data.end());
   size = orig_data.size();
 
-  // Signal handlers
-  signal(SIGINT, signal_handler);
-  signal(SIGTERM, signal_handler);
-
   for (size_t i = 0; i < arguments.runs; i++)
   {
     data = orig_data;
-    size_t res = time(arguments.method, arguments.threshold, data, sorted_data);
+    boost::timer::cpu_times res =
+        time(arguments.method, arguments.threshold, data, sorted_data);
     times.push_back(res);
   }
 
@@ -226,32 +220,14 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
   return 0;
 }
 
-/** Attempt to preserve output on signal.
- *
- * @param signum: Signal type
- */
-void signal_handler(int signum)
-{
-  // Try to write the output on failure.
-  try
-  {
-    write(arguments, size, times);
-  }
-  catch (std::ios_base::failure& e)
-  {
-    std::cerr << e.what() << std::endl;
-  }
-  exit(EXIT_FAILURE);
-}
-
 /** Write results out to a file.
  *
  * @param args: Input arguments when this binary was called
  * @param size: Total number of input elements from the loaded file
  * @param times: All sort times
  */
-void write(struct arguments args, const size_t& size,
-           const std::vector<size_t>& times)
+void write(const struct arguments args, const size_t& size,
+           const std::vector<boost::timer::cpu_times>& times)
 {
   if (args.out_file == "-")
   {
@@ -259,12 +235,16 @@ void write(struct arguments args, const size_t& size,
     std::cout << "Input: " << args.in_file << std::endl;
     std::cout << "Description: " << args.description << std::endl;
     std::cout << "Size: " << size << std::endl;
-    for (size_t time : times)
-    {
-      std::cout << "Elapsed Time (microseconds): " << time << std::endl;
-    }
-
     std::cout << "Threshold: " << args.threshold << std::endl;
+    for (boost::timer::cpu_times time : times)
+    {
+      std::cout << "Elapsed Wall Time (nanoseconds): " << time.wall
+                << std::endl;
+      std::cout << "Elapsed User Time (nanoseconds): " << time.user
+                << std::endl;
+      std::cout << "Elapsed System Time (nanoseconds): " << time.system
+                << std::endl;
+    }
   }
   else
   {
@@ -282,16 +262,17 @@ void write(struct arguments args, const size_t& size,
     if (out_file.tellg() == 0)
     {
       out_file.clear();
-      out_file << "method,input,description,size,elapsed_usecs,threshold"
+      out_file << "method,input,description,size,threshold,wall_nsecs,user_"
+                  "nsecs,system_nsecs"
                << std::endl;
     }
 
     // Write the actual data
-    for (size_t time : times)
+    for (boost::timer::cpu_times time : times)
     {
       out_file << args.method << "," << args.in_file << "," << args.description
-               << "," << size << "," << time << "," << args.threshold
-               << std::endl;
+               << "," << size << "," << args.threshold << "," << time.wall
+               << "," << time.user << "," << time.system << std::endl;
     }
 
     out_file.close();

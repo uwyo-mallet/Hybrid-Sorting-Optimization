@@ -6,12 +6,13 @@
 
 #ifdef USE_BOOST_CPP_INT
 #define BOOST_CPP_INT "+"
+#include <boost/multiprecision/cpp_int.hpp>
 namespace bmp = boost::multiprecision;
 #else
 #define BOOST_CPP_INT "-"
 #endif  // USE_BOOST_CPP_INT
 
-#if MSVC
+#ifdef MSVC
 #error "Unsupported compiler"
 #endif  // MSVC
 

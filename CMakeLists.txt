@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.6.7
+  VERSION 1.7.0
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES C CXX ASM)
 configure_file(src/config.h.in config.hpp)
@@ -20,7 +20,7 @@ message("CXX Compiler Path: " ${CMAKE_CXX_COMPILER})
 message("CXX Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
 
 # Boost
-find_package(Boost 1.67.0 REQUIRED COMPONENTS iostreams filesystem)
+find_package(Boost 1.67.0 REQUIRED COMPONENTS iostreams filesystem timer)
 include_directories(${BOOST_INCLUDE_DIRS})
 
 # Add src files
@@ -55,7 +55,7 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE ${PROJECT_BINARY_DIR})
 
 # Linking
 target_link_libraries(${EXECUTABLE_NAME} Boost::iostreams Boost::filesystem
-                      Boost::boost)
+                      Boost::timer)
 
 add_compile_options(
   -Wall
@@ -67,6 +67,7 @@ add_compile_options(
   $<$<CONFIG:DEBUG>:-Og>
   $<$<CONFIG:DEBUG>:-pg>
   $<$<CONFIG:DEBUG>:-p>
+  $<$<CONFIG:DEBUG>:-ggdb>
   $<$<CONFIG:RELEASE>:-O2>)
 
 # Docs
