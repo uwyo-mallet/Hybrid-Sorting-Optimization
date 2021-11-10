@@ -28,7 +28,7 @@ QST Version:
 """
 
 
-def gen_layout(units, dirs):
+def gen_layout(units, clocks, dirs):
     res = html.Div(
         [
             dcc.Store(id="stat-data"),
@@ -107,11 +107,25 @@ def gen_layout(units, dirs):
                                         options=[
                                             {
                                                 "label": i.capitalize(),
-                                                "value": i,
+                                                "value": units[i],
                                             }
                                             for i in units
                                         ],
-                                        value=next(iter(units.keys())),
+                                        value=next(iter(units.values())),
+                                    ),
+                                    html.Label(
+                                        "Clock Type", style={"margin-top": "5px"}
+                                    ),
+                                    dcc.RadioItems(
+                                        id="clock-type",
+                                        options=[
+                                            {
+                                                "label": i.capitalize(),
+                                                "value": i,
+                                            }
+                                            for i in clocks
+                                        ],
+                                        value=clocks[0],
                                     ),
                                     dcc.Checklist(
                                         id="error-bars-checkbox",
@@ -121,6 +135,7 @@ def gen_layout(units, dirs):
                                                 "value": "error_bars",
                                             }
                                         ],
+                                        style={"margin-top": "5px"},
                                     ),
                                 ],
                                 className="pretty_container",

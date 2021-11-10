@@ -35,11 +35,16 @@ GRAPH_ORDER = (
     "single_num",
 )
 UNITS = {
-    "seconds": "wall_secs",
-    "milliseconds": "wall_msecs",
-    "microseconds": "wall_usecs",
-    "nanoseconds": "wall_nsecs",
+    "seconds": "_secs",
+    "milliseconds": "_msecs",
+    "microseconds": "_usecs",
+    "nanoseconds": "_nsecs",
 }
+CLOCKS = (
+    "wall",
+    "user",
+    "system",
+)
 RAW_COLUMNS = {
     "method": str,
     "input": str,
@@ -50,7 +55,6 @@ RAW_COLUMNS = {
     "user_nsecs": np.uint64,  # Elapsed user cpu time
     "system_nsecs": np.uint64,  # Elapsed system cpu time
 }
-
 POST_PROCESS_COLUMNS = {
     "input": str,
     "method": str,
@@ -72,7 +76,7 @@ POST_PROCESS_COLUMNS = {
 }
 
 app = dash.Dash(__name__)
-app.layout = gen_layout(UNITS, dirs)
+app.layout = gen_layout(UNITS, CLOCKS, dirs)
 
 
 @dataclass
@@ -274,21 +278,26 @@ def update_size_slider(json_df):
     [
         dash.dependencies.Input("stat-data", "data"),
         dash.dependencies.Input("time-unit", "value"),
+        dash.dependencies.Input("clock-type", "value"),
         dash.dependencies.Input("threshold-slider", "value"),
         dash.dependencies.Input("error-bars-checkbox", "value"),
     ],
 )
-def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
+def update_size_v_runtime(
+    json_df, time_unit, clock_type, threshold=4, error_bars=False
+):
     df = df_from_json(json_df)
 
     df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
     df.sort_values(["size"], inplace=True)
 
+    index = clock_type + time_unit
+
     fig = px.line(
         df,
         x=df["size"],
-        y=list(df[(UNITS[time_unit], "mean")]),
-        error_y=list(df[(UNITS[time_unit], "std")]) if error_bars else None,
+        y=list(df[(index, "mean")]),
+        error_y=list(df[(index, "std")]) if error_bars else None,
         facet_col="description",
         facet_col_wrap=1,
         facet_row_spacing=0.04,
@@ -306,7 +315,7 @@ def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
     fig.update_yaxes(
         automargin=True,
         matches=None,
-        title=f"Runtime ({time_unit})",
+        title=f"Runtime ({index})",
     )
 
     # General other formatting
@@ -334,11 +343,14 @@ def update_size_v_runtime(json_df, time_unit, threshold=4, error_bars=False):
     [
         dash.dependencies.Input("stat-data", "data"),
         dash.dependencies.Input("time-unit", "value"),
+        dash.dependencies.Input("clock-type", "value"),
         dash.dependencies.Input("size-slider", "value"),
         dash.dependencies.Input("error-bars-checkbox", "value"),
     ],
 )
-def update_threshold_v_runtime(json_df, time_unit, size=None, error_bars=False):
+def update_threshold_v_runtime(
+    json_df, time_unit, clock_type, size=None, error_bars=False
+):
     df = df_from_json(json_df)
 
     # Check to ensure that a size is provided, and that the size is valid within the DF.
@@ -369,18 +381,20 @@ def update_threshold_v_runtime(json_df, time_unit, size=None, error_bars=False):
             row["threshold"] = t
             df = df.append(row)
 
+    index = clock_type + time_unit
+
     fig = px.line(
         df,
         x=df["threshold"],
-        y=list(df[(UNITS[time_unit], "mean")]),
-        error_y=list(df[(UNITS[time_unit], "std")]) if error_bars else None,
+        y=list(df[(index, "mean")]),
+        error_y=list(df[(index, "std")]) if error_bars else None,
         facet_col="description",
         facet_col_wrap=1,
         facet_row_spacing=0.04,
         category_orders={"description": GRAPH_ORDER},
         color=df["method"],
         markers=True,
-        labels={"x": "Threshold", "y": f"Runtime ({time_unit})"},
+        labels={"x": "Threshold", "y": f"Runtime ({index})"},
         height=2000,
     )
 
