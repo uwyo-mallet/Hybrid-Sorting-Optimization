@@ -304,7 +304,7 @@ def update_size_v_runtime(
         category_orders={"description": GRAPH_ORDER},
         color=df["method"],
         markers=True,
-        labels={"x": "Size", "y": f"Runtime ({time_unit})"},
+        labels={"x": "Size", "y": f"Runtime ({index})"},
         height=2000,
     )
 
@@ -405,7 +405,7 @@ def update_threshold_v_runtime(
     fig.update_yaxes(
         automargin=True,
         matches=None,
-        title=f"Runtime ({time_unit})",
+        title=f"Runtime ({index})",
     )
 
     # General other formatting
