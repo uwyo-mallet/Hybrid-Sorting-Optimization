@@ -24,6 +24,7 @@ Options:
 """
 import multiprocessing
 import os
+import random
 import shutil
 import signal
 import subprocess
@@ -33,14 +34,14 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from queue import Queue
+from collections import deque
 
 from docopt import docopt
 from tqdm import tqdm
 
 from info import write_info
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 VALID_METHODS = (
     "insertion_sort",
@@ -223,8 +224,8 @@ class Scheduler:
         self.threshold = kwargs["threshold"]
         self.progress = kwargs["progress"]
 
-        self.job_queue: "Queue[Job]" = Queue()
-        self.active_queue: "Queue[Job]" = Queue()
+        self.job_queue: "deque[Job]" = deque()
+        self.active_queue: "deque[Job]" = deque()
 
         self._gen_jobs()
 
@@ -237,13 +238,13 @@ class Scheduler:
     def _gen_jobs(self):
         """Populate the queue with jobs."""
         files = self.data_dir.glob(r"**/*.gz")
-        self.job_queue: "Queue[Job]" = Queue()
+        self.job_queue.clear()
 
-        for file in files:
+        for f in files:
             # Get the type of data from one of the subdirectory names.
             desc = "N/A"
             for t in DATA_TYPES:
-                if f"/{t}" in str(file):
+                if f"/{t}" in str(f):
                     desc = t
                     break
 
@@ -253,10 +254,10 @@ class Scheduler:
                 # QST (> V1.0) corrects this to 0 on the CSV output.
                 if method in THRESHOLD_METHODS:
                     for thresh in self.threshold:
-                        self.job_queue.put(
+                        self.job_queue.append(
                             Job(
                                 self.exec,
-                                file,
+                                f,
                                 desc,
                                 method,
                                 self.runs,
@@ -265,10 +266,10 @@ class Scheduler:
                             )
                         )
                 else:
-                    self.job_queue.put(
+                    self.job_queue.append(
                         Job(
                             self.exec,
-                            file,
+                            f,
                             desc,
                             method,
                             self.runs,
@@ -277,28 +278,27 @@ class Scheduler:
                         )
                     )
         self.active_queue = self.job_queue
+        random.shuffle(self.active_queue)
 
     def _restore_jobs(self):
         self.active_queue = self.job_queue
 
     def _worker(self):
         """Worker function for each thread."""
-        while True:
-            job = self.active_queue.get()
+        while self.active_queue:
+            job = self.active_queue.pop()
             job.run(quiet=self.progress)
-            self.active_queue.task_done()
-
             self.pbar.update()
 
     def run_jobs(self):
         """Run all the jobs on the local machine."""
         print("===========================", file=sys.stderr)
-        print(f"About to run {self.active_queue.qsize()} jobs", file=sys.stderr)
+        print(f"About to run {len(self.active_queue)} jobs", file=sys.stderr)
         print("===========================", file=sys.stderr)
         time.sleep(3)
         print("Okay, lets do it!", file=sys.stderr)
 
-        self.pbar = tqdm(total=self.active_queue.qsize(), disable=not self.progress)
+        self.pbar = tqdm(total=len(self.active_queue), disable=not self.progress)
 
         # Log system info
         write_info(
@@ -308,15 +308,19 @@ class Scheduler:
             concurrent=self.jobs,
             qst_vers=self._get_exec_version(),
             runs=self.runs,
-            total_num_jobs=self.active_queue.qsize(),
-            total_num_sorts=self.active_queue.qsize() * self.runs,
+            total_num_jobs=len(self.active_queue),
+            total_num_sorts=len(self.active_queue) * self.runs,
         )
         # Create my own process group
         os.setpgrp()
+        threads = []
         try:
             for _ in range(self.jobs):
-                threading.Thread(target=self._worker, daemon=True).start()
-            self.active_queue.join()
+                threads.append(threading.Thread(target=self._worker, daemon=True))
+            for i in threads:
+                i.start()
+            for i in threads:
+                i.join()
         except KeyboardInterrupt:
             # Kill myself and all my processes if told to
             os.killpg(0, signal.SIGKILL)
@@ -336,18 +340,17 @@ class Scheduler:
             data_details_path=Path(self.data_dir, "details.json"),
             qst_vers=self._get_exec_version(),
             runs=self.runs,
-            total_num_jobs=self.active_queue.qsize(),
-            total_num_sorts=self.active_queue.qsize() * self.runs,
+            total_num_jobs=len(self.active_queue),
+            total_num_sorts=len(self.active_queue) * self.runs,
         )
         index = 0
-        while not self.active_queue.empty():
+        while self.active_queue:
             current_file = Path(self.slurm, f"{index}.dat")
             with open(current_file, "w") as slurm_file:
                 size = 0
-                while not self.active_queue.empty() and size < MAX_BATCH:
-                    job = self.active_queue.get()
+                while self.active_queue and size < MAX_BATCH:
+                    job = self.active_queue.pop()
                     slurm_file.write(job.cli + "\n")
-                    self.active_queue.task_done()
                     size += 1
             print(f"{current_file}: {size}")
 
