@@ -67,7 +67,6 @@ void write(struct arguments args, const size_t& size,
 void version_json();
 
 struct arguments arguments;
-size_t size = 0;
 
 int main(int argc, char** argv)
 {
@@ -106,34 +105,43 @@ int main(int argc, char** argv)
   const std::vector<bmp::cpp_int> orig_data =
       from_disk<bmp::cpp_int>(arguments.in_file);
   std::vector<bmp::cpp_int> sorted_data = orig_data;
-  std::vector<bmp::cpp_int> data;
+  std::sort(sorted_data.begin(), sorted_data.end());
+
+  const size_t DATA_LEN = orig_data.size();
+  bmp::cpp_int* to_sort = new bmp::cpp_int[DATA_LEN];
 #else
   const std::vector<uint64_t> orig_data =
       from_disk<uint64_t>(arguments.in_file);
   std::vector<uint64_t> sorted_data = orig_data;
-  std::vector<uint64_t> data;
+  std::sort(sorted_data.begin(), sorted_data.end());
+
+  const size_t DATA_LEN = orig_data.size();
+  uint64_t* to_sort = new uint64_t[DATA_LEN];
 #endif
 
-  std::sort(sorted_data.begin(), sorted_data.end());
-  size = orig_data.size();
+  bool checked = false;
 
   for (size_t i = 0; i < arguments.runs; i++)
   {
-    data = orig_data;
+    std::copy(orig_data.begin(), orig_data.end(), to_sort);
     boost::timer::cpu_times res =
-        time(arguments.method, arguments.threshold, data, sorted_data);
+        time(arguments.method, arguments.threshold, to_sort, DATA_LEN);
     times.push_back(res);
+
+    if (!checked)
+    {
+      if (!array_equal(to_sort, sorted_data.data(), DATA_LEN))
+      {
+        throw std::runtime_error("Post sort array not correctly sorted.");
+      }
+      checked = true;
+    }
   }
 
   // Output
-  try
-  {
-    write(arguments, size, times);
-  }
-  catch (std::ios_base::failure& e)
-  {
-    std::cerr << e.what() << std::endl;
-  }
+  write(arguments, DATA_LEN, times);
+
+  delete[] to_sort;
 
   return EXIT_SUCCESS;
 }
@@ -220,7 +228,7 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
   return 0;
 }
 
-/** Write results out to a file.
+/** Write results out to a file or stdout.
  *
  * @param args: Input arguments when this binary was called
  * @param size: Total number of input elements from the loaded file
