@@ -45,7 +45,9 @@ from tqdm import tqdm
 from info import write_info
 import itertools
 
-VERSION = "1.0.3"
+from typing import Union
+
+VERSION = "1.0.4"
 
 VALID_METHODS = {
     "insertion_sort",
@@ -85,9 +87,9 @@ class Job:
     output: Path
     threshold: int
 
-    callgrind: Path
-    cachegrind: Path
-    massif: Path
+    callgrind: Union[Path, None]
+    cachegrind: Union[Path, None]
+    massif: Union[Path, None]
 
     @property
     def commands(self):
@@ -186,7 +188,7 @@ class Job:
 
 
 def parse_args(args):
-    """! Parse CLI args from docopt."""
+    """Parse CLI args from docopt."""
     parsed = {}
 
     # Data dir
@@ -291,50 +293,84 @@ def parse_args(args):
 
 
 class Scheduler:
-    """! Utility class allowing for easy job generation and scheduling across many threads."""
+    """Utility class allowing for easy job generation and scheduling across many threads."""
 
-    def __init__(self, **kwargs):
-        """!
+    def __init__(
+        self,
+        data_dir: Path,
+        exec: Path,
+        jobs: int,
+        methods: list[str],
+        output: Path,
+        runs: int,
+        slurm: Path,
+        threshold: range,
+        progress: bool,
+        callgrind: Path,
+        cachegrind: Path,
+        massif: Path,
+    ):
+        """
         Define the base parameters
 
         @param data_dir: Path to input data.
         @param exec: Path to QST executable.
         @param jobs: Number of jobs to run concurrently.
         @param methods: List of all the methods to test.
+        @param output: Path to output CSV file with all test results.
         @param runs: Number of times to repeat sorts on the given data.
         @param slurm: Optional path to output slurm.d/ folder. Only provide if
-                      if not running jobs on local machine.
-        @param threshold: List of thresholds to test with each method.
+                      not running jobs on local machine.
+        @param threshold: Range of thresholds to test with each method.
         @param progress: Optionally enable a progress bar.
+        @param callgrind: Optionally run all experiments with callgrind.
+        @param cachegrind: Optionally run all experiments with cachegrind.
+        @param massif: Optionally run all experiments with massif.
         """
-        self.data_dir = kwargs["data_dir"]
-        self.exec = kwargs["exec"]
-        self.jobs = kwargs["jobs"]
-        self.methods = kwargs["methods"]
-        self.output = kwargs["output"]
-        self.runs = kwargs["runs"]
-        self.slurm = kwargs["slurm"]
-        self.threshold = kwargs["threshold"]
-        self.progress = kwargs["progress"]
+        self.data_dir = data_dir
+        self.exec = exec
+        self.jobs = jobs
+        self.methods = methods
+        self.output = output
+        self.runs = runs
+        self.slurm = slurm
+        self.threshold = threshold
+        self.progress = progress
 
-        self.callgrind = kwargs["callgrind"]
-        self.cachegrind = kwargs["cachegrind"]
-        self.massif = kwargs["massif"]
+        self.callgrind = callgrind
+        self.cachegrind = cachegrind
+        self.massif = massif
 
         self.job_queue: "deque[Job]" = deque()
         self.active_queue: "deque[Job]" = deque()
 
         self._gen_jobs()
 
-    def _get_exec_version(self):
-        """! Call the QST process and parse the version output."""
+    def _get_exec_version(self) -> str:
+        """Call the QST process and parse the version output."""
         cmd = [self.exec, "--version"]
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         stdout, _ = p.communicate()
         return stdout.decode()
 
-    # TODO: A lot of documentation needs updating
-    def _gen_subjobs(self, job_id, params):
+    def _gen_subjobs(self, job_id: int, params) -> tuple[list[Job], int]:
+        """
+        Generate any possible valgrind subjobs from this specfic job.
+
+        Since the job object is responsible for keeping track of its subprocess
+        command and its valgrind specific subprocess commands, we do a somewhat
+        goofy method of creating an invididual job for each sub type of
+        valgrind. This can probably eventually be refactored into the Job
+        object itself. But for now, this is the easiet way to keep the job_id
+        and valgrind outputs synced and unique.
+
+        @param job_id: Current largest job_id to increment from.
+        @param params: Tuple containing all the other positional arguments
+                       required for for the creation of the job.
+
+        @return Tuple containing a list of all the new jobs, and an integer
+                representing the next job_id.
+        """
         subjobs = []
         if not any([self.callgrind, self.cachegrind, self.massif]):
             job = Job(job_id, *params, callgrind=None, cachegrind=None, massif=None)
@@ -373,7 +409,7 @@ class Scheduler:
         return subjobs, job_id
 
     def _gen_jobs(self):
-        """! Populate the queue with jobs."""
+        """Populate the queue with jobs."""
         files = self.data_dir.glob(r"**/*.gz")
         self.job_queue.clear()
 
@@ -405,7 +441,7 @@ class Scheduler:
         random.shuffle(self.active_queue)
 
     def _restore_jobs(self):
-        """! Bring all the jbos from the last _gen_jobs() back into the active queue."""
+        """Bring all the jbos from the last _gen_jobs() back into the active queue."""
         self.active_queue = self.job_queue
 
     def _worker(self):
@@ -416,7 +452,7 @@ class Scheduler:
             self.pbar.update()
 
     def run_jobs(self):
-        """! Run all the jobs on the local machine."""
+        """Run all the jobs on the local machine."""
         print("===========================", file=sys.stderr)
         print(f"About to run {len(self.active_queue)} jobs", file=sys.stderr)
         print("===========================", file=sys.stderr)
@@ -451,7 +487,7 @@ class Scheduler:
             os.killpg(0, signal.SIGKILL)
 
     def gen_slurm(self):
-        """! Create the slurm.d/ directory with all necessary parameters."""
+        """Create the slurm.d/ directory with all necessary parameters."""
         if self.slurm.exists() and self.slurm.is_dir():
             shutil.rmtree(self.slurm)
         elif self.slurm.is_file():
@@ -485,7 +521,6 @@ class Scheduler:
 
 if __name__ == "__main__":
     args = parse_args(docopt(__doc__, version=VERSION))
-
     s = Scheduler(**args)
     if args["slurm"]:
         s.gen_slurm()

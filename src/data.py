@@ -30,6 +30,8 @@ from pathlib import Path
 import numpy as np
 from docopt import docopt
 
+VERSION = "1.0.0"
+
 # Default thresholds
 INCREMENT = 100_000
 MIN_ELEMENTS = INCREMENT
@@ -37,10 +39,10 @@ MAX_ELEMENTS = 1_000_000
 
 
 class DataGen:
-    """! Utility class for generating lots of data really fast."""
+    """Utility class for generating lots of data really fast."""
 
     def __init__(self, output: Path, minimum: int, maximum: int, increment: int):
-        """!
+        """
         Initialize range and output parameters.
 
         @param output: Path to folder to output data.
@@ -71,14 +73,14 @@ class DataGen:
         self._create_dirs()
 
     def _create_dirs(self):
-        """! Create all the directories for output files."""
+        """Create all the directories for output files."""
         self.base_path.mkdir(parents=True, exist_ok=True)
         for d in self.dirs:
             real_path = Path(self.base_path, d)
             real_path.mkdir(exist_ok=True)
 
     def _copy_and_append(self, prev: Path, current: Path, data):
-        """!
+        """
         Copy a .gz file and append to the new file assuming the data is an Iterable
 
         @param prev: Path to prev file.
@@ -95,11 +97,11 @@ class DataGen:
 
     @staticmethod
     def _save(output: Path, data):
-        """! Save a np array as either txt or gz depending on the extension."""
+        """Save a np array as either txt or gz depending on the extension."""
         np.savetxt(output, data, fmt="%u", delimiter="\n", comments="")
 
     def _generic(self, output: Path, data):
-        """!
+        """
         Generic save routine for all other methods.
 
         @param output: Path to folder to save outputs (0.EXT, 1.EXT, ...).
@@ -114,19 +116,19 @@ class DataGen:
             self._copy_and_append(prev, current, data[n : n + self.inc])
 
     def ascending(self, output: Path):
-        """! Ascending data, 0, 1, 2, 3, 4."""
+        """Ascending data, 0, 1, 2, 3, 4."""
         data = np.arange(self.min - self.inc, self.max - self.inc, dtype=np.uint64)
         self._generic(output, data)
 
     def descending(self, output: Path):
-        """! Descending data, 4, 3, 2, 1, 0."""
+        """Descending data, 4, 3, 2, 1, 0."""
         data = np.arange(
             self.max - self.inc - 1, self.min - self.inc - 1, -1, dtype=np.uint64
         )
         self._generic(output, data)
 
     def random(self, output: Path):
-        """! Random data bounded by the min and max."""
+        """Random data bounded by the min and max."""
         data = np.random.randint(
             low=self.min - self.inc,
             high=self.max - self.inc,
@@ -136,13 +138,13 @@ class DataGen:
         self._generic(output, data)
 
     def single_num(self, output: Path):
-        """! The number 42 repeated."""
+        """The number 42 repeated."""
         data = np.empty(self.max + 1, dtype=np.int64)
         data.fill(42)
         self._generic(output, data)
 
     def generate(self, t=None):
-        """!
+        """
         Generate data in parallel.
 
         @param t: Singular type of data to generate. If none, generate all types.
@@ -186,7 +188,7 @@ class DataGen:
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__)
+    args = docopt(__doc__, version=VERSION)
     if args.get("evaluate"):
         print("[Deprecated]: Use the evaluate.ipynb jupyter notebook instead.")
 

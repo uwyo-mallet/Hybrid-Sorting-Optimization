@@ -39,7 +39,7 @@ def write_info(
     total_num_jobs=0,
     total_num_sorts=0,
 ):
-    """!
+    """
     Write system information to disk.
 
     @param output_folder: Directory to write `job_details.json` to.
