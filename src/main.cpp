@@ -38,6 +38,7 @@ static char args_doc[] = "INPUT";
 #define VERSION_JSON_SHORT_OPT 0x80
 static struct argp_option options[] = {
     {"description", 'd', "DESCRIP", 0, "Short description of input data."},
+    {"id", 'i', "ID", 0, "ID of this job."},
     {"method", 'm', "METHOD", 0, "Sorting method."},
     {"output", 'o', "FILE", 0, "Output to FILE instead of STDOUT."},
     {"runs", 'r', "N", 0, "Number of times to sort the same data. Default: 1"},
@@ -50,6 +51,7 @@ static struct argp_option options[] = {
 struct arguments
 {
   std::string description;
+  int64_t id;
   fs::path in_file;
   std::string method;
   fs::path out_file;
@@ -74,6 +76,7 @@ int main(int argc, char** argv)
 
   // Default CLI options
   arguments.description = "N/A";
+  arguments.id = -1;
   arguments.method = "qsort_c";
   arguments.out_file = "-";
   arguments.runs = 1;
@@ -166,6 +169,10 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
       args->description = std::string(arg);
       break;
 
+    case 'i':
+      args->id = std::stoi(std::string(arg));
+      break;
+
     case 'm':
       args->method = std::string(arg);
       break;
@@ -239,6 +246,7 @@ void write(const struct arguments args, const size_t& size,
 {
   if (args.out_file == "-")
   {
+    std::cout << "ID: " << args.id << std::endl;
     std::cout << "Method: " << args.method << std::endl;
     std::cout << "Input: " << args.in_file << std::endl;
     std::cout << "Description: " << args.description << std::endl;
@@ -270,7 +278,7 @@ void write(const struct arguments args, const size_t& size,
     if (out_file.tellg() == 0)
     {
       out_file.clear();
-      out_file << "method,input,description,size,threshold,wall_nsecs,user_"
+      out_file << "id,method,input,description,size,threshold,wall_nsecs,user_"
                   "nsecs,system_nsecs"
                << std::endl;
     }
@@ -278,9 +286,10 @@ void write(const struct arguments args, const size_t& size,
     // Write the actual data
     for (boost::timer::cpu_times time : times)
     {
-      out_file << args.method << "," << args.in_file << "," << args.description
-               << "," << size << "," << args.threshold << "," << time.wall
-               << "," << time.user << "," << time.system << std::endl;
+      out_file << args.id << "," << args.method << "," << args.in_file << ","
+               << args.description << "," << size << "," << args.threshold
+               << "," << time.wall << "," << time.user << "," << time.system
+               << std::endl;
     }
 
     out_file.close();
