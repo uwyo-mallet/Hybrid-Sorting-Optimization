@@ -286,7 +286,8 @@ def parse_args(args):
         arg = args.get(f"--{i}")
         if arg:
             arg = parsed["output"].parent / "valgrind"
-            arg.mkdir(exist_ok=True)
+            if parsed["slurm"] is None:
+                arg.mkdir(exist_ok=True)
         parsed[i] = arg
 
     return parsed
