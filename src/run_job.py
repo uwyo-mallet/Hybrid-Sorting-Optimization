@@ -7,6 +7,7 @@ Usage:
     run_job.py -h | --help
 
 Options:
+    -e, --exclusive          Slurm exclusive flag.
     -h, --help               Show this help.
     -n, --dry-run            Do everything except actually submit the jobs to slurm.
     -w, --wait=N             Time to wait in seconds between slurm submissions
@@ -126,6 +127,9 @@ with cd(RESULTS_DIR):
             str(JOB_SBATCH),
             str(batch),
         ]
+
+        if args.get("--exclusive"):
+            command.insert(1, "--exclusive")
 
         print("\t" + " ".join(command))
         if not DRY_RUN:

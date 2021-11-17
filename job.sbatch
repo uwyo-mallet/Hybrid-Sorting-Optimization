@@ -13,7 +13,6 @@
 #SBATCH --signal=TERM@300
 #SBATCH --profile=all
 #SBATCH --output=stdout_%A.out
-#SBATCH --exclusive
 
 INPUT_DATA="$1"
 mapfile -t commands <"$INPUT_DATA"
