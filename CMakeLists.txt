@@ -71,7 +71,9 @@ add_compile_options(
   $<$<CONFIG:DEBUG>:-pg>
   $<$<CONFIG:DEBUG>:-p>
   $<$<CONFIG:DEBUG>:-ggdb>
-  $<$<CONFIG:RELEASE>:-O2>)
+  $<$<CONFIG:RELEASE>:-Ofast>
+  $<$<CONFIG:VALGRIND>:-Ofast>
+  $<$<CONFIG:VALGRIND>:-ggdb>)
 
 # Docs
 add_subdirectory("docs")
