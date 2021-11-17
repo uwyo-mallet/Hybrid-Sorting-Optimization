@@ -19,6 +19,9 @@ message("C Compiler ID: " ${CMAKE_C_COMPILER_ID})
 message("CXX Compiler Path: " ${CMAKE_CXX_COMPILER})
 message("CXX Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
 
+# Additional modules
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
 # Boost
 find_package(Boost 1.67.0 REQUIRED COMPONENTS iostreams filesystem timer)
 include_directories(${BOOST_INCLUDE_DIRS})
@@ -71,25 +74,4 @@ add_compile_options(
   $<$<CONFIG:RELEASE>:-O2>)
 
 # Docs
-find_package(Doxygen)
-if(${DOXYGEN_FOUND} AND ${DOXYGEN_VERSION} VERSION_GREATER "1.9.0")
-  set(DOXYGEN_INPUT_DIR
-      ${PROJECT_SOURCE_DIR}/src,${PROJECT_SOURCE_DIR}/evaluator)
-  set(DOXYGEN_OUTPUT_DIR ${PROJECT_SOURCE_DIR}/docs/doxygen)
-  set(DOXYGEN_INDEX_FILE ${CMAKE_CURRENT_SOURCE_DIR}/docs/html/index.html)
-  set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in)
-  set(DOXYFILE_OUT ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile)
-
-  configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
-
-  file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
-  add_custom_command(
-    OUTPUT ${DOXYGEN_INDEX_FILE}
-    DEPENDS ${HEADER_FILES}
-    DEPENDS ${SRC_FILES}
-    COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile
-    COMMENT "Generating docs")
-  add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
-endif()
+add_subdirectory("docs")
