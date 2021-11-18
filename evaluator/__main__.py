@@ -46,6 +46,7 @@ CLOCKS = (
     "system",
 )
 RAW_COLUMNS = {
+    "id": np.uint64,
     "method": str,
     "input": str,
     "description": str,
@@ -56,6 +57,7 @@ RAW_COLUMNS = {
     "system_nsecs": np.uint64,  # Elapsed system cpu time
 }
 POST_PROCESS_COLUMNS = {
+    "id": np.uint64,
     "input": str,
     "method": str,
     "description": str,
