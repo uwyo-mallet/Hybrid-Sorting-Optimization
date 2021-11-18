@@ -70,6 +70,7 @@ add_compile_options(
   $<$<CONFIG:DEBUG>:-Og>
   $<$<CONFIG:DEBUG>:-pg>
   $<$<CONFIG:DEBUG>:-p>
+  $<$<CONFIG:DEBUG>:-fsanitize=address>
   $<$<CONFIG:DEBUG>:-ggdb>
   $<$<CONFIG:RELEASE>:-Ofast>
   $<$<CONFIG:VALGRIND>:-Ofast>
