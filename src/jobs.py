@@ -25,6 +25,7 @@ Options:
     --cachegrind             Enable cachegrind data collection for each job.
     --massif                 Enable massif data collection for each job.
 """
+import itertools
 import multiprocessing
 import os
 import random
@@ -34,20 +35,18 @@ import subprocess
 import sys
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from collections import deque
+from typing import Union
 
 from docopt import docopt
 from tqdm import tqdm
 
 from info import write_info
-import itertools
 
-from typing import Union
-
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 
 VALID_METHODS = {
     "insertion_sort",
@@ -93,8 +92,7 @@ class Job:
 
     @property
     def commands(self):
-        # """Return the appropiate format for subprocess.Popen."""
-
+        """Return all possible commands given the parameters from init."""
         all_commands = []
         base_command = [
             str(self.exec_path.absolute()),
@@ -123,7 +121,7 @@ class Job:
 
         # Parse valgrind specific stuff
         if self.callgrind:
-            out = self.callgrind.absolute() / f"{self.job_id}_callgrind.out"
+            out = self.callgrind / f"{self.job_id}_callgrind.out"
             out = str(out)
             opts = [
                 "--tool=callgrind",
@@ -143,7 +141,7 @@ class Job:
                 list(itertools.chain(base_valgrind_opts, opts, base_command))
             )
         if self.cachegrind:
-            out = self.cachegrind.absolute() / f"{self.job_id}_cachegrind.out"
+            out = self.cachegrind / f"{self.job_id}_cachegrind.out"
             out = str(out)
             opts = [
                 "--tool=cachegrind",
@@ -155,7 +153,7 @@ class Job:
                 list(itertools.chain(base_valgrind_opts, opts, base_command))
             )
         if self.massif:
-            out = self.massif.absolute() / f"{self.job_id}_massif.out"
+            out = self.massif / f"{self.job_id}_massif.out"
             out = str(out)
             opts = [
                 "--tool=massif",
@@ -183,8 +181,7 @@ class Job:
         for i in self.commands:
             if not quiet:
                 print(i)
-            p = subprocess.Popen(i)
-            p.wait()
+            subprocess.run(i, capture_output=True)
 
 
 def parse_args(args):

@@ -24,6 +24,8 @@ from pathlib import Path
 
 from docopt import docopt
 
+VERSION = "1.0.0"
+
 
 class cd:
     """
@@ -67,7 +69,7 @@ PARTITIONS = {
     "moran",
 }
 
-args = docopt(__doc__)
+args = docopt(__doc__, version=VERSION)
 
 CWD = Path.cwd()
 JOB_SBATCH = Path(CWD, "job.sbatch")
@@ -78,6 +80,7 @@ WAIT = float(args["--wait"])
 RESULTS_DIR = (
     CWD / "results" / f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{PARTITION}"
 )
+VALGRIND_DIR = RESULTS_DIR / "valgrind"
 
 # Validate user inputs
 if not JOB_SBATCH.is_file():
@@ -103,6 +106,7 @@ except ValueError:
 # All user inputs are valid, prep for job submission.
 if not DRY_RUN:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    VALGRIND_DIR.mkdir(parents=True, exist_ok=True)
     shutil.copy(Path(SLURM_DIR, "job_details.json"), RESULTS_DIR)
     shutil.copytree(SLURM_DIR, Path(RESULTS_DIR, SLURM_DIR.name))
     Path(RESULTS_DIR, "partition").write_text(PARTITION + "\n")
