@@ -22,7 +22,6 @@ Options:
     -t, --threshold=THRESH   Comma seperated range for threshold (min,max,[step])
                              including both endpoints, or a single value.
     --callgrind              Enable callgrind data collection for each job.
-    --cachegrind             Enable cachegrind data collection for each job.
     --massif                 Enable massif data collection for each job.
 """
 import itertools
@@ -87,7 +86,6 @@ class Job:
     threshold: int
 
     callgrind: Union[Path, None]
-    cachegrind: Union[Path, None]
     massif: Union[Path, None]
 
     @property
@@ -113,10 +111,11 @@ class Job:
         base_valgrind_opts = [
             "valgrind",
             "--time-stamp=yes",
+            "--quiet",
         ]
 
         # Not using valgrind, just pass the base command
-        if not any([self.callgrind, self.cachegrind, self.massif]):
+        if not any([self.callgrind, self.massif]):
             return [base_command]
 
         # Parse valgrind specific stuff
@@ -136,18 +135,6 @@ class Job:
                 "--cache-sim=yes",
                 "--branch-sim=yes",
                 "--",
-            ]
-            all_commands.append(
-                list(itertools.chain(base_valgrind_opts, opts, base_command))
-            )
-        if self.cachegrind:
-            out = self.cachegrind / f"{self.job_id}_cachegrind.out"
-            out = str(out)
-            opts = [
-                "--tool=cachegrind",
-                f"--cachegrind-out-file={out}",
-                "--cache-sim=yes",
-                "--branch-sim=yes",
             ]
             all_commands.append(
                 list(itertools.chain(base_valgrind_opts, opts, base_command))
@@ -279,7 +266,7 @@ def parse_args(args):
     parsed["threshold"] = range(thresh_range[0], thresh_range[1] + 1, thresh_range[2])
 
     # Valgrind options
-    for i in ("callgrind", "cachegrind", "massif"):
+    for i in ("callgrind", "massif"):
         arg = args.get(f"--{i}")
         if arg:
             arg = parsed["output"].parent / "valgrind"
@@ -305,7 +292,6 @@ class Scheduler:
         threshold: range,
         progress: bool,
         callgrind: Path,
-        cachegrind: Path,
         massif: Path,
     ):
         """
@@ -322,7 +308,6 @@ class Scheduler:
         @param threshold: Range of thresholds to test with each method.
         @param progress: Optionally enable a progress bar.
         @param callgrind: Optionally run all experiments with callgrind.
-        @param cachegrind: Optionally run all experiments with cachegrind.
         @param massif: Optionally run all experiments with massif.
         """
         self.data_dir = data_dir
@@ -336,7 +321,6 @@ class Scheduler:
         self.progress = progress
 
         self.callgrind = callgrind
-        self.cachegrind = cachegrind
         self.massif = massif
 
         self.job_queue: "deque[Job]" = deque()
@@ -370,25 +354,14 @@ class Scheduler:
                 representing the next job_id.
         """
         subjobs = []
-        if not any([self.callgrind, self.cachegrind, self.massif]):
-            job = Job(job_id, *params, callgrind=None, cachegrind=None, massif=None)
+        if not any([self.callgrind, self.massif]):
+            job = Job(job_id, *params, callgrind=None, massif=None)
             return [job], job_id + 1
         if self.callgrind:
             job = Job(
                 job_id,
                 *params,
                 callgrind=self.callgrind,
-                cachegrind=None,
-                massif=None,
-            )
-            subjobs.append(job)
-            job_id += 1
-        if self.cachegrind:
-            job = Job(
-                job_id,
-                *params,
-                cachegrind=self.cachegrind,
-                callgrind=None,
                 massif=None,
             )
             subjobs.append(job)
@@ -399,7 +372,6 @@ class Scheduler:
                 *params,
                 massif=self.massif,
                 callgrind=None,
-                cachegrind=None,
             )
             subjobs.append(job)
             job_id += 1
