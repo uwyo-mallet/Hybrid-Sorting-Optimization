@@ -60,16 +60,16 @@ DATA_TYPES = (
 RAW_COLUMNS = {
     "method": str,
     "input": str,
-    "size": np.uint64,
+    "size": np.uint32,
     "threshold": np.uint64,
     "wall_nsecs": np.uint64,  # Elapsed wall time
     "user_nsecs": np.uint64,  # Elapsed user cpu time
     "system_nsecs": np.uint64,  # Elapsed system cpu time
-    "id": np.uint64,
+    "id": np.uint32,
     "description": str,
-    "base": int,
-    "callgrind": int,
-    "massif": int,
+    "base": np.uint8,
+    "callgrind": np.uint8,
+    "massif": np.uint8,
 }
 POST_PROCESS_COLUMNS = {
     "id": np.uint64,
@@ -110,7 +110,7 @@ def preprocess_csv(csv_file: Path):
     in_raw_parq = Path(csv_file.parent, csv_file.stem + ".parquet")
     in_stat_parq = Path(csv_file.parent, csv_file.stem + "_stat.parquet")
 
-    raw_df = pd.read_csv(csv_file, dtype=RAW_COLUMNS, engine="c")
+    raw_df = pd.read_csv(csv_file, dtype=RAW_COLUMNS, engine="c", memory_map=True)
 
     # Cleanup and add some additional columns
     raw_df["wall_usecs"] = raw_df["wall_nsecs"] / 1000
