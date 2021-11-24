@@ -38,6 +38,9 @@ def write_info(
     runs=0,
     total_num_jobs=0,
     total_num_sorts=0,
+    base=True,
+    callgrind=False,
+    massif=False,
 ):
     """
     Write system information to disk.
@@ -71,6 +74,9 @@ def write_info(
         "System": platform.system(),
         "Total number of jobs": total_num_jobs,
         "Total number of sorts": total_num_sorts,
+        "Base": base,
+        "Callgrind": callgrind,
+        "Massif": massif,
         "Version": platform.version(),
     }
 

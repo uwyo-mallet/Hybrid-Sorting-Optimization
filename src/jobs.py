@@ -21,6 +21,9 @@ Options:
     -s, --slurm=DIR          Generate a batch of slurm data files in this dir.
     -t, --threshold=THRESH   Comma seperated range for threshold (min,max,[step])
                              including both endpoints, or a single value.
+
+    --base                   Collect a normal sample along with any valgrind options.
+                             Ignored if not accompanied by either of the following options.
     --callgrind              Enable callgrind data collection for each job.
     --massif                 Enable massif data collection for each job.
 """
@@ -33,19 +36,18 @@ import signal
 import subprocess
 import sys
 import threading
-import time
 from collections import deque
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Union
 
 from docopt import docopt
 from tqdm import tqdm
 
 from info import write_info
 
-VERSION = "1.0.5"
+VERSION = "1.1.0"
 
 VALID_METHODS = {
     "insertion_sort",
@@ -85,20 +87,69 @@ class Job:
     output: Path
     threshold: int
 
-    callgrind: Union[Path, None]
-    massif: Union[Path, None]
+    base: bool
+    callgrind: bool
+    massif: bool
+
+    def __init__(
+        self,
+        job_id,
+        exec_path,
+        infile_path,
+        description,
+        method,
+        runs,
+        output,
+        threshold,
+        base=False,
+        callgrind=False,
+        massif=False,
+    ):
+        self.job_id = job_id
+        self.exec_path = exec_path
+        self.infile_path = infile_path
+        self.description = description
+        self.method = method
+        self.runs = runs
+        self.output = output
+        self.threshold = threshold
+        self.base = base
+
+        self.callgrind = None
+        self.massif = None
+        if callgrind:
+            self.callgrind = (
+                self.output.parent / "valgrind" / f"{self.job_id}_callgrind.out"
+            )
+        if massif:
+            self.massif = self.output.parent / "valgrind" / f"{self.job_id}_massif.out"
+
+        if not any([self.callgrind, self.massif]):
+            self.base = True
+
+    @staticmethod
+    def _passthrough_args(passthrough):
+        return [
+            "--cols",
+            ",".join(passthrough.keys()),
+            "--vals",
+            ",".join(passthrough.values()),
+        ]
 
     @property
     def commands(self):
         """Return all possible commands given the parameters from init."""
         all_commands = []
+        passthrough_opts = {
+            "id": str(self.job_id),
+            "description": str(self.description),
+            "base": "0",
+            "callgrind": "0",
+            "massif": "0",
+        }
         base_command = [
             str(self.exec_path.absolute()),
             str(self.infile_path.absolute()),
-            "--id",
-            str(self.job_id),
-            "--description",
-            str(self.description),
             "--method",
             str(self.method),
             "--output",
@@ -114,14 +165,16 @@ class Job:
             "--quiet",
         ]
 
-        # Not using valgrind, just pass the base command
-        if not any([self.callgrind, self.massif]):
-            return [base_command]
+        if self.base:
+            my_pt = deepcopy(passthrough_opts)
+            my_pt["base"] = "1"
+            all_commands.append(
+                tuple(itertools.chain(base_command, self._passthrough_args(my_pt)))
+            )
 
         # Parse valgrind specific stuff
-        if self.callgrind:
-            out = self.callgrind / f"{self.job_id}_callgrind.out"
-            out = str(out)
+        if self.callgrind is not None:
+            out = str(self.callgrind)
             opts = [
                 "--tool=callgrind",
                 f"--callgrind-out-file={out}",
@@ -136,39 +189,59 @@ class Job:
                 "--branch-sim=yes",
                 "--",
             ]
+            my_pt = deepcopy(passthrough_opts)
+            my_pt["callgrind"] = "1"
             all_commands.append(
-                list(itertools.chain(base_valgrind_opts, opts, base_command))
+                tuple(
+                    itertools.chain(
+                        base_valgrind_opts,
+                        opts,
+                        base_command,
+                        self._passthrough_args(my_pt),
+                    )
+                )
             )
-        if self.massif:
-            out = self.massif / f"{self.job_id}_massif.out"
-            out = str(out)
+        if self.massif is not None:
+            out = str(self.massif)
             opts = [
                 "--tool=massif",
                 f"--massif-out-file={out}",
                 "--stacks=yes",
                 "--",
             ]
+
+            my_pt = deepcopy(passthrough_opts)
+            my_pt["massif"] = "1"
+
             all_commands.append(
-                list(itertools.chain(base_valgrind_opts, opts, base_command))
+                tuple(
+                    itertools.chain(
+                        base_valgrind_opts,
+                        opts,
+                        base_command,
+                        self._passthrough_args(my_pt),
+                    )
+                )
             )
 
         return all_commands
-
-    @property
-    def size(self):
-        return len(self.commands)
 
     @property
     def cli(self):
         # """Return the raw CLI equivalent of the subprocess.Popen command."""
         return [" ".join([str(i) for i in command]) for command in self.commands]
 
-    def run(self, quiet=False):
+    def run(self, quiet=False, pbar=None):
         """Call the subprocess and run the job."""
         for i in self.commands:
             if not quiet:
-                print(i)
+                print(" ".join(i))
+            elif pbar is not None:
+                pbar.update()
             subprocess.run(i, capture_output=True)
+
+    def __len__(self):
+        return len(self.commands)
 
 
 def parse_args(args):
@@ -253,7 +326,7 @@ def parse_args(args):
             except ValueError as e:
                 raise ValueError(f"Invalid threshold: {buf}") from e
     else:
-        thresh_range = [4, 4, 1]
+        thresh_range = [1, 1, 1]
 
     # Ensure thresholds are within sensible range
     if (
@@ -266,13 +339,12 @@ def parse_args(args):
     parsed["threshold"] = range(thresh_range[0], thresh_range[1] + 1, thresh_range[2])
 
     # Valgrind options
-    for i in ("callgrind", "massif"):
-        arg = args.get(f"--{i}")
-        if arg:
-            arg = parsed["output"].parent / "valgrind"
-            if parsed["slurm"] is None:
-                arg.mkdir(exist_ok=True)
-        parsed[i] = arg
+    parsed["base"] = args.get("--base")
+    parsed["callgrind"] = args.get("--callgrind")
+    parsed["massif"] = args.get("--callgrind")
+
+    if parsed["slurm"] is None:
+        Path(parsed["output"].parent, "valgrind").mkdir(exist_ok=True)
 
     return parsed
 
@@ -291,8 +363,9 @@ class Scheduler:
         slurm: Path,
         threshold: range,
         progress: bool,
-        callgrind: Path,
-        massif: Path,
+        base: bool,
+        callgrind: bool,
+        massif: bool,
     ):
         """
         Define the base parameters
@@ -320,8 +393,12 @@ class Scheduler:
         self.threshold = threshold
         self.progress = progress
 
+        self.base = base
         self.callgrind = callgrind
         self.massif = massif
+
+        if not any([self.callgrind, self.massif]):
+            self.base = True
 
         self.job_queue: "deque[Job]" = deque()
         self.active_queue: "deque[Job]" = deque()
@@ -330,60 +407,16 @@ class Scheduler:
 
     def _get_exec_version(self) -> str:
         """Call the QST process and parse the version output."""
-        cmd = [self.exec, "--version"]
+        cmd = (self.exec, "--version")
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         stdout, _ = p.communicate()
         return stdout.decode()
-
-    def _gen_subjobs(self, job_id: int, params) -> tuple[list[Job], int]:
-        """
-        Generate any possible valgrind subjobs from this specfic job.
-
-        Since the job object is responsible for keeping track of its subprocess
-        command and its valgrind specific subprocess commands, we do a somewhat
-        goofy method of creating an invididual job for each sub type of
-        valgrind. This can probably eventually be refactored into the Job
-        object itself. But for now, this is the easiet way to keep the job_id
-        and valgrind outputs synced and unique.
-
-        @param job_id: Current largest job_id to increment from.
-        @param params: Tuple containing all the other positional arguments
-                       required for for the creation of the job.
-
-        @return Tuple containing a list of all the new jobs, and an integer
-                representing the next job_id.
-        """
-        subjobs = []
-        if not any([self.callgrind, self.massif]):
-            job = Job(job_id, *params, callgrind=None, massif=None)
-            return [job], job_id + 1
-        if self.callgrind:
-            job = Job(
-                job_id,
-                *params,
-                callgrind=self.callgrind,
-                massif=None,
-            )
-            subjobs.append(job)
-            job_id += 1
-        if self.massif:
-            job = Job(
-                job_id,
-                *params,
-                massif=self.massif,
-                callgrind=None,
-            )
-            subjobs.append(job)
-            job_id += 1
-
-        return subjobs, job_id
 
     def _gen_jobs(self):
         """Populate the queue with jobs."""
         files = self.data_dir.glob(r"**/*.gz")
         self.job_queue.clear()
 
-        job_id = 0
         for f in files:
             # Get the type of data from one of the subdirectory names.
             desc = "N/A"
@@ -392,23 +425,37 @@ class Scheduler:
                     desc = t
                     break
 
+            params = {
+                "job_id": 0,
+                "exec_path": self.exec,
+                "infile_path": f,
+                "description": desc,
+                "method": None,
+                "runs": self.runs,
+                "output": self.output,
+                "threshold": 1,
+                "base": self.base,
+                "callgrind": self.callgrind,
+                "massif": self.massif,
+            }
             for method in self.methods:
+                params["method"] = method
                 # Only methods in THRESHOLD_METHODS care about threshold value.
                 # For the others, we can use just one dummy value.
                 # QST (> V1.0) corrects this to 0 on the CSV output.
-                base_params = (self.exec, f, desc, method, self.runs, self.output)
                 if method in THRESHOLD_METHODS:
                     for thresh in self.threshold:
-                        params = base_params + (thresh,)
-                        subjobs, job_id = self._gen_subjobs(job_id, params)
-                        self.job_queue += subjobs
+                        params["threshold"] = thresh
+                        job = Job(**params)
+                        self.job_queue.append(job)
+                        params["job_id"] += 1
                 else:
-                    params = base_params + (1,)
-                    subjobs, job_id = self._gen_subjobs(job_id, params)
-                    self.job_queue += subjobs
+                    job = Job(**params)
+                    self.job_queue.append(job)
+                    params["job_id"] += 1
 
+        random.shuffle(self.job_queue)
         self.active_queue = self.job_queue
-        random.shuffle(self.active_queue)
 
     def _restore_jobs(self):
         """Bring all the jbos from the last _gen_jobs() back into the active queue."""
@@ -418,18 +465,18 @@ class Scheduler:
         """Worker function for each thread."""
         while self.active_queue:
             job = self.active_queue.pop()
-            job.run(quiet=self.progress)
-            self.pbar.update()
+            job.run(quiet=self.progress, pbar=self.pbar)
 
     def run_jobs(self):
         """Run all the jobs on the local machine."""
+        total_num_jobs = sum([len(job) for job in self.active_queue])
         print("===========================", file=sys.stderr)
-        print(f"About to run {len(self.active_queue)} jobs", file=sys.stderr)
+        print(f"About to run {total_num_jobs} jobs", file=sys.stderr)
         print("===========================", file=sys.stderr)
-        time.sleep(3)
+        # time.sleep(3)
         print("Okay, lets do it!", file=sys.stderr)
 
-        self.pbar = tqdm(total=len(self.active_queue), disable=not self.progress)
+        self.pbar = tqdm(total=total_num_jobs, disable=not self.progress)
 
         # Log system info
         write_info(
@@ -439,8 +486,11 @@ class Scheduler:
             concurrent=self.jobs,
             qst_vers=self._get_exec_version(),
             runs=self.runs,
-            total_num_jobs=len(self.active_queue),
-            total_num_sorts=len(self.active_queue) * self.runs,
+            total_num_jobs=total_num_jobs,
+            total_num_sorts=total_num_jobs * self.runs,
+            base=self.base,
+            callgrind=self.callgrind,
+            massif=self.massif,
         )
         # Create my own process group
         os.setpgrp()
@@ -464,6 +514,7 @@ class Scheduler:
             raise FileExistsError("Slurm output cannot be a file")
 
         self.slurm.mkdir()
+        total_num_jobs = sum([len(job) for job in self.active_queue])
         write_info(
             self.slurm,
             command=" ".join(sys.argv),
@@ -471,8 +522,11 @@ class Scheduler:
             data_details_path=Path(self.data_dir, "details.json"),
             qst_vers=self._get_exec_version(),
             runs=self.runs,
-            total_num_jobs=len(self.active_queue),
-            total_num_sorts=len(self.active_queue) * self.runs,
+            total_num_jobs=total_num_jobs,
+            total_num_sorts=total_num_jobs * self.runs,
+            base=self.base,
+            callgrind=self.callgrind,
+            massif=self.massif,
         )
         index = 0
         while self.active_queue:
@@ -483,9 +537,8 @@ class Scheduler:
                     job = self.active_queue.pop()
                     for i in job.cli:
                         slurm_file.write(i + "\n")
-                    size += job.size
+                    size += len(job)
             print(f"{current_file}: {size}")
-
             index += 1
 
 
