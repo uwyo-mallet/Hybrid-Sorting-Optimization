@@ -14,8 +14,15 @@ from dash import dcc
 
 from .layout import gen_layout, md_template
 
+from functools import partial
 
-pd.set_option("display.max_columns", None)
+
+# Debug Options
+# pd.set_option("display.max_columns", None)
+# pd.set_option("display.max_rows", 500)
+# pd.set_option("display.max_columns", 500)
+# pd.set_option("display.width", 1000)
+
 
 RESULTS_DIR = Path("./results")
 dirs = sorted(list(RESULTS_DIR.iterdir()))
@@ -45,16 +52,24 @@ CLOCKS = (
     "user",
     "system",
 )
+DATA_TYPES = (
+    "base",
+    "callgrind",
+    "massif",
+)
 RAW_COLUMNS = {
-    "id": np.uint64,
     "method": str,
     "input": str,
-    "description": str,
     "size": np.uint64,
     "threshold": np.uint64,
     "wall_nsecs": np.uint64,  # Elapsed wall time
     "user_nsecs": np.uint64,  # Elapsed user cpu time
     "system_nsecs": np.uint64,  # Elapsed system cpu time
+    "id": np.uint64,
+    "description": str,
+    "base": int,
+    "callgrind": int,
+    "massif": int,
 }
 POST_PROCESS_COLUMNS = {
     "id": np.uint64,
@@ -63,6 +78,9 @@ POST_PROCESS_COLUMNS = {
     "description": str,
     "threshold": np.uint64,
     "size": np.uint64,
+    "base": bool,
+    "callgrind": bool,
+    "massif": bool,
     "wall_nsecs": np.uint64,
     "wall_usecs": np.uint64,
     "wall_msecs": np.uint64,
@@ -78,7 +96,7 @@ POST_PROCESS_COLUMNS = {
 }
 
 app = dash.Dash(__name__)
-app.layout = gen_layout(UNITS, CLOCKS, dirs)
+app.layout = partial(gen_layout, UNITS, CLOCKS, DATA_TYPES, None)
 
 
 @dataclass
@@ -86,6 +104,70 @@ class Result:
     raw_df: pd.DataFrame
     stat_df: pd.DataFrame
     info: dict
+
+
+def preprocess_csv(csv_file: Path):
+    in_raw_parq = Path(csv_file.parent, csv_file.stem + ".parquet")
+    in_stat_parq = Path(csv_file.parent, csv_file.stem + "_stat.parquet")
+
+    raw_df = pd.read_csv(csv_file, dtype=RAW_COLUMNS, engine="c")
+
+    # Cleanup and add some additional columns
+    raw_df["wall_usecs"] = raw_df["wall_nsecs"] / 1000
+    raw_df["user_usecs"] = raw_df["user_nsecs"] / 1000
+    raw_df["system_usecs"] = raw_df["system_nsecs"] / 1000
+
+    raw_df["wall_msecs"] = raw_df["wall_usecs"] / 1000
+    raw_df["user_msecs"] = raw_df["user_usecs"] / 1000
+    raw_df["system_msecs"] = raw_df["system_usecs"] / 1000
+
+    raw_df["wall_secs"] = raw_df["wall_msecs"] / 1000
+    raw_df["user_secs"] = raw_df["user_msecs"] / 1000
+    raw_df["system_secs"] = raw_df["system_msecs"] / 1000
+
+    raw_df["base"] = raw_df["base"].astype(bool)
+    raw_df["callgrind"] = raw_df["callgrind"].astype(bool)
+    raw_df["massif"] = raw_df["massif"].astype(bool)
+
+    # Reorder columns
+    raw_df = raw_df[POST_PROCESS_COLUMNS.keys()]
+
+    stats = (np.mean, np.std)
+    stat_df = raw_df
+    stat_df = stat_df.groupby(
+        [
+            "id",
+            "input",
+            "method",
+            "description",
+            "size",
+            "threshold",
+            "base",
+            "callgrind",
+            "massif",
+        ]
+    ).agg(
+        {
+            "wall_nsecs": stats,
+            "user_nsecs": stats,
+            "system_nsecs": stats,
+            "wall_msecs": stats,
+            "user_msecs": stats,
+            "system_msecs": stats,
+            "wall_secs": stats,
+            "user_secs": stats,
+            "system_secs": stats,
+        }
+    )
+
+    stat_df = stat_df.reset_index()
+    stat_df.sort_values(["size"], inplace=True)
+
+    # Save to disk as cache
+    raw_df.to_parquet(in_raw_parq)
+    stat_df.to_parquet(in_stat_parq)
+
+    return raw_df, stat_df
 
 
 def load(in_dir=None):
@@ -118,52 +200,8 @@ def load(in_dir=None):
     else:
         if in_csv is None:
             raise FileNotFoundError("Neither CSV nor parquet data files found.")
-
         # CSV is found, parquets not found, generate them to serve as a cache.
-        in_raw_parq = Path(in_csv.parent, in_csv.stem + ".parquet")
-        in_stat_parq = Path(in_csv.parent, in_csv.stem + "_stat.parquet")
-
-        raw_df = pd.read_csv(in_csv, dtype=RAW_COLUMNS, engine="c")
-
-        # Cleanup and add some additional columns
-        raw_df["wall_usecs"] = raw_df["wall_nsecs"] / 1000
-        raw_df["user_usecs"] = raw_df["user_nsecs"] / 1000
-        raw_df["system_usecs"] = raw_df["system_nsecs"] / 1000
-
-        raw_df["wall_msecs"] = raw_df["wall_usecs"] / 1000
-        raw_df["user_msecs"] = raw_df["user_usecs"] / 1000
-        raw_df["system_msecs"] = raw_df["system_usecs"] / 1000
-
-        raw_df["wall_secs"] = raw_df["wall_msecs"] / 1000
-        raw_df["user_secs"] = raw_df["user_msecs"] / 1000
-        raw_df["system_secs"] = raw_df["system_msecs"] / 1000
-
-        # Reorder columns
-        raw_df = raw_df[POST_PROCESS_COLUMNS.keys()]
-
-        stats = ("mean", "std")
-        stat_df = raw_df
-        stat_df = stat_df.groupby(
-            ["input", "method", "description", "size", "threshold"]
-        ).agg(
-            {
-                "wall_nsecs": stats,
-                "user_nsecs": stats,
-                "system_nsecs": stats,
-                "wall_msecs": stats,
-                "user_msecs": stats,
-                "system_msecs": stats,
-                "wall_secs": stats,
-                "user_secs": stats,
-                "system_secs": stats,
-            }
-        )
-        stat_df = stat_df.reset_index()
-        stat_df.sort_values(["size"], inplace=True)
-
-        # Save to disk as cache
-        raw_df.to_parquet(in_raw_parq)
-        stat_df.to_parquet(in_stat_parq)
+        raw_df, stat_df = preprocess_csv(in_csv)
 
     info_path = in_dir / "job_details.json"
     if info_path.is_file():
@@ -281,19 +319,31 @@ def update_size_slider(json_df):
         dash.dependencies.Input("stat-data", "data"),
         dash.dependencies.Input("time-unit", "value"),
         dash.dependencies.Input("clock-type", "value"),
+        dash.dependencies.Input("data-type", "value"),
         dash.dependencies.Input("threshold-slider", "value"),
         dash.dependencies.Input("error-bars-checkbox", "value"),
     ],
 )
 def update_size_v_runtime(
-    json_df, time_unit, clock_type, threshold=4, error_bars=False
+    json_df,
+    time_unit,
+    clock_type,
+    data_type,
+    threshold=None,
+    error_bars=False,
 ):
-    df = df_from_json(json_df)
-
-    df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
-    df.sort_values(["size"], inplace=True)
 
     index = clock_type + time_unit
+    df = df_from_json(json_df)
+
+    if threshold is None or not any(df["threshold"] == threshold):
+        threshold = df["threshold"].min()
+    df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
+    df = df[df[data_type]]
+
+    df.sort_values(["size"], inplace=True)
+    if df.empty:
+        return px.line()
 
     fig = px.line(
         df,
@@ -346,12 +396,18 @@ def update_size_v_runtime(
         dash.dependencies.Input("stat-data", "data"),
         dash.dependencies.Input("time-unit", "value"),
         dash.dependencies.Input("clock-type", "value"),
+        dash.dependencies.Input("data-type", "value"),
         dash.dependencies.Input("size-slider", "value"),
         dash.dependencies.Input("error-bars-checkbox", "value"),
     ],
 )
 def update_threshold_v_runtime(
-    json_df, time_unit, clock_type, size=None, error_bars=False
+    json_df,
+    time_unit,
+    clock_type,
+    data_type,
+    size=None,
+    error_bars=False,
 ):
     df = df_from_json(json_df)
 
@@ -359,8 +415,9 @@ def update_threshold_v_runtime(
     # This is used to catch a nasty bug that, on startup, leaves the graph empty.
     if size is None or not any(df["size"] == size):
         size = df["size"].min()
-
     df = df[(df["size"] == size)]
+
+    df = df[(df[data_type])]
 
     # Try to use insertion sort and std as baselines
     ins_sort_df = df[(df["method"] == "insertion_sort")]
@@ -369,6 +426,9 @@ def update_threshold_v_runtime(
     # Get all methods that support a varying threshold.
     df = df[(df["threshold"] != 0)]
     df.sort_values(["threshold"], inplace=True)
+
+    if df.empty:
+        return px.line()
 
     # Create dummy values for insertion sort, since it isn't affected by threshold,
     # we are just illustrating a comparison. It is okay to manually iterate over the

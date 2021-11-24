@@ -1,4 +1,7 @@
 from dash import dcc, html
+from pathlib import Path
+
+RESULTS_DIR = Path("./results")
 
 md_template = """\
 `{command}`
@@ -28,7 +31,9 @@ QST Version:
 """
 
 
-def gen_layout(units, clocks, dirs):
+def gen_layout(units, clocks, data_types, dirs=None):
+    if dirs is None:
+        dirs = sorted(list(RESULTS_DIR.iterdir()))
     res = html.Div(
         [
             dcc.Store(id="stat-data"),
@@ -127,6 +132,20 @@ def gen_layout(units, clocks, dirs):
                                         ],
                                         value=clocks[0],
                                     ),
+                                    html.Label(
+                                        "Data Type", style={"margin-top": "5px"}
+                                    ),
+                                    dcc.RadioItems(
+                                        id="data-type",
+                                        options=[
+                                            {
+                                                "label": i.capitalize(),
+                                                "value": i,
+                                            }
+                                            for i in data_types
+                                        ],
+                                        value=data_types[0],
+                                    ),
                                     dcc.Checklist(
                                         id="error-bars-checkbox",
                                         options=[
@@ -162,7 +181,7 @@ def gen_layout(units, clocks, dirs):
                                         },
                                     ),
                                     dcc.Slider(
-                                        id="threshold-slider", step=None, value=1
+                                        id="threshold-slider", step=None, value=0
                                     ),
                                 ],
                                 className="pretty_container",
