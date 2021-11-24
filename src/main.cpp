@@ -15,6 +15,7 @@
 #include "io.hpp"
 #include "platform.hpp"
 #include "sort.h"
+#include "utils.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -36,13 +37,17 @@ static char args_doc[] = "INPUT";
 
 // Accepted methods
 #define VERSION_JSON_SHORT_OPT 0x80
+#define COLS_SHORT_OPT 0x81
+#define VALS_SHORT_OPT 0x82
 static struct argp_option options[] = {
-    {"description", 'd', "DESCRIP", 0, "Short description of input data."},
-    {"id", 'i', "ID", 0, "ID of this job."},
     {"method", 'm', "METHOD", 0, "Sorting method."},
     {"output", 'o', "FILE", 0, "Output to FILE instead of STDOUT."},
     {"runs", 'r', "N", 0, "Number of times to sort the same data. Default: 1"},
     {"threshold", 't', "THRESH", 0, "Threshold to switch to insertion sort."},
+    {"cols", COLS_SHORT_OPT, "COLS", 0,
+     "Additional columns to pass through to the output CSV."},
+    {"vals", VALS_SHORT_OPT, "VALS", 0,
+     "Values to use for the additional columns."},
     {"version-json", VERSION_JSON_SHORT_OPT, 0, 0,
      "Output version information in machine readable format."},
     {0},
@@ -50,17 +55,16 @@ static struct argp_option options[] = {
 
 struct arguments
 {
-  std::string description;
-  int64_t id;
   fs::path in_file;
   std::string method;
   fs::path out_file;
   int64_t runs;
   int64_t threshold;
+  std::vector<std::string> cols;
+  std::vector<std::string> vals;
 };
 
 // Option parser
-static std::string& trim(std::string&);
 static error_t parse_opt(int key, char* arg, struct argp_state* state);
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
@@ -68,15 +72,12 @@ void write(struct arguments args, const size_t& size,
            const std::vector<boost::timer::cpu_times>& times);
 void version_json();
 
-struct arguments arguments;
-
 int main(int argc, char** argv)
 {
+  struct arguments arguments;
   std::vector<boost::timer::cpu_times> times;
 
   // Default CLI options
-  arguments.description = "N/A";
-  arguments.id = -1;
   arguments.method = "qsort_c";
   arguments.out_file = "-";
   arguments.runs = 1;
@@ -91,11 +92,16 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
+  if (arguments.cols.size() != arguments.vals.size())
+  {
+    throw std::runtime_error("Number of cols and vals don't match.");
+  }
+
   // Cleanup, remove whitespace and lowercase.
   trim(arguments.method);
   std::transform(arguments.method.begin(), arguments.method.end(),
                  arguments.method.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
+                 [](const unsigned char& c) { return std::tolower(c); });
 
   // Check if the input method supports a threshold.
   // If not set to 0 for output.
@@ -107,7 +113,7 @@ int main(int argc, char** argv)
 #ifdef USE_BOOST_CPP_INT
   const std::vector<bmp::cpp_int> orig_data =
       from_disk<bmp::cpp_int>(arguments.in_file);
-  std::vector<bmp::cpp_int> sorted_data = orig_data;
+  std::vector<bmp::cpp_int> sorted_data(orig_data);
   std::sort(sorted_data.begin(), sorted_data.end());
 
   const size_t DATA_LEN = orig_data.size();
@@ -115,7 +121,7 @@ int main(int argc, char** argv)
 #else
   const std::vector<uint64_t> orig_data =
       from_disk<uint64_t>(arguments.in_file);
-  std::vector<uint64_t> sorted_data = orig_data;
+  std::vector<uint64_t> sorted_data(orig_data);
   std::sort(sorted_data.begin(), sorted_data.end());
 
   const size_t DATA_LEN = orig_data.size();
@@ -127,7 +133,7 @@ int main(int argc, char** argv)
   for (size_t i = 0; i < arguments.runs; i++)
   {
     std::copy(orig_data.begin(), orig_data.end(), to_sort);
-    boost::timer::cpu_times res =
+    const boost::timer::cpu_times res =
         time(arguments.method, arguments.threshold, to_sort, DATA_LEN);
     times.push_back(res);
 
@@ -149,15 +155,6 @@ int main(int argc, char** argv)
   return EXIT_SUCCESS;
 }
 
-/** Remove leading and trailing whitespace. */
-std::string& trim(std::string& s)
-{
-  const char* t = " \t\n\r\f\v";
-  s = s.erase(s.find_last_not_of(t) + 1);
-  s = s.erase(0, s.find_first_not_of(t));
-  return s;
-}
-
 /** Parse a single CLI option. */
 static error_t parse_opt(int key, char* arg, struct argp_state* state)
 {
@@ -165,14 +162,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
 
   switch (key)
   {
-    case 'd':
-      args->description = std::string(arg);
-      break;
-
-    case 'i':
-      args->id = std::stoi(std::string(arg));
-      break;
-
     case 'm':
       args->method = std::string(arg);
       break;
@@ -205,6 +194,14 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
         std::cerr << "Invalid threshold: " << arg << std::endl;
         return 1;
       }
+      break;
+
+    case COLS_SHORT_OPT:
+      args->cols = parse_comma_sep_args(std::string(arg));
+      break;
+
+    case VALS_SHORT_OPT:
+      args->vals = parse_comma_sep_args(std::string(arg));
       break;
 
     case VERSION_JSON_SHORT_OPT:
@@ -246,20 +243,25 @@ void write(const struct arguments args, const size_t& size,
 {
   if (args.out_file == "-")
   {
-    std::cout << "ID: " << args.id << std::endl;
     std::cout << "Method: " << args.method << std::endl;
     std::cout << "Input: " << args.in_file << std::endl;
-    std::cout << "Description: " << args.description << std::endl;
     std::cout << "Size: " << size << std::endl;
     std::cout << "Threshold: " << args.threshold << std::endl;
+    for (size_t i = 0; i < args.cols.size(); i++)
+    {
+      std::cout << args.cols[i] << ": " << args.vals[i] << std::endl;
+    }
+
     for (boost::timer::cpu_times time : times)
     {
+      std::cout << "---------------------------------------------" << std::endl;
       std::cout << "Elapsed Wall Time (nanoseconds): " << time.wall
                 << std::endl;
       std::cout << "Elapsed User Time (nanoseconds): " << time.user
                 << std::endl;
       std::cout << "Elapsed System Time (nanoseconds): " << time.system
                 << std::endl;
+      std::cout << "---------------------------------------------" << std::endl;
     }
   }
   else
@@ -278,18 +280,28 @@ void write(const struct arguments args, const size_t& size,
     if (out_file.tellg() == 0)
     {
       out_file.clear();
-      out_file << "id,method,input,description,size,threshold,wall_nsecs,user_"
-                  "nsecs,system_nsecs"
-               << std::endl;
+      out_file << "method,input,size,threshold,wall_nsecs,user_"
+                  "nsecs,system_nsecs";
+
+      for (const std::string& col : args.cols)
+      {
+        out_file << "," << col;
+      }
+      out_file << std::endl;
     }
 
     // Write the actual data
     for (boost::timer::cpu_times time : times)
     {
-      out_file << args.id << "," << args.method << "," << args.in_file << ","
-               << args.description << "," << size << "," << args.threshold
-               << "," << time.wall << "," << time.user << "," << time.system
-               << std::endl;
+      out_file << args.method << "," << args.in_file << "," << size << ","
+               << args.threshold << "," << time.wall << "," << time.user << ","
+               << time.system;
+
+      for (const std::string& val : args.vals)
+      {
+        out_file << "," << val;
+      }
+      out_file << std::endl;
     }
 
     out_file.close();

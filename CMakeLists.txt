@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.8.1
+  VERSION 1.8.2
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES C CXX ASM)
 configure_file(src/config.h.in config.hpp)
@@ -20,6 +20,7 @@ message("CXX Compiler Path: " ${CMAKE_CXX_COMPILER})
 message("CXX Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
 
 # Additional modules
+add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # Boost
@@ -28,13 +29,20 @@ include_directories(${BOOST_INCLUDE_DIRS})
 
 # Add src files
 set(SRC_FILES
-    ${PROJECT_SOURCE_DIR}/src/main.cpp ${PROJECT_SOURCE_DIR}/src/qsort_c.c
-    ${PROJECT_SOURCE_DIR}/src/sort.c)
+    ${PROJECT_SOURCE_DIR}/src/main.cpp
+    ${PROJECT_SOURCE_DIR}/src/qsort_c.c
+    ${PROJECT_SOURCE_DIR}/src/sort.c
+    ${PROJECT_SOURCE_DIR}/src/utils.cpp
+)
 
 set(HEADER_FILES
-    ${PROJECT_SOURCE_DIR}/src/exp.hpp ${PROJECT_SOURCE_DIR}/src/io.hpp
-    ${PROJECT_SOURCE_DIR}/src/platform.hpp ${PROJECT_SOURCE_DIR}/src/sort.h
-    ${PROJECT_SOURCE_DIR}/src/sort.hpp)
+    ${PROJECT_SOURCE_DIR}/src/exp.hpp
+    ${PROJECT_SOURCE_DIR}/src/io.hpp
+    ${PROJECT_SOURCE_DIR}/src/platform.hpp
+    ${PROJECT_SOURCE_DIR}/src/sort.h
+    ${PROJECT_SOURCE_DIR}/src/sort.hpp
+    ${PROJECT_SOURCE_DIR}/src/utils.hpp
+)
 
 if(USE_BOOST_CPP_INT)
   add_definitions(-DUSE_BOOST_CPP_INT)
