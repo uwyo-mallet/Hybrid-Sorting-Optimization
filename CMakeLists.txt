@@ -20,8 +20,8 @@ message("CXX Compiler Path: " ${CMAKE_CXX_COMPILER})
 message("CXX Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
 
 # Additional modules
-add_definitions(-DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Boost
 find_package(Boost 1.67.0 REQUIRED COMPONENTS iostreams filesystem timer)
@@ -29,20 +29,13 @@ include_directories(${BOOST_INCLUDE_DIRS})
 
 # Add src files
 set(SRC_FILES
-    ${PROJECT_SOURCE_DIR}/src/main.cpp
-    ${PROJECT_SOURCE_DIR}/src/qsort_c.c
-    ${PROJECT_SOURCE_DIR}/src/sort.c
-    ${PROJECT_SOURCE_DIR}/src/utils.cpp
-)
+    ${PROJECT_SOURCE_DIR}/src/main.cpp ${PROJECT_SOURCE_DIR}/src/qsort_c.c
+    ${PROJECT_SOURCE_DIR}/src/sort.c ${PROJECT_SOURCE_DIR}/src/utils.cpp)
 
 set(HEADER_FILES
-    ${PROJECT_SOURCE_DIR}/src/exp.hpp
-    ${PROJECT_SOURCE_DIR}/src/io.hpp
-    ${PROJECT_SOURCE_DIR}/src/platform.hpp
-    ${PROJECT_SOURCE_DIR}/src/sort.h
-    ${PROJECT_SOURCE_DIR}/src/sort.hpp
-    ${PROJECT_SOURCE_DIR}/src/utils.hpp
-)
+    ${PROJECT_SOURCE_DIR}/src/exp.hpp ${PROJECT_SOURCE_DIR}/src/io.hpp
+    ${PROJECT_SOURCE_DIR}/src/platform.hpp ${PROJECT_SOURCE_DIR}/src/sort.h
+    ${PROJECT_SOURCE_DIR}/src/sort.hpp ${PROJECT_SOURCE_DIR}/src/utils.hpp)
 
 if(USE_BOOST_CPP_INT)
   add_definitions(-DUSE_BOOST_CPP_INT)
