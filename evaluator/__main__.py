@@ -28,9 +28,13 @@ app.layout = partial(gen_layout, UNITS, CLOCKS, DATA_TYPES, None)
 @app.callback(
     dash.dependencies.Output("stat-data", "data"),
     dash.dependencies.Output("info-data", "data"),
-    [dash.dependencies.Input("result-dropdown", "value")],
+    dash.dependencies.Input("load-button", "n_clicks"),
+    dash.dependencies.State("result-dropdown", "value"),
 )
-def load_result(results_dir):
+def load_result(n_clicks, results_dir):
+    if not n_clicks:
+        raise dash.exceptions.PreventUpdate
+
     try:
         res = load(Path(results_dir))
     except FileNotFoundError as e:
@@ -78,6 +82,8 @@ def update_info(info_json):
 
 
 def df_from_json(json_df):
+    if not json_df:
+        raise dash.exceptions.PreventUpdate
     df = pd.read_json(json_df)
     tuples = [ast.literal_eval(i) for i in df.columns]
     df.columns = pd.MultiIndex.from_tuples(tuples)
@@ -144,7 +150,7 @@ def update_size_v_runtime(
     if threshold is None or not any(df["threshold"] == threshold):
         threshold = df["threshold"].min()
     df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
-    df = df[df[data_type]]
+    df = df[df["run_type"] == data_type]
 
     df.sort_values(["size"], inplace=True)
     if df.empty:
@@ -220,13 +226,13 @@ def update_threshold_v_runtime(
     # This is used to catch a nasty bug that, on startup, leaves the graph empty.
     if size is None or not any(df["size"] == size):
         size = df["size"].min()
-    df = df[(df["size"] == size)]
 
-    df = df[(df[data_type])]
+    df = df[(df["size"] == size)]
+    df = df[df["run_type"] == data_type]
 
     # Try to use insertion sort and std as baselines
-    ins_sort_df = df[(df["method"] == "insertion_sort")]
-    std_sort_df = df[(df["method"] == "std")]
+    # ins_sort_df = df[(df["method"] == "insertion_sort")]
+    # std_sort_df = df[(df["method"] == "std")]
 
     # Get all methods that support a varying threshold.
     df = df[(df["threshold"] != 0)]
@@ -239,14 +245,14 @@ def update_threshold_v_runtime(
     # we are just illustrating a comparison. It is okay to manually iterate over the
     # rows here, since there should only ever be one row per input data type.
     # TODO: Find a way to generalize / make the user pick baselines.
-    for _, row in ins_sort_df.iterrows():
-        for t in df["threshold"].unique():
-            row["threshold"] = t
-            df = df.append(row)
-    for _, row in std_sort_df.iterrows():
-        for t in df["threshold"].unique():
-            row["threshold"] = t
-            df = df.append(row)
+    # for _, row in ins_sort_df.iterrows():
+    #     for t in df["threshold"].unique():
+    #         row["threshold"] = t
+    #         df = df.append(row)
+    # for _, row in std_sort_df.iterrows():
+    #     for t in df["threshold"].unique():
+    #         row["threshold"] = t
+    #         df = df.append(row)
 
     index = clock_type + time_unit
 

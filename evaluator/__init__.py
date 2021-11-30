@@ -1,2 +1,4 @@
 # Quicksort Tuning Evaluator
-__version__ = "1.0.1"
+from .loader import load
+
+__version__ = "1.0.2"

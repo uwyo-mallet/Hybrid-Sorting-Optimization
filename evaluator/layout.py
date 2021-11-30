@@ -89,6 +89,11 @@ def gen_layout(units, clocks, data_types, dirs=None):
                                                             verticalAlign="baseline",
                                                         ),
                                                     ),
+                                                    html.Button(
+                                                        "Load",
+                                                        id="load-button",
+                                                        n_clicks=0,
+                                                    ),
                                                 ],
                                                 style={
                                                     "display": "flex",
