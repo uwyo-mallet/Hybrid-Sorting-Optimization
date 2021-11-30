@@ -128,7 +128,6 @@ def update_size_slider(json_df):
     dash.dependencies.Output("size-vs-runtime-scatter", "figure"),
     [
         dash.dependencies.Input("stat-data", "data"),
-        dash.dependencies.Input("time-unit", "value"),
         dash.dependencies.Input("clock-type", "value"),
         dash.dependencies.Input("data-type", "value"),
         dash.dependencies.Input("threshold-slider", "value"),
@@ -137,39 +136,74 @@ def update_size_slider(json_df):
 )
 def update_size_v_runtime(
     json_df,
-    time_unit,
     clock_type,
     data_type,
     threshold=None,
     error_bars=False,
 ):
 
-    index = clock_type + time_unit
+    # index = clock_type + time_unit
+    index = "".join([clock_type, "_secs"])
     df = df_from_json(json_df)
 
     if threshold is None or not any(df["threshold"] == threshold):
         threshold = df["threshold"].min()
     df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
     df = df[df["run_type"] == data_type]
-
-    df.sort_values(["size"], inplace=True)
     if df.empty:
         return px.line()
 
-    fig = px.line(
-        df,
-        x=df["size"],
-        y=list(df[(index, "mean")]),
-        error_y=list(df[(index, "std")]) if error_bars else None,
-        facet_col="description",
-        facet_col_wrap=1,
-        facet_row_spacing=0.04,
-        category_orders={"description": GRAPH_ORDER},
-        color=df["method"],
-        markers=True,
-        labels={"x": "Size", "y": f"Runtime ({index})"},
-        height=2000,
-    )
+    df.sort_values(["size"], inplace=True)
+
+    if len(df["size"].unique()) == 1:
+        size = df["size"].min()
+        df = df[df["size"] == size]
+        fig = px.bar(
+            df,
+            x=df["method"],
+            y=list(df[(index, "mean")]),
+            error_y=list(df[(index, "std")]) if error_bars else None,
+            facet_col="description",
+            facet_col_wrap=1,
+            facet_row_spacing=0.04,
+            category_orders={"description": GRAPH_ORDER},
+            color=df["method"],
+            labels={"x": "Method", "y": f"Runtime ({index})"},
+            height=2000,
+        )
+
+        fig.update_layout(
+            xaxis_title="Method",
+            title={
+                "text": f"Method vs. Runtime, size = {size}, threshold = {threshold}",
+                "xanchor": "left",
+            },
+        )
+    else:
+        # Scatter
+        fig = px.line(
+            df,
+            x=df["size"],
+            y=list(df[(index, "mean")]),
+            error_y=list(df[(index, "std")]) if error_bars else None,
+            facet_col="description",
+            facet_col_wrap=1,
+            facet_row_spacing=0.04,
+            category_orders={"description": GRAPH_ORDER},
+            color=df["method"],
+            markers=True,
+            labels={"x": "Size", "y": f"Runtime ({index})"},
+            height=2000,
+        )
+
+        # General other formatting
+        fig.update_layout(
+            xaxis_title="Size",
+            title={
+                "text": f"Size vs. Runtime, threshold = {threshold}",
+                "xanchor": "left",
+            },
+        )
 
     # Axis formatting
     fig.update_xaxes(
@@ -180,20 +214,14 @@ def update_size_v_runtime(
         matches=None,
         title=f"Runtime ({index})",
     )
-
-    # General other formatting
     fig.update_layout(
-        xaxis_title="Size",
         legend_title_text="Sorting Method",
-        title={
-            "text": f"Size vs. Runtime, threshold = {threshold}",
-            "xanchor": "left",
-        },
         font=dict(
             family="Courier New, monospace",
             size=18,
         ),
     )
+
     # Fix facet titles
     # TODO: Find a less gross way to do this...
     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
@@ -205,7 +233,6 @@ def update_size_v_runtime(
     dash.dependencies.Output("threshold-vs-runtime-scatter", "figure"),
     [
         dash.dependencies.Input("stat-data", "data"),
-        dash.dependencies.Input("time-unit", "value"),
         dash.dependencies.Input("clock-type", "value"),
         dash.dependencies.Input("data-type", "value"),
         dash.dependencies.Input("size-slider", "value"),
@@ -214,7 +241,6 @@ def update_size_v_runtime(
 )
 def update_threshold_v_runtime(
     json_df,
-    time_unit,
     clock_type,
     data_type,
     size=None,
@@ -254,7 +280,7 @@ def update_threshold_v_runtime(
     #         row["threshold"] = t
     #         df = df.append(row)
 
-    index = clock_type + time_unit
+    index = "".join([clock_type, "_secs"])
 
     fig = px.line(
         df,

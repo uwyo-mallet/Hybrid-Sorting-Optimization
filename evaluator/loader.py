@@ -104,6 +104,7 @@ def load_cachegrind(df, valgrind_dir: Path):
         "Bim",
     ]
     pattern = re.compile(r"(\d+,?\d*)(?:\s+)")
+    orig_df = df.copy()
     df = df.drop_duplicates(subset=["id"], keep="first")
     df = df[df["run_type"] == "cachegrind"]
 
@@ -133,7 +134,7 @@ def load_cachegrind(df, valgrind_dir: Path):
                 break
 
     cachegrind_df = downcast(cachegrind_df, CACHEGRIND_COLS)
-    df = df.join(cachegrind_df)
+    df = orig_df.join(cachegrind_df)
     return df
 
 

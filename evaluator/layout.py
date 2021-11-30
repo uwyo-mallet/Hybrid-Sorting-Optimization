@@ -111,18 +111,6 @@ def gen_layout(units, clocks, data_types, dirs=None):
                             ),
                             html.Div(
                                 [
-                                    html.Label("Time Unit"),
-                                    dcc.RadioItems(
-                                        id="time-unit",
-                                        options=[
-                                            {
-                                                "label": i.capitalize(),
-                                                "value": units[i],
-                                            }
-                                            for i in units
-                                        ],
-                                        value=next(iter(units.values())),
-                                    ),
                                     html.Label(
                                         "Clock Type", style={"margin-top": "5px"}
                                     ),
