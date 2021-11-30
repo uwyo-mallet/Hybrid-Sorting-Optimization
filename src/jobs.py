@@ -25,6 +25,7 @@ Options:
     --base                   Collect a normal sample along with any valgrind options.
                              Ignored if not accompanied by either of the following options.
     --callgrind              Enable callgrind data collection for each job.
+    --cachegrind             Enable cachegrind data collection for each job.
     --massif                 Enable massif data collection for each job.
 """
 import itertools
@@ -47,7 +48,7 @@ from tqdm import tqdm
 
 from info import write_info
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 VALID_METHODS = {
     "insertion_sort",
@@ -103,6 +104,7 @@ class Job:
         threshold,
         base=False,
         callgrind=False,
+        cachegrind=False,
         massif=False,
     ):
         self.job_id = job_id
@@ -116,15 +118,21 @@ class Job:
         self.base = base
 
         self.callgrind = None
+        self.cachegrind = None
         self.massif = None
+
         if callgrind:
             self.callgrind = (
                 self.output.parent / "valgrind" / f"{self.job_id}_callgrind.out"
             )
+        if cachegrind:
+            self.cachegrind = (
+                self.output.parent / "valgrind" / f"{self.job_id}_cachegrind.out"
+            )
         if massif:
             self.massif = self.output.parent / "valgrind" / f"{self.job_id}_massif.out"
 
-        if not any([self.callgrind, self.massif]):
+        if not any([self.callgrind, self.cachegrind, self.massif]):
             self.base = True
 
     @staticmethod
@@ -143,9 +151,7 @@ class Job:
         passthrough_opts = {
             "id": str(self.job_id),
             "description": str(self.description),
-            "base": "0",
-            "callgrind": "0",
-            "massif": "0",
+            "run_type": None,
         }
         base_command = [
             str(self.exec_path.absolute()),
@@ -167,7 +173,7 @@ class Job:
 
         if self.base:
             my_pt = deepcopy(passthrough_opts)
-            my_pt["base"] = "1"
+            my_pt["run_type"] = "base"
             all_commands.append(
                 tuple(itertools.chain(base_command, self._passthrough_args(my_pt)))
             )
@@ -190,7 +196,28 @@ class Job:
                 "--",
             ]
             my_pt = deepcopy(passthrough_opts)
-            my_pt["callgrind"] = "1"
+            my_pt["run_type"] = "callgrind"
+            all_commands.append(
+                tuple(
+                    itertools.chain(
+                        base_valgrind_opts,
+                        opts,
+                        base_command,
+                        self._passthrough_args(my_pt),
+                    )
+                )
+            )
+        if self.cachegrind is not None:
+            out = str(self.cachegrind)
+            opts = [
+                "--tool=cachegrind",
+                f"--cachegrind-out-file={out}",
+                "--cache-sim=yes",
+                "--branch-sim=yes",
+                "--",
+            ]
+            my_pt = deepcopy(passthrough_opts)
+            my_pt["run_type"] = "cachegrind"
             all_commands.append(
                 tuple(
                     itertools.chain(
@@ -211,7 +238,7 @@ class Job:
             ]
 
             my_pt = deepcopy(passthrough_opts)
-            my_pt["massif"] = "1"
+            my_pt["run_type"] = "massif"
 
             all_commands.append(
                 tuple(
@@ -341,6 +368,7 @@ def parse_args(args):
     # Valgrind options
     parsed["base"] = args.get("--base")
     parsed["callgrind"] = args.get("--callgrind")
+    parsed["cachegrind"] = args.get("--cachegrind")
     parsed["massif"] = args.get("--callgrind")
 
     if parsed["slurm"] is None:
@@ -365,6 +393,7 @@ class Scheduler:
         progress: bool,
         base: bool,
         callgrind: bool,
+        cachegrind: bool,
         massif: bool,
     ):
         """
@@ -395,9 +424,10 @@ class Scheduler:
 
         self.base = base
         self.callgrind = callgrind
+        self.cachegrind = cachegrind
         self.massif = massif
 
-        if not any([self.callgrind, self.massif]):
+        if not any([self.callgrind, self.cachegrind, self.massif]):
             self.base = True
 
         self.job_queue: "deque[Job]" = deque()
@@ -436,6 +466,7 @@ class Scheduler:
                 "threshold": 1,
                 "base": self.base,
                 "callgrind": self.callgrind,
+                "cachegrind": self.cachegrind,
                 "massif": self.massif,
             }
             for method in self.methods:
