@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 
 import json
+import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 import pandas as pd
 
-IGNORE_CACHE = True
+
+IGNORE_CACHE = False
 JOB_DETAILS_FILE = "job_details.json"
 PARTITION_FILE = "partition"
 RESULTS_DIR = Path("./results")
@@ -39,9 +43,11 @@ CLOCKS = (
 DATA_TYPES = (
     "base",
     "callgrind",
+    "cachegrind",
     "massif",
 )
 RAW_COLUMNS = {
+    "id": np.uint64,
     "method": str,
     "input": str,
     "size": np.uint64,
@@ -50,33 +56,23 @@ RAW_COLUMNS = {
     "user_nsecs": np.uint64,  # Elapsed user cpu time
     "system_nsecs": np.uint64,  # Elapsed system cpu time
     "description": str,
-    "base": bool,
-    "callgrind": bool,
-    "massif": bool,
+    "run_type": str,
 }
 POST_PROCESS_COLUMNS = [
+    "id",
     "input",
     "method",
     "description",
     "threshold",
     "size",
-    "base",
-    "callgrind",
-    "massif",
+    "run_type",
     "wall_nsecs",
-    "wall_usecs",
-    "wall_msecs",
-    "wall_secs",
     "user_nsecs",
-    "user_usecs",
-    "user_msecs",
-    "user_secs",
     "system_nsecs",
-    "system_usecs",
-    "system_msecs",
+    "wall_secs",
+    "user_secs",
     "system_secs",
 ]
-CLOCK_COLUMNS = POST_PROCESS_COLUMNS[9:]
 
 
 @dataclass
@@ -86,7 +82,62 @@ class Result:
     info: dict
 
 
-def preprocess_csv(csv_file: Path):
+def downcast(df, cols, cast="unsigned"):
+    df[cols] = df[cols].apply(pd.to_numeric, downcast=cast)
+    return df
+
+
+def load_cachegrind(df, valgrind_dir: Path):
+    CACHEGRIND_COLS = [
+        "Ir",
+        "I1mr",
+        "ILmr",
+        "Dr",
+        "D1mr",
+        "DLmr",
+        "Dw",
+        "D1mw",
+        "DLmw",
+        "Bc",
+        "Bcm",
+        "Bi",
+        "Bim",
+    ]
+    pattern = re.compile(r"(\d+,?\d*)(?:\s+)")
+    df = df.drop_duplicates(subset=["id"], keep="first")
+    df = df[df["run_type"] == "cachegrind"]
+
+    df = df.set_index("id")
+    cachegrind_df = pd.DataFrame(columns=CACHEGRIND_COLS, dtype=np.uint64)
+    for row in df.itertuples():
+        i = row.Index
+        method = row.method
+        cachegrind_file = valgrind_dir / f"{i}_cachegrind.out"
+
+        p = subprocess.run(
+            ["cg_annotate", str(cachegrind_file.absolute())],
+            capture_output=True,
+            text=True,
+        )
+        lines = p.stdout.split("\n")[10:]
+        for line in lines:
+            line = line.lower()
+            if method in line:
+                tokens = [int(i.replace(",", "")) for i in pattern.findall(line)]
+                if len(tokens) != len(CACHEGRIND_COLS):
+                    print("[Warning]: Malformed line found, skipping.")
+                    continue
+
+                stats = dict(zip(CACHEGRIND_COLS, tokens))
+                cachegrind_df.loc[i] = stats
+                break
+
+    cachegrind_df = downcast(cachegrind_df, CACHEGRIND_COLS)
+    df = df.join(cachegrind_df)
+    return df
+
+
+def preprocess_csv(csv_file: Path, valgrind_dir: Union[None, Path] = None):
     in_raw_parq = Path(csv_file.parent, csv_file.stem + ".parquet")
     in_stat_parq = Path(csv_file.parent, csv_file.stem + "_stat.parquet")
 
@@ -95,33 +146,28 @@ def preprocess_csv(csv_file: Path):
         usecols=RAW_COLUMNS,
         dtype=RAW_COLUMNS,
         engine="c",
-        memory_map=True,
     )
 
     # Save some memory
     raw_df["input"] = raw_df["input"].astype("category")
     raw_df["method"] = raw_df["method"].astype("category")
     raw_df["description"] = raw_df["description"].astype("category")
+    raw_df["run_type"] = raw_df["run_type"].astype("category")
 
-    raw_df["base"] = raw_df["base"].astype(bool)
-    raw_df["callgrind"] = raw_df["callgrind"].astype(bool)
-    raw_df["massif"] = raw_df["massif"].astype(bool)
+    raw_df["wall_secs"] = raw_df["wall_nsecs"] / 1_000_000_000
+    raw_df["user_secs"] = raw_df["user_nsecs"] / 1_000_000_000
+    raw_df["system_secs"] = raw_df["system_nsecs"] / 1_000_000_000
 
     # Downcast whenever possible
-    uint_columns = ["threshold", "size", "wall_nsecs", "user_nsecs", "system_nsecs"]
-    raw_df[uint_columns] = raw_df[uint_columns].apply(
-        pd.to_numeric, downcast="unsigned"
-    )
-
-    units = list(reversed(UNITS.values()))
-    for clock in CLOCKS:
-        for prev, current in zip(units, units[1:]):
-            prev_index = "".join((clock, prev))
-            current_index = "".join((clock, current))
-            raw_df[current_index] = raw_df[prev_index].div(1000)
-            raw_df[current_index] = pd.to_numeric(
-                raw_df[current_index], downcast="float"
-            )
+    uint_columns = [
+        "id",
+        "threshold",
+        "size",
+        "wall_nsecs",
+        "user_nsecs",
+        "system_nsecs",
+    ]
+    raw_df = downcast(raw_df, uint_columns)
 
     # Reorder columns
     raw_df = raw_df[POST_PROCESS_COLUMNS]
@@ -133,28 +179,26 @@ def preprocess_csv(csv_file: Path):
             "input",
             "method",
             "description",
-            "size",
             "threshold",
-            "base",
-            "callgrind",
-            "massif",
+            "size",
+            "run_type",
         ]
     ).agg(
         {
             "wall_nsecs": stats,
             "user_nsecs": stats,
             "system_nsecs": stats,
-            "wall_msecs": stats,
-            "user_msecs": stats,
-            "system_msecs": stats,
             "wall_secs": stats,
             "user_secs": stats,
             "system_secs": stats,
-        }
+        },
+        skipna=True,
     )
-
     stat_df = stat_df.reset_index()
     stat_df.sort_values(["size"], inplace=True)
+
+    if valgrind_dir is not None:
+        raw_df = load_cachegrind(raw_df, valgrind_dir)
 
     # Save to disk as cache
     raw_df.to_parquet(in_raw_parq)
@@ -184,7 +228,9 @@ def load(in_dir=None):
     if IGNORE_CACHE:
         if in_csv is None:
             raise FileNotFoundError("CSV data files found.")
-        raw_df, stat_df = preprocess_csv(in_csv)
+        valgrind_dir = in_csv.parent / "valgrind"
+        valgrind_dir = valgrind_dir if valgrind_dir.exists() else None
+        raw_df, stat_df = preprocess_csv(in_csv, valgrind_dir)
     else:
         for i in parqs:
             if str(i).endswith("_stat.parquet"):
@@ -200,7 +246,9 @@ def load(in_dir=None):
             if in_csv is None:
                 raise FileNotFoundError("Neither CSV nor parquet data files found.")
             # CSV is found, parquets not found, generate them to serve as a cache.
-            raw_df, stat_df = preprocess_csv(in_csv)
+            valgrind_dir = in_csv.parent / "valgrind"
+            valgrind_dir = valgrind_dir if valgrind_dir.exists() else None
+            raw_df, stat_df = preprocess_csv(in_csv, valgrind_dir)
 
     info_path = in_dir / JOB_DETAILS_FILE
     if info_path.is_file():
