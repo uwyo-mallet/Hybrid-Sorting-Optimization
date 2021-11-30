@@ -30,7 +30,7 @@ from pathlib import Path
 import numpy as np
 from docopt import docopt
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 # Default thresholds
 INCREMENT = 100_000
@@ -214,7 +214,7 @@ if __name__ == "__main__":
             minimum = MIN_ELEMENTS
             maximum = MAX_ELEMENTS
             increment = INCREMENT
-        if maximum <= minimum or minimum < 0 or maximum < 0 or increment < 0:
+        if maximum < minimum or minimum < 0 or maximum < 0 or increment < 0:
             raise ValueError("Invalid threshold range")
 
         print("Generating data...", file=sys.stderr)
