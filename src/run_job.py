@@ -3,7 +3,7 @@
 Submit jobs to a HPC.
 
 Usage:
-    run_job.py SLURM_DIR PARTITION [options]
+    run_job.py PARTITION SLURM_DIRS... [options]
     run_job.py -h | --help
 
 Options:
@@ -18,13 +18,14 @@ import shutil
 import subprocess
 import sys
 import time
+from collections import defaultdict, namedtuple
 from datetime import datetime
 from itertools import repeat, takewhile
 from pathlib import Path
 
 from docopt import docopt
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 
 class cd:
@@ -34,15 +35,18 @@ class cd:
     @see https://stackoverflow.com/a/13197763/8846676
     """
 
-    def __init__(self, new_path):
+    def __init__(self, new_path, dry_run=False):
         self.new_path = os.path.expanduser(new_path)
+        self._dry_run = dry_run
 
     def __enter__(self):
-        self.saved_path = os.getcwd()
-        os.chdir(self.new_path)
+        if not self._dry_run:
+            self.saved_path = os.getcwd()
+            os.chdir(self.new_path)
 
     def __exit__(self, etype, value, traceback):
-        os.chdir(self.saved_path)
+        if not self._dry_run:
+            os.chdir(self.saved_path)
 
 
 def fast_line_count(filename: Path) -> int:
@@ -60,7 +64,7 @@ def fast_line_count(filename: Path) -> int:
 
 
 # All valid partition names for job submission.
-PARTITIONS = {
+VALID_PARTITIONS = {
     "teton",
     "teton-cascade",
     "teton-hugemem",
@@ -69,83 +73,124 @@ PARTITIONS = {
     "moran",
 }
 
-args = docopt(__doc__, version=VERSION)
 
-CWD = Path.cwd()
-JOB_SBATCH = Path(CWD, "job.sbatch")
-SLURM_DIR = Path(args["SLURM_DIR"])
-PARTITION = args["PARTITION"].lower()
-DRY_RUN = args["--dry-run"]
-WAIT = float(args["--wait"])
-RESULTS_DIR = (
-    CWD / "results" / f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{PARTITION}"
+Args = namedtuple(
+    "Args",
+    [
+        "partition",
+        "slurm_dirs",
+        "cwd",
+        "job_sbatch",
+        "exclusive",
+        "dry_run",
+        "wait",
+    ],
 )
-VALGRIND_DIR = RESULTS_DIR / "valgrind"
-
-# Validate user inputs
-if not JOB_SBATCH.is_file():
-    raise FileNotFoundError("Can't find job.sbatch")
-if not SLURM_DIR.exists():
-    raise NotADirectoryError(f"{SLURM_DIR} does not exist")
-if not SLURM_DIR.is_dir():
-    raise NotADirectoryError("SLURM_DIR must be a directory")
-if PARTITION not in PARTITIONS:
-    raise ValueError(f"Invalid partition selection: {PARTITION}")
-
-input_files = tuple(SLURM_DIR.glob("*.dat"))
-if not input_files:
-    raise FileNotFoundError(f"{SLURM_DIR} doesn't contain any input .dat files")
-
-# Sort numerically, fallback to current order if we can't parse the
-# filenames properly
-try:
-    input_files = sorted(input_files, key=lambda x: int(x.stem))
-except ValueError:
-    pass
-
-# All user inputs are valid, prep for job submission.
-if not DRY_RUN:
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    VALGRIND_DIR.mkdir(parents=True, exist_ok=True)
-    shutil.copy(Path(SLURM_DIR, "job_details.json"), RESULTS_DIR)
-    shutil.copytree(SLURM_DIR, Path(RESULTS_DIR, SLURM_DIR.name))
-    Path(RESULTS_DIR, "partition").write_text(PARTITION + "\n")
 
 
-total_num_jobs = 0
-with cd(RESULTS_DIR):
-    for batch in input_files:
-        num_lines = fast_line_count(batch)
+def validate(args):
+    # Validate user inputs
+    if not args.job_sbatch.is_file():
+        raise FileNotFoundError("Can't find job.sbatch")
+    if args.partition not in VALID_PARTITIONS:
+        raise ValueError(f"Invalid partition selection: {args.partition}")
 
-        if num_lines == 0:
-            print(f"[Warning]: Skipping empty data file: {batch}", file=sys.stderr)
-            continue
+    for d in args.slurm_dirs:
+        if not d.is_dir():
+            raise NotADirectoryError(f"{d} must be a directory")
+        input_files = tuple(d.glob("*.dat"))
+        if not input_files:
+            raise FileNotFoundError(f"{d} doesn't contain any input .dat files")
 
-        print(f"{batch.name}: {num_lines}")
-        command = [
-            "sbatch",
-            "--array",
-            f"0-{num_lines}",
-            "--partition",
-            PARTITION,
-            str(JOB_SBATCH),
-            str(batch),
-        ]
 
-        if args.get("--exclusive"):
-            command.insert(1, "--exclusive")
+def submit(args):
+    num_jobs = defaultdict(int)
+    for slurm_dir in args.slurm_dirs:
+        # Sort numerically, fallback to current order if we can't parse the
+        # filenames properly
+        input_files = tuple(slurm_dir.glob("*.dat"))
+        results_dir = (
+            args.cwd
+            / "results"
+            / f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{args.partition}_{slurm_dir.name}"
+        )
+        valgrind_dir = results_dir / "valgrind"
+        try:
+            input_files = sorted(input_files, key=lambda x: int(x.stem))
+        except ValueError:
+            pass
 
-        print("\t" + " ".join(command))
-        if not DRY_RUN:
-            subprocess.run(command)
-        total_num_jobs += num_lines
+        # All user inputs are valid, prep for job submission.
+        if not args.dry_run:
+            results_dir.mkdir(parents=True, exist_ok=True)
+            valgrind_dir.mkdir(parents=True, exist_ok=True)
 
-        # TODO: Add a check here for if the subprocess completed successfully.
-        # That way, we could submit a job in multiple stages if slurm decides to
-        # ratelimit us.
+            shutil.copy(Path(slurm_dir, "job_details.json"), results_dir)
+            shutil.copytree(slurm_dir, Path(results_dir, slurm_dir.name))
+            Path(results_dir, "partition").write_text(args.partition + "\n")
 
-        # Wait between submissions, otherwise slurm fails many jobs.
-        if batch != input_files[-1]:
-            time.sleep(WAIT)
+        print(f"{slurm_dir}: ")
+        with cd(results_dir, args.dry_run):
+            for batch in input_files:
+                num_lines = fast_line_count(batch)
+                num_jobs[slurm_dir.name] += num_lines
 
-print(f"Total number of jobs: {total_num_jobs}")
+                if num_lines == 0:
+                    print(
+                        f"\t[Warning]: Skipping empty data file: {batch}",
+                        file=sys.stderr,
+                    )
+                    continue
+
+                command = [
+                    "sbatch",
+                    "--array",
+                    f"0-{num_lines}",
+                    "--partition",
+                    args.partition,
+                    str(args.job_sbatch),
+                    str(batch),
+                ]
+                if args.exclusive:
+                    command.insert(1, "--exclusive")
+
+                print(f"\t{batch.name}: {num_lines}")
+                print(f"\t\t{' '.join(command)}")
+                if not args.dry_run:
+                    subprocess.run(command)
+
+                # Wait between submissions, otherwise slurm fails many jobs.
+                if batch != input_files[-1]:
+                    time.sleep(args.wait)
+
+        if slurm_dir != args.slurm_dirs[-1]:
+            time.sleep(args.wait)
+
+    print("\nTotal number of jobs sumitted:")
+    for k, v in num_jobs.items():
+        print(f"\t{k}: {v}")
+
+
+if __name__ == "__main__":
+    raw_args = docopt(__doc__, version=VERSION)
+
+    CWD = Path.cwd()
+    JOB_SBATCH = Path(CWD, "job.sbatch")
+    SLURM_DIRS = [Path(i) for i in raw_args["SLURM_DIRS"]]
+    PARTITION = raw_args["PARTITION"].lower()
+    DRY_RUN = raw_args["--dry-run"]
+    EXCLUSIVE = raw_args["--exclusive"]
+    WAIT = float(raw_args["--wait"])
+
+    args = Args(
+        PARTITION,
+        SLURM_DIRS,
+        CWD,
+        JOB_SBATCH,
+        raw_args["--exclusive"],
+        DRY_RUN,
+        WAIT,
+    )
+
+    validate(args)
+    submit(args)
