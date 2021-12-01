@@ -105,10 +105,10 @@ def load_cachegrind(df, valgrind_dir: Path):
     ]
     pattern = re.compile(r"(\d+,?\d*)(?:\s+)")
     orig_df = df.copy()
-    df = df.drop_duplicates(subset=["id"], keep="first")
     df = df[df["run_type"] == "cachegrind"]
-
+    df = df.drop_duplicates(subset=["id"], keep="first")
     df = df.set_index("id")
+
     cachegrind_df = pd.DataFrame(columns=CACHEGRIND_COLS, dtype=np.uint64)
     for row in df.itertuples():
         i = row.Index
@@ -120,10 +120,10 @@ def load_cachegrind(df, valgrind_dir: Path):
             capture_output=True,
             text=True,
         )
-        lines = p.stdout.split("\n")[10:]
+        lines = p.stdout.split("\n")
         for line in lines:
             line = line.lower()
-            if method in line:
+            if method in line and "command" not in line:
                 tokens = [int(i.replace(",", "")) for i in pattern.findall(line)]
                 if len(tokens) != len(CACHEGRIND_COLS):
                     print("[Warning]: Malformed line found, skipping.")
@@ -148,12 +148,6 @@ def preprocess_csv(csv_file: Path, valgrind_dir: Union[None, Path] = None):
         dtype=RAW_COLUMNS,
         engine="c",
     )
-
-    # Save some memory
-    raw_df["input"] = raw_df["input"].astype("category")
-    raw_df["method"] = raw_df["method"].astype("category")
-    raw_df["description"] = raw_df["description"].astype("category")
-    raw_df["run_type"] = raw_df["run_type"].astype("category")
 
     raw_df["wall_secs"] = raw_df["wall_nsecs"] / 1_000_000_000
     raw_df["user_secs"] = raw_df["user_nsecs"] / 1_000_000_000
@@ -193,7 +187,6 @@ def preprocess_csv(csv_file: Path, valgrind_dir: Union[None, Path] = None):
             "user_secs": stats,
             "system_secs": stats,
         },
-        skipna=True,
     )
     stat_df = stat_df.reset_index()
     stat_df.sort_values(["size"], inplace=True)

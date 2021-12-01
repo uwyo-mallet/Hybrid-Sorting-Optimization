@@ -158,6 +158,7 @@ def update_size_v_runtime(
     if len(df["size"].unique()) == 1:
         size = df["size"].min()
         df = df[df["size"] == size]
+        df.sort_values(["method"], inplace=True)
         fig = px.bar(
             df,
             x=df["method"],
