@@ -10,6 +10,7 @@ import dash
 import pandas as pd
 import plotly.express as px
 from dash import dcc
+from dash.dependencies import Input, Output, State
 
 from .layout import gen_layout, md_template
 from .loader import CLOCKS, DATA_TYPES, GRAPH_ORDER, UNITS, load
@@ -26,10 +27,10 @@ app.layout = partial(gen_layout, UNITS, CLOCKS, DATA_TYPES, None)
 
 
 @app.callback(
-    dash.dependencies.Output("stat-data", "data"),
-    dash.dependencies.Output("info-data", "data"),
-    dash.dependencies.Input("load-button", "n_clicks"),
-    dash.dependencies.State("result-dropdown", "value"),
+    Output("stat-data", "data"),
+    Output("info-data", "data"),
+    Input("load-button", "n_clicks"),
+    State("result-dropdown", "value"),
 )
 def load_result(n_clicks, results_dir):
     if not n_clicks:
@@ -44,8 +45,8 @@ def load_result(n_clicks, results_dir):
 
 
 @app.callback(
-    dash.dependencies.Output("info", "children"),
-    [dash.dependencies.Input("info-data", "data")],
+    Output("info", "children"),
+    Input("info-data", "data"),
 )
 def update_info(info_json):
     info = json.loads(info_json)
@@ -83,7 +84,7 @@ def update_info(info_json):
 
 def df_from_json(json_df):
     if not json_df:
-        raise dash.exceptions.PreventUpdate
+        raise dcc.exceptions.PreventUpdate
     df = pd.read_json(json_df)
     tuples = [ast.literal_eval(i) for i in df.columns]
     df.columns = pd.MultiIndex.from_tuples(tuples)
@@ -91,10 +92,10 @@ def df_from_json(json_df):
 
 
 @app.callback(
-    dash.dependencies.Output("threshold-slider", "min"),
-    dash.dependencies.Output("threshold-slider", "max"),
-    dash.dependencies.Output("threshold-slider", "marks"),
-    [dash.dependencies.Input("stat-data", "data")],
+    Output("threshold-slider", "min"),
+    Output("threshold-slider", "max"),
+    Output("threshold-slider", "marks"),
+    Input("stat-data", "data"),
 )
 def update_threshold_slider(json_df):
     df = df_from_json(json_df)
@@ -107,10 +108,10 @@ def update_threshold_slider(json_df):
 
 
 @app.callback(
-    dash.dependencies.Output("size-slider", "min"),
-    dash.dependencies.Output("size-slider", "max"),
-    dash.dependencies.Output("size-slider", "marks"),
-    [dash.dependencies.Input("stat-data", "data")],
+    Output("size-slider", "min"),
+    Output("size-slider", "max"),
+    Output("size-slider", "marks"),
+    Input("stat-data", "data"),
 )
 def update_size_slider(json_df):
     df = df_from_json(json_df)
@@ -125,13 +126,13 @@ def update_size_slider(json_df):
 
 
 @app.callback(
-    dash.dependencies.Output("size-vs-runtime-scatter", "figure"),
+    Output("size-vs-runtime-scatter", "figure"),
     [
-        dash.dependencies.Input("stat-data", "data"),
-        dash.dependencies.Input("clock-type", "value"),
-        dash.dependencies.Input("data-type", "value"),
-        dash.dependencies.Input("threshold-slider", "value"),
-        dash.dependencies.Input("error-bars-checkbox", "value"),
+        Input("stat-data", "data"),
+        Input("clock-type", "value"),
+        Input("data-type", "value"),
+        Input("threshold-slider", "value"),
+        Input("error-bars-checkbox", "value"),
     ],
 )
 def update_size_v_runtime(
@@ -141,24 +142,26 @@ def update_size_v_runtime(
     threshold=None,
     error_bars=False,
 ):
-
-    # index = clock_type + time_unit
-    index = "".join([clock_type, "_secs"])
+    if not json_df:
+        return px.line()
     df = df_from_json(json_df)
+    index = "".join([clock_type, "_secs"])
 
     if threshold is None or not any(df["threshold"] == threshold):
         threshold = df["threshold"].min()
+
     df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
     df = df[df["run_type"] == data_type]
+    df = df.sort_values(["size"])
     if df.empty:
         return px.line()
 
-    df.sort_values(["size"], inplace=True)
-
+    # If only one size was sampled during the experiment, display a bar graph,
+    # otherwise use a line graph.
     if len(df["size"].unique()) == 1:
         size = df["size"].min()
         df = df[df["size"] == size]
-        df.sort_values(["method"], inplace=True)
+        df = df.sort_values(["method"])
         fig = px.bar(
             df,
             x=df["method"],
@@ -172,7 +175,6 @@ def update_size_v_runtime(
             labels={"x": "Method", "y": f"Runtime ({index})"},
             height=2000,
         )
-
         fig.update_layout(
             xaxis_title="Method",
             title={
@@ -181,7 +183,7 @@ def update_size_v_runtime(
             },
         )
     else:
-        # Scatter
+        df = df.sort_values(["size", "method"])
         fig = px.line(
             df,
             x=df["size"],
@@ -196,8 +198,6 @@ def update_size_v_runtime(
             labels={"x": "Size", "y": f"Runtime ({index})"},
             height=2000,
         )
-
-        # General other formatting
         fig.update_layout(
             xaxis_title="Size",
             title={
@@ -231,13 +231,13 @@ def update_size_v_runtime(
 
 
 @app.callback(
-    dash.dependencies.Output("threshold-vs-runtime-scatter", "figure"),
+    Output("threshold-vs-runtime-scatter", "figure"),
     [
-        dash.dependencies.Input("stat-data", "data"),
-        dash.dependencies.Input("clock-type", "value"),
-        dash.dependencies.Input("data-type", "value"),
-        dash.dependencies.Input("size-slider", "value"),
-        dash.dependencies.Input("error-bars-checkbox", "value"),
+        Input("stat-data", "data"),
+        Input("clock-type", "value"),
+        Input("data-type", "value"),
+        Input("size-slider", "value"),
+        Input("error-bars-checkbox", "value"),
     ],
 )
 def update_threshold_v_runtime(
@@ -248,9 +248,8 @@ def update_threshold_v_runtime(
     error_bars=False,
 ):
     df = df_from_json(json_df)
+    index = "".join([clock_type, "_secs"])
 
-    # Check to ensure that a size is provided, and that the size is valid within the DF.
-    # This is used to catch a nasty bug that, on startup, leaves the graph empty.
     if size is None or not any(df["size"] == size):
         size = df["size"].min()
 
@@ -259,12 +258,11 @@ def update_threshold_v_runtime(
 
     # Try to use insertion sort and std as baselines
     # ins_sort_df = df[(df["method"] == "insertion_sort")]
-    # std_sort_df = df[(df["method"] == "std")]
+    std_sort_df = df[(df["method"] == "std")]
 
     # Get all methods that support a varying threshold.
     df = df[(df["threshold"] != 0)]
-    df.sort_values(["threshold"], inplace=True)
-
+    df = df.sort_values(["threshold", "method"])
     if df.empty:
         return px.line()
 
@@ -272,16 +270,15 @@ def update_threshold_v_runtime(
     # we are just illustrating a comparison. It is okay to manually iterate over the
     # rows here, since there should only ever be one row per input data type.
     # TODO: Find a way to generalize / make the user pick baselines.
+    # TODO: Reevaluate the performance implifications of this.
     # for _, row in ins_sort_df.iterrows():
     #     for t in df["threshold"].unique():
     #         row["threshold"] = t
     #         df = df.append(row)
-    # for _, row in std_sort_df.iterrows():
-    #     for t in df["threshold"].unique():
-    #         row["threshold"] = t
-    #         df = df.append(row)
-
-    index = "".join([clock_type, "_secs"])
+    for _, row in std_sort_df.iterrows():
+        for t in df["threshold"].unique():
+            row["threshold"] = t
+            df = df.append(row)
 
     fig = px.line(
         df,
@@ -297,8 +294,6 @@ def update_threshold_v_runtime(
         labels={"x": "Threshold", "y": f"Runtime ({index})"},
         height=2000,
     )
-
-    # Axis formatting
     fig.update_xaxes(
         showticklabels=True,
     )
@@ -307,8 +302,6 @@ def update_threshold_v_runtime(
         matches=None,
         title=f"Runtime ({index})",
     )
-
-    # General other formatting
     fig.update_layout(
         xaxis_title="Threshold",
         legend_title_text="Sorting Method",
