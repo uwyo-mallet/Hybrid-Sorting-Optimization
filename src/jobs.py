@@ -49,7 +49,7 @@ from tqdm import tqdm
 
 from info import write_info
 
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 
 VALID_METHODS = {
     "insertion_sort",
@@ -442,6 +442,7 @@ class Scheduler:
         files = self.data_dir.glob(r"**/*.gz")
         self.job_queue.clear()
 
+        job_id = 0
         for f in files:
             # Get the type of data from one of the subdirectory names.
             desc = "N/A"
@@ -451,7 +452,7 @@ class Scheduler:
                     break
 
             params = {
-                "job_id": 0,
+                "job_id": job_id,
                 "exec_path": self.exec,
                 "infile_path": f,
                 "description": desc,
@@ -475,10 +476,11 @@ class Scheduler:
                         job = Job(**params)
                         self.job_queue.append(job)
                         params["job_id"] += 1
+                    job_id = params["job_id"]
                 else:
                     job = Job(**params)
                     self.job_queue.append(job)
-                    params["job_id"] += 1
+                    job_id += 1
 
         random.shuffle(self.job_queue)
         self.active_queue = self.job_queue
