@@ -16,10 +16,10 @@ from .layout import gen_layout, md_template
 from .loader import CLOCKS, DATA_TYPES, GRAPH_ORDER, UNITS, load
 
 # Debug Options
-# pd.set_option("display.max_columns", None)
-# pd.set_option("display.max_rows", 500)
-# pd.set_option("display.max_columns", 500)
-# pd.set_option("display.width", 1000)
+pd.set_option("display.max_columns", None)
+pd.set_option("display.max_rows", 500)
+pd.set_option("display.max_columns", 500)
+pd.set_option("display.width", 1000)
 
 
 app = dash.Dash(__name__)
@@ -28,6 +28,7 @@ app.layout = partial(gen_layout, UNITS, CLOCKS, DATA_TYPES, None)
 
 @app.callback(
     Output("stat-data", "data"),
+    Output("cachegrind-data", "data"),
     Output("info-data", "data"),
     Input("load-button", "n_clicks"),
     State("result-dropdown", "value"),
@@ -41,7 +42,7 @@ def load_result(n_clicks, results_dir):
     except FileNotFoundError as e:
         return dash.no_update, str(e)
 
-    return res.stat_df.to_json(), json.dumps(res.info)
+    return res.stat_df.to_json(), res.cachegrind_df.to_json(), json.dumps(res.info)
 
 
 @app.callback(
@@ -99,7 +100,7 @@ def df_from_json(json_df):
 )
 def update_threshold_slider(json_df):
     df = df_from_json(json_df)
-    marks = {int(i): str(i) for i in sorted(df["threshold"].unique())}
+    marks = {int(i): "" for i in sorted(df["threshold"].unique())}
     return (
         int(df["threshold"].unique().min()),
         int(df["threshold"].unique().max()),
@@ -117,7 +118,7 @@ def update_size_slider(json_df):
     df = df_from_json(json_df)
     # Format marks as 'general'
     # https://docs.python.org/3.4/library/string.html#format-string-syntax
-    marks = {int(i): format(i, "g") for i in sorted(df["size"].unique())}
+    marks = {int(i): "" for i in sorted(df["size"].unique())}
     return (
         int(df["size"].unique().min()),
         int(df["size"].unique().max()),
@@ -307,6 +308,61 @@ def update_threshold_v_runtime(
         legend_title_text="Sorting Method",
         title={
             "text": f"Threshold vs. Runtime, size = {size:,}",
+            "xanchor": "left",
+        },
+        font=dict(
+            family="Courier New, monospace",
+            size=18,
+        ),
+        legend=dict(yanchor="top", xanchor="left"),
+    )
+
+    # Fix facet titles
+    # TODO: Find a less gross way to do this...
+    fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
+
+    return fig
+
+
+@app.callback(
+    Output("cachegrind-figure", "figure"),
+    [
+        Input("cachegrind-data", "data"),
+    ],
+)
+def update_cachegrind(json_df):
+    # TODO: Generalize
+    df = pd.read_json(json_df)
+    # df = df.sort_values(["threshold", "description"])
+    df = df.sort_values(["method", "threshold"])
+    print(df)
+    fig = px.line(
+        df,
+        x="threshold",
+        y="Dr",
+        facet_col="description",
+        facet_col_wrap=1,
+        facet_row_spacing=0.04,
+        category_orders={"description": GRAPH_ORDER},
+        color=df["method"],
+        markers=True,
+        labels={"x": "Threshold", "y": f"D1mr"},
+        height=2000,
+    )
+
+    fig.update_xaxes(
+        showticklabels=True,
+    )
+    fig.update_yaxes(
+        automargin=True,
+        matches=None,
+        title=f"D1mr",
+    )
+    fig.update_layout(
+        xaxis_title="Threshold",
+        legend_title_text="Sorting Method",
+        title={
+            "text": f"Threshold vs. Cache Performance",
             "xanchor": "left",
         },
         font=dict(
