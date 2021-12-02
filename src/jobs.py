@@ -7,7 +7,8 @@ dispatch slurm job array batches. Only use the native scheduling features if
 running on a local multi-core machine.
 
 Usage:
-    jobs.py DATA_DIR [options]
+    jobs.py <DATA_DIR> [options]
+    jobs.py <DATA_DIR> [options] (--threshold=THRESH ...)
     jobs.py -h | --help
 
 Options:
@@ -48,7 +49,7 @@ from tqdm import tqdm
 
 from info import write_info
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 VALID_METHODS = {
     "insertion_sort",
@@ -271,12 +272,33 @@ class Job:
         return len(self.commands)
 
 
+def parse_threshold_arg(user_input):
+    if not user_input:
+        return range(1, 2, 1)
+
+    result = []
+    for arg in user_input:
+        tokens = arg.split(",")
+        tokens = [int(i) for i in tokens]
+        if len(tokens) < 1 or len(tokens) > 3:
+            raise ValueError(f"Invalid threshold value: {arg}")
+
+        if len(tokens) == 1:
+            result = itertools.chain(result, range(tokens[0], tokens[0] + 1))
+        else:
+            # Include endpoint
+            tokens[1] += 1
+            result = itertools.chain(result, range(*tokens))
+
+    return list(set(result))
+
+
 def parse_args(args):
     """Parse CLI args from docopt."""
     parsed = {}
 
     # Data dir
-    parsed["data_dir"] = Path(args.get("DATA_DIR"))
+    parsed["data_dir"] = Path(args.get("<DATA_DIR>"))
     if not parsed["data_dir"].is_dir():
         raise NotADirectoryError("Invalid data directory")
 
@@ -336,34 +358,7 @@ def parse_args(args):
         parsed["output"] = Path(args.get("--output"))
 
     # Threshold
-    if args.get("--threshold") is not None:
-        # Try if the threshold is a single value
-        try:
-            buf = int(args.get("--threshold"))
-            thresh_range = [buf, buf]
-        # Not a single value, try to parse into range (min,max)
-        except ValueError:
-            try:
-                buf = args.get("--threshold").rsplit(",")
-                if len(buf) < 2 or len(buf) > 3:
-                    raise ValueError
-                thresh_range = [int(i) for i in buf]
-                if len(thresh_range) == 2:
-                    thresh_range.append(1)
-            except ValueError as e:
-                raise ValueError(f"Invalid threshold: {buf}") from e
-    else:
-        thresh_range = [1, 1, 1]
-
-    # Ensure thresholds are within sensible range
-    if (
-        thresh_range[1] < thresh_range[0]
-        or thresh_range[0] <= 0
-        or thresh_range[1] <= 0
-        or thresh_range[2] <= 0
-    ):
-        raise ValueError(f"Invalid threshold range: {thresh_range}")
-    parsed["threshold"] = range(thresh_range[0], thresh_range[1] + 1, thresh_range[2])
+    parsed["threshold"] = parse_threshold_arg(args.get("--threshold"))
 
     # Valgrind options
     parsed["base"] = args.get("--base")
