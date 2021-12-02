@@ -84,7 +84,7 @@ def update_info(info_json):
 
 def df_from_json(json_df):
     if not json_df:
-        raise dcc.exceptions.PreventUpdate
+        raise dash.exceptions.PreventUpdate
     df = pd.read_json(json_df)
     tuples = [ast.literal_eval(i) for i in df.columns]
     df.columns = pd.MultiIndex.from_tuples(tuples)
