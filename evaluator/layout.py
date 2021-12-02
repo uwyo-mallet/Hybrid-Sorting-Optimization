@@ -37,6 +37,7 @@ def gen_layout(units, clocks, data_types, dirs=None):
     res = html.Div(
         [
             dcc.Store(id="stat-data"),
+            dcc.Store(id="cachegrind-data"),
             dcc.Store(id="info-data"),
             html.Div(
                 [
@@ -174,7 +175,13 @@ def gen_layout(units, clocks, data_types, dirs=None):
                                         },
                                     ),
                                     dcc.Slider(
-                                        id="threshold-slider", step=None, value=0
+                                        id="threshold-slider",
+                                        step=None,
+                                        value=0,
+                                        tooltip={
+                                            "placement": "bottom",
+                                            "always_visible": True,
+                                        },
                                     ),
                                 ],
                                 className="pretty_container",
@@ -201,12 +208,32 @@ def gen_layout(units, clocks, data_types, dirs=None):
                                             "textAlign": "center",
                                         },
                                     ),
-                                    dcc.Slider(id="size-slider", step=None, value=0),
+                                    dcc.Slider(
+                                        id="size-slider",
+                                        step=None,
+                                        value=0,
+                                        tooltip={
+                                            "placement": "bottom",
+                                            "always_visible": True,
+                                        },
+                                    ),
                                 ],
                                 className="pretty_container",
                             ),
                             dcc.Graph(
                                 id="threshold-vs-runtime-scatter",
+                            ),
+                        ]
+                    )
+                ],
+                className="row pretty_container",
+            ),
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            dcc.Graph(
+                                id="cachegrind-figure",
                             ),
                         ]
                     )
