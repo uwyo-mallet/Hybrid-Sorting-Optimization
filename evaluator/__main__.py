@@ -14,6 +14,10 @@ from dash.dependencies import Input, Output, State
 
 from .layout import gen_layout, md_template
 from .loader import CLOCKS, DATA_TYPES, GRAPH_ORDER, UNITS, load
+from .loader import CACHEGRIND_COLS
+import numpy as np
+
+import plotly.graph_objects as go
 
 # Debug Options
 pd.set_option("display.max_columns", None)
@@ -276,10 +280,12 @@ def update_threshold_v_runtime(
     #     for t in df["threshold"].unique():
     #         row["threshold"] = t
     #         df = df.append(row)
+
     for _, row in std_sort_df.iterrows():
-        for t in df["threshold"].unique():
-            row["threshold"] = t
-            df = df.append(row)
+        row["threshold"] = df["threshold"].min()
+        df = df.append(row)
+        row["threshold"] = df["threshold"].max()
+        df = df.append(row)
 
     fig = px.line(
         df,
@@ -333,30 +339,34 @@ def update_threshold_v_runtime(
 def update_cachegrind(json_df):
     # TODO: Generalize
     df = pd.read_json(json_df)
-    # df = df.sort_values(["threshold", "description"])
-    df = df.sort_values(["method", "threshold"])
-    print(df)
-    fig = px.line(
-        df,
-        x="threshold",
-        y="Dr",
-        facet_col="description",
-        facet_col_wrap=1,
-        facet_row_spacing=0.04,
-        category_orders={"description": GRAPH_ORDER},
-        color=df["method"],
-        markers=True,
-        labels={"x": "Threshold", "y": f"D1mr"},
-        height=2000,
-    )
+
+    # # total_df = pd.DataFrame(columns=["method"] + CACHEGRIND_COLS)
+    # print(df.sum())
+    groups = df.groupby(["method", "size"])
+    sums = groups.aggregate(np.mean)
+    sums = sums.reset_index()
+    print(sums)
+    print(sums.columns)
+
+    # raise dash.exceptions.PreventUpdate
+    # print
+
+    bars = []
+    for i in sums["method"].unique():
+        y = sums[sums["method"] == i].reset_index()
+        y = y[CACHEGRIND_COLS].loc[0]
+        print(type(y))
+        bars.append(go.Bar(name=i, x=CACHEGRIND_COLS, y=y))
+    fig = go.Figure(bars)
 
     fig.update_xaxes(
         showticklabels=True,
     )
     fig.update_yaxes(
-        automargin=True,
-        matches=None,
-        title=f"D1mr",
+        # automargin=True,
+        # autorange=True,
+        # matches=None,
+        type="log",
     )
     fig.update_layout(
         xaxis_title="Threshold",
@@ -370,6 +380,7 @@ def update_cachegrind(json_df):
             size=18,
         ),
         legend=dict(yanchor="top", xanchor="left"),
+        barmode="group",
     )
 
     # Fix facet titles
