@@ -14,8 +14,8 @@ from dash.dependencies import Input, Output, State
 
 from .layout import gen_layout, md_template
 from .loader import CLOCKS, DATA_TYPES, GRAPH_ORDER, UNITS, load
-from .loader import CACHEGRIND_COLS
 import numpy as np
+import math
 
 import plotly.graph_objects as go
 
@@ -334,45 +334,58 @@ def update_threshold_v_runtime(
     Output("cachegrind-figure", "figure"),
     [
         Input("cachegrind-data", "data"),
+        Input("cachegrind-options", "value"),
     ],
 )
-def update_cachegrind(json_df):
-    # TODO: Generalize
+def update_cachegrind(json_df, opts):
+    if json_df is None:
+        return px.line()
+    if opts is None:
+        opts = []
+
     df = pd.read_json(json_df)
 
-    # # total_df = pd.DataFrame(columns=["method"] + CACHEGRIND_COLS)
-    # print(df.sum())
     groups = df.groupby(["method", "size"])
-    sums = groups.aggregate(np.mean)
-    sums = sums.reset_index()
-    print(sums)
-    print(sums.columns)
+    means = groups.aggregate(np.mean)
+    means = means.reset_index()
 
-    # raise dash.exceptions.PreventUpdate
-    # print
+    MISS_COLS = ["I1mr", "ILmr", "D1mr", "DLmr", "D1mw", "DLmw", "Bcm", "Bim"]
+    # TOTAL_COLS = ["Ir", "Dr", "Dw", "Bc", "Bi"]
 
+    COL_MAP = {
+        "Ir": ("I1mr", "ILmr"),
+        "Dr": ("D1mr", "DLmr", "D1mw", "DLmw"),
+        "Bc": ("Bcm",),
+        "Bi": ("Bim",),
+    }
+
+    if "relative" in opts:
+        pass
+
+    misses = means[["method"] + MISS_COLS]
+
+    # TODO: Find a more pythonic way to do this.
     bars = []
-    for i in sums["method"].unique():
-        y = sums[sums["method"] == i].reset_index()
-        y = y[CACHEGRIND_COLS].loc[0]
-        print(type(y))
-        bars.append(go.Bar(name=i, x=CACHEGRIND_COLS, y=y))
+    for i in misses["method"].unique():
+        y = misses[misses["method"] == i].reset_index()
+        y = y.loc[0][MISS_COLS]
+        bars.append(go.Bar(name=i, x=MISS_COLS, y=y))
     fig = go.Figure(bars)
 
     fig.update_xaxes(
         showticklabels=True,
     )
-    fig.update_yaxes(
-        # automargin=True,
-        # autorange=True,
-        # matches=None,
-        type="log",
-    )
+    if "log" in opts:
+        fig.update_yaxes(
+            automargin=True,
+            autorange=True,
+            type="log",
+            dtick="D2",
+        )
     fig.update_layout(
-        xaxis_title="Threshold",
         legend_title_text="Sorting Method",
         title={
-            "text": f"Threshold vs. Cache Performance",
+            "text": "Cache Performance",
             "xanchor": "left",
         },
         font=dict(
@@ -388,6 +401,17 @@ def update_cachegrind(json_df):
     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
 
     return fig
+
+
+@app.callback(
+    Output("threshold-vs-cache", "figure"),
+    [
+        Input("cachegrind-data", "data"),
+        Input("cachegrind-options", "value"),
+    ],
+)
+def update_threshold_v_cache():
+    pass
 
 
 if __name__ == "__main__":

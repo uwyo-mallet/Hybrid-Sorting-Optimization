@@ -232,11 +232,40 @@ def gen_layout(units, clocks, data_types, dirs=None):
                 [
                     html.Div(
                         [
+                            html.P(
+                                "Options",
+                                className="control_label",
+                                style={
+                                    "fontWeight": "bold",
+                                    "textAlign": "center",
+                                },
+                            ),
+                            dcc.Checklist(
+                                id="cachegrind-options",
+                                options=[
+                                    {
+                                        "label": "Relative",
+                                        "value": "relative",
+                                    },
+                                    {
+                                        "label": "Log Scale",
+                                        "value": "log",
+                                    },
+                                ],
+                                value=["log"],
+                                labelStyle={"display": "inline-block"},
+                                style={"margin-top": "5px"},
+                            ),
+                        ],
+                        className="pretty_container",
+                    ),
+                    html.Div(
+                        [
                             dcc.Graph(
                                 id="cachegrind-figure",
                             ),
                         ]
-                    )
+                    ),
                 ],
                 className="row pretty_container",
             ),
