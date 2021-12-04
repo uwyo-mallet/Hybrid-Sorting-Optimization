@@ -13,9 +13,10 @@ from dash import dcc
 from dash.dependencies import Input, Output, State
 
 from .layout import gen_layout, md_template
-from .loader import CLOCKS, DATA_TYPES, GRAPH_ORDER, UNITS, load
+from .loader import CACHEGRIND_COLS, CLOCKS, DATA_TYPES, GRAPH_ORDER, UNITS, load
 import numpy as np
-import math
+
+# import math
 
 import plotly.graph_objects as go
 
@@ -348,21 +349,30 @@ def update_cachegrind(json_df, opts):
     groups = df.groupby(["method", "size"])
     means = groups.aggregate(np.mean)
     means = means.reset_index()
+    means = means.fillna(0)
+
+    print(means)
 
     MISS_COLS = ["I1mr", "ILmr", "D1mr", "DLmr", "D1mw", "DLmw", "Bcm", "Bim"]
     # TOTAL_COLS = ["Ir", "Dr", "Dw", "Bc", "Bi"]
 
     COL_MAP = {
         "Ir": ("I1mr", "ILmr"),
-        "Dr": ("D1mr", "DLmr", "D1mw", "DLmw"),
+        "Dr": ("D1mr", "DLmr"),
+        "Dw": ("D1mw", "DLmw"),
         "Bc": ("Bcm",),
         "Bi": ("Bim",),
     }
 
     if "relative" in opts:
-        pass
-
-    misses = means[["method"] + MISS_COLS]
+        relative = means[["method"] + CACHEGRIND_COLS].copy()
+        for total, sub in COL_MAP.items():
+            for miss in sub:
+                relative[miss] /= relative[total]
+                relative[miss] *= 100
+        misses = relative[["method"] + MISS_COLS]
+    else:
+        misses = means[["method"] + MISS_COLS]
 
     # TODO: Find a more pythonic way to do this.
     bars = []
@@ -382,10 +392,11 @@ def update_cachegrind(json_df, opts):
             type="log",
             dtick="D2",
         )
+
     fig.update_layout(
         legend_title_text="Sorting Method",
         title={
-            "text": "Cache Performance",
+            "text": "Mean Cache Performance Accross All Types and Thresholds",
             "xanchor": "left",
         },
         font=dict(

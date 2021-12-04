@@ -109,6 +109,7 @@ def downcast(df, cols, cast="unsigned"):
 
 
 def load_cachegrind(df, valgrind_dir: Union[None, Path]):
+    # TODO: Handle a different method name in CSV vs C source code.
     BASE_COLS = [
         # "input",
         "method",
@@ -149,6 +150,8 @@ def load_cachegrind(df, valgrind_dir: Union[None, Path]):
                 data.update(dict(zip(CACHEGRIND_COLS, tokens)))
                 cachegrind_df.loc[i] = data
                 break
+        else:
+            print(f"[Warning]: Could not locate method: {method}")
 
     cachegrind_df = downcast(cachegrind_df, CACHEGRIND_COLS)
     return cachegrind_df
