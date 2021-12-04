@@ -180,13 +180,13 @@ Supported sorting methods for QST. Essentially the possible options for
   parameterized compare function.
 - `insertion_sort_c` - Pure C version of `insertion_sort` using `void` pointers.
 - `insertion_sort_c_swp` - Same as `insertion_sort_c` but uses a parameterized
-  swap function instead of preprocessor based bitwise swap (used in `qsort` in
+  swap function instead of preprocessor based bitwise swap (from `qsort` in
   glibc).
 - `insertion_sort_asm` - Pure x86 assembly version of insertion sort. Only
   supports `uint64_t`.
 - `qsort_sanity` - Literally just calls `qsort`. May be different methods
   internally depending on the compiler implementation.
-- `std` - Literally just calls `std::sort`. May be different methods
+- `std::sort` - Literally just calls `std::sort`. May be different methods
   internally depending on the compiler implementation.
 
 #### Threshold
