@@ -61,7 +61,7 @@ VALID_METHODS = {
     "qsort_cpp",
     "qsort_cpp_no_comp",
     "qsort_sanity",
-    "std",
+    "std::sort",
 }
 THRESHOLD_METHODS = {
     "qsort_asm",

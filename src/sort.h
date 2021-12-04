@@ -60,6 +60,8 @@ extern "C"
   void qsort_c_swp(void *const arr, const size_t n, const size_t size,
                    swp_fn_t swp, compar_d_fn_t cmp, const size_t thresh);
 
+  void qsort_sanity(void *const pbase, const size_t total_elems,
+                    const size_t size, compar_d_fn_t cmp);
 #if defined(__cplusplus)
 }
 #endif

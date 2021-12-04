@@ -130,7 +130,7 @@ int main(int argc, char** argv)
 
   bool checked = false;
 
-  for (size_t i = 0; i < arguments.runs; i++)
+  for (int64_t i = 0; i < arguments.runs; i++)
   {
     std::copy(orig_data.begin(), orig_data.end(), to_sort);
     const boost::timer::cpu_times res =

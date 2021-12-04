@@ -46,9 +46,9 @@ boost::timer::cpu_times time(const std::string& method, const size_t& threshold,
   else if (method == "qsort_sanity")
   {
     timer.start();
-    qsort(to_sort, size, sizeof(T), compare<T>);
+    qsort_sanity(to_sort, size, sizeof(T), compare<T>);
   }
-  else if (method == "std")
+  else if (method == "std::sort")
   {
     timer.start();
     std::sort(to_sort, to_sort + size, compare_std<T>);

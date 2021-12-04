@@ -526,3 +526,9 @@ void qsort_c_sep_ins(void *const pbase, const size_t total_elems,
     insertion_sort_c(pbase, total_elems, size, cmp);
   }
 }
+
+void qsort_sanity(void *const pbase, const size_t total_elems,
+                  const size_t size, compar_d_fn_t cmp)
+{
+  qsort(pbase, total_elems, size, cmp);
+}
