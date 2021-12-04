@@ -133,14 +133,14 @@ def load_cachegrind(df, valgrind_dir: Union[None, Path]):
         cachegrind_file = valgrind_dir / f"{i}_cachegrind.out"
 
         p = subprocess.run(
-            ["cg_annotate", str(cachegrind_file.absolute())],
+            ["cg_annotate", "--auto=no", str(cachegrind_file.absolute())],
             capture_output=True,
             text=True,
         )
         lines = p.stdout.split("\n")
         for line in lines:
             line = line.lower()
-            if method in line and "command" not in line:
+            if ("time" in line or method in line) and "command" not in line:
                 tokens = [int(i.replace(",", "")) for i in pattern.findall(line)]
                 if len(tokens) != len(CACHEGRIND_COLS):
                     print("[Warning]: Malformed line found, skipping.")
