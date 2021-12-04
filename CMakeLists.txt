@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.8.3
+  VERSION 1.8.4
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES C CXX ASM)
 configure_file(src/config.h.in config.hpp)
@@ -61,21 +61,19 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE ${PROJECT_BINARY_DIR})
 target_link_libraries(${EXECUTABLE_NAME} Boost::iostreams Boost::filesystem
                       Boost::timer)
 
-add_compile_options(
-  -Wall
-  -Wextra
-  -Wconversion
-  -Wsign-conversion
-  -pedantic
-  $<$<CONFIG:DEBUG>:-g3>
-  $<$<CONFIG:DEBUG>:-Og>
-  $<$<CONFIG:DEBUG>:-pg>
-  $<$<CONFIG:DEBUG>:-p>
-  $<$<CONFIG:DEBUG>:-fsanitize=address>
-  $<$<CONFIG:DEBUG>:-ggdb>
-  $<$<CONFIG:RELEASE>:-Ofast>
-  $<$<CONFIG:VALGRIND>:-Ofast>
-  $<$<CONFIG:VALGRIND>:-ggdb>)
+target_compile_options(${EXECUTABLE_NAME} PRIVATE -Wall -Wextra -Wconversion
+                                                  -Wsign-conversion -pedantic)
+
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
+  message("Build type: Debug")
+  target_compile_options(${EXECUTABLE_NAME} PRIVATE -ggdb -fsanitize=address)
+elseif(CMAKE_BUILD_TYPE MATCHES "Valgrind")
+  message("Build type: Valgrind")
+  target_compile_options(${EXECUTABLE_NAME} PRIVATE -Ofast -ggdb)
+else()
+  message("Build type: Release")
+  target_compile_options(${EXECUTABLE_NAME} PRIVATE -Ofast)
+endif()
 
 # Docs
 add_subdirectory("docs")
