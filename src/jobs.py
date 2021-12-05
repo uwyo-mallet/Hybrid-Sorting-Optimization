@@ -49,7 +49,7 @@ from tqdm import tqdm
 
 from info import write_info
 
-VERSION = "1.1.3"
+VERSION = "1.1.4"
 
 VALID_METHODS = {
     "insertion_sort",
@@ -91,6 +91,7 @@ class Job:
 
     base: bool
     callgrind: bool
+    cachegrind: bool
     massif: bool
 
     def __init__(
@@ -468,19 +469,21 @@ class Scheduler:
             for method in self.methods:
                 params["method"] = method
                 # Only methods in THRESHOLD_METHODS care about threshold value.
-                # For the others, we can use just one dummy value.
+                # For the others, we can use just one dummy value (42).
                 # QST (> V1.0) corrects this to 0 on the CSV output.
                 if method in THRESHOLD_METHODS:
                     for thresh in self.threshold:
                         params["threshold"] = thresh
                         job = Job(**params)
                         self.job_queue.append(job)
-                        params["job_id"] += 1
-                    job_id = params["job_id"]
+                        job_id += 1
+                        params["job_id"] = job_id
                 else:
+                    params["threshold"] = 42
                     job = Job(**params)
                     self.job_queue.append(job)
                     job_id += 1
+                    params["job_id"] = job_id
 
         random.shuffle(self.job_queue)
         self.active_queue = self.job_queue
