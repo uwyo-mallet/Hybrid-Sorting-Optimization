@@ -21,10 +21,10 @@ import numpy as np
 import plotly.graph_objects as go
 
 # Debug Options
-pd.set_option("display.max_columns", None)
-pd.set_option("display.max_rows", 500)
-pd.set_option("display.max_columns", 500)
-pd.set_option("display.width", 1000)
+# pd.set_option("display.max_columns", None)
+# pd.set_option("display.max_rows", 500)
+# pd.set_option("display.max_columns", 500)
+# pd.set_option("display.width", 1000)
 
 
 app = dash.Dash(__name__)
@@ -259,7 +259,7 @@ def update_threshold_v_runtime(
     if size is None or not any(df["size"] == size):
         size = df["size"].min()
 
-    df = df[(df["size"] == size)]
+    df = df[df["size"] == size]
     df = df[df["run_type"] == data_type]
 
     # Try to use insertion sort and std as baselines
@@ -267,7 +267,7 @@ def update_threshold_v_runtime(
     std_sort_df = df[(df["method"] == "std")]
 
     # Get all methods that support a varying threshold.
-    df = df[(df["threshold"] != 0)]
+    df = df[df["threshold"] != 0]
     df = df.sort_values(["threshold", "method"])
     if df.empty:
         return px.line()
@@ -351,11 +351,11 @@ def update_cachegrind(json_df, opts):
     means = means.reset_index()
     means = means.fillna(0)
 
-    print(means)
-
     MISS_COLS = ["I1mr", "ILmr", "D1mr", "DLmr", "D1mw", "DLmw", "Bcm", "Bim"]
-    # TOTAL_COLS = ["Ir", "Dr", "Dw", "Bc", "Bi"]
 
+    # TODO: Globalize this
+
+    # Associate totals with subgroups
     COL_MAP = {
         "Ir": ("I1mr", "ILmr"),
         "Dr": ("D1mr", "DLmr"),
@@ -419,10 +419,93 @@ def update_cachegrind(json_df, opts):
     [
         Input("cachegrind-data", "data"),
         Input("cachegrind-options", "value"),
+        Input("cachegrind-metric-dropdown", "value"),
+        Input("size-slider", "value"),
     ],
 )
-def update_threshold_v_cache():
-    pass
+def update_threshold_v_cache(json_df, opts, metric, size=None):
+    if json_df is None:
+        return px.line()
+    if opts is None:
+        opts = []
+
+    df = pd.read_json(json_df)
+    if size is None or not any(df["size"] == size):
+        size = df["size"].min()
+
+    df = df[df["size"] == size]
+    df = df[df["threshold"] != 0]
+    df = df.sort_values(["threshold", "method"])
+    if df.empty:
+        return px.line()
+
+    # Associate totals with subgroups
+    # COL_MAP = {
+    #     "Ir": ("I1mr", "ILmr"),
+    #     "Dr": ("D1mr", "DLmr"),
+    #     "Dw": ("D1mw", "DLmw"),
+    #     "Bc": ("Bcm",),
+    #     "Bi": ("Bim",),
+    # }
+    COL_MAP = {
+        "I1mr": "Ir",
+        "ILmr": "Ir",
+        "D1mr": "Dr",
+        "DLmr": "Dr",
+        "D1mw": "Dw",
+        "DLmw": "Dw",
+        "Bcm": "Bc",
+        "Bim": "Bi",
+    }
+    if "relative" in opts:
+        df[metric] /= df[COL_MAP[metric]]
+        df[metric] *= 100
+        y_axis_title = f"Percent of {COL_MAP[metric]}"
+    else:
+        y_axis_title = f"Number of {COL_MAP[metric]} misses"
+
+    print(df)
+
+    fig = px.line(
+        df,
+        x=df["threshold"],
+        y=df[metric],
+        facet_col="description",
+        facet_col_wrap=1,
+        facet_row_spacing=0.04,
+        category_orders={"description": GRAPH_ORDER},
+        color=df["method"],
+        markers=True,
+        height=2000,
+    )
+
+    fig.update_xaxes(
+        showticklabels=True,
+    )
+    fig.update_yaxes(
+        automargin=True,
+        matches=None,
+        title=y_axis_title,
+    )
+    fig.update_layout(
+        xaxis_title="Threshold",
+        legend_title_text="Sorting Method",
+        title={
+            "text": f"Threshold vs. {metric}, size = {size:,}",
+            "xanchor": "left",
+        },
+        font=dict(
+            family="Courier New, monospace",
+            size=18,
+        ),
+        legend=dict(yanchor="top", xanchor="left"),
+    )
+
+    # Fix facet titles
+    # TODO: Find a less gross way to do this...
+    fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
+
+    return fig
 
 
 if __name__ == "__main__":

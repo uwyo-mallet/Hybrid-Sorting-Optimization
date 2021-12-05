@@ -266,6 +266,33 @@ def gen_layout(units, clocks, data_types, dirs=None):
                             ),
                         ]
                     ),
+                    dcc.Dropdown(
+                        id="cachegrind-metric-dropdown",
+                        options=[
+                            {
+                                "label": str(i),
+                                "value": str(i),
+                            }
+                            for i in [
+                                "I1mr",
+                                "ILmr",
+                                "D1mr",
+                                "DLmr",
+                                "D1mw",
+                                "DLmw",
+                                "Bcm",
+                                "Bim",
+                            ]
+                        ],
+                        value="I1mr",
+                    ),
+                    html.Div(
+                        [
+                            dcc.Graph(
+                                id="threshold-vs-cache",
+                            ),
+                        ]
+                    ),
                 ],
                 className="row pretty_container",
             ),
