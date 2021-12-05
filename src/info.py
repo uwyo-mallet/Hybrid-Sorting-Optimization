@@ -28,6 +28,8 @@ from pathlib import Path
 
 from docopt import docopt
 
+VERSION = "1.0.0"
+
 
 def write_info(
     output_folder,
@@ -57,6 +59,8 @@ def write_info(
     if data_details_path is not None and data_details_path.is_file():
         with open(data_details_path, "r") as data_details_file:
             data_details = json.load(data_details_file)
+    else:
+        data_details = None
 
     info = {
         "Architecture": platform.architecture(),
@@ -85,7 +89,7 @@ def write_info(
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__)
+    args = docopt(__doc__, version=VERSION)
     OUT_DIR = Path(args.get("DIR"))
 
     concurrent = args.get("--concurrent") or 1
