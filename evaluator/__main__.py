@@ -7,18 +7,24 @@ from functools import partial
 from pathlib import Path
 
 import dash
+import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from dash import dcc
 from dash.dependencies import Input, Output, State
 
 from .layout import gen_layout, md_template
-from .loader import CACHEGRIND_COLS, CLOCKS, DATA_TYPES, GRAPH_ORDER, UNITS, load
-import numpy as np
+from .loader import (
+    CACHEGRIND_COLS,
+    CLOCKS,
+    DATA_TYPES,
+    GRAPH_ORDER,
+    THRESHOLD_METHODS,
+    UNITS,
+    load,
+)
 
-# import math
-
-import plotly.graph_objects as go
 
 # Debug Options
 # pd.set_option("display.max_columns", None)
@@ -353,7 +359,6 @@ def update_cachegrind(json_df, opts):
         opts = []
 
     df = pd.read_json(json_df)
-    print(df)
 
     groups = df.groupby(["method", "size"])
     means = groups.aggregate(np.mean)
@@ -387,6 +392,7 @@ def update_cachegrind(json_df, opts):
 
     # TODO: Find a more pythonic way to do this.
     bars = []
+    means = means.sort_values(["threshold", "method"])
     for i in misses["method"].unique():
         y = misses[misses["method"] == i].reset_index()
         y = y.loc[0][MISS_COLS]
@@ -447,36 +453,23 @@ def update_threshold_v_cache(json_df, opts, metric, size=None):
     if size is None or not any(df["size"] == size):
         size = df["size"].min()
 
-    std_sort_df = df[df["method"] == "std::sort"]
-    vanilla_df = df[df["method"] == "qsort_vanilla"]
+    # TODO: Generalize this desparately!!!
+    non_threshold_dfs = df[~df["method"].isin(THRESHOLD_METHODS)]
 
     df = df[df["size"] == size]
     df = df[df["threshold"] != 0]
-    df = df.sort_values(["threshold", "method"])
+
     if df.empty:
         return px.line()
 
-    # Create dummy values for insertion sort, since it isn't affected by threshold,
-    # we are just illustrating a comparison. It is okay to manually iterate over the
-    # rows here, since there should only ever be one row per input data type.
-    # TODO: Find a way to generalize / make the user pick baselines.
-    # TODO: Reevaluate the performance implifications of this.
-    # for _, row in ins_sort_df.iterrows():
-    #     for t in df["threshold"].unique():
-    #         row["threshold"] = t
-    #         df = df.append(row)
-
-    for _, row in std_sort_df.iterrows():
-        row["threshold"] = df["threshold"].min()
-        df = df.append(row)
-        row["threshold"] = df["threshold"].max()
-        df = df.append(row)
-
-    for _, row in vanilla_df.iterrows():
-        row["threshold"] = df["threshold"].min()
-        df = df.append(row)
-        row["threshold"] = df["threshold"].max()
-        df = df.append(row)
+    for method in non_threshold_dfs["method"].unique():
+        for _, row in non_threshold_dfs[
+            non_threshold_dfs["method"] == method
+        ].iterrows():
+            row["threshold"] = df["threshold"].min()
+            df = df.append(row)
+            row["threshold"] = df["threshold"].max()
+            df = df.append(row)
 
     # Associate totals with subgroups
     # COL_MAP = {
@@ -503,6 +496,7 @@ def update_threshold_v_cache(json_df, opts, metric, size=None):
     else:
         y_axis_title = f"Number of {COL_MAP[metric]} misses"
 
+    df = df.sort_values(["threshold", "method"])
     fig = px.line(
         df,
         x=df["threshold"],
