@@ -403,4 +403,95 @@ void qsort_cpp_no_comp(T *arr, const size_t &n, const size_t &thresh)
   insertion_sort(arr, n);
 }
 
+/**
+ * Vanilla quicksort with no hybridization.
+ *
+ * @param arr: Input array to sort.
+ * @param n: Length of arr.
+ * @param comp: Comparator function, follows STL qsort conventions.
+ * @see compare()
+ */
+template <typename T, typename Comparator>
+void qsort_vanilla(T *arr, const size_t &n, Comparator comp)
+{
+  node<T> stack[STACK_SIZE];
+  node<T> *top = stack;
+
+  PUSH(arr, arr + n - 1);
+
+  T *hi;
+  T *lo;
+
+  while (STACK_NOT_EMPTY)
+  {
+    POP(lo, hi);
+
+    T *mid = lo + ((hi - lo) >> 1);
+
+    if (comp(mid, lo) < 0)
+    {
+      swap<T>(mid, lo);
+    }
+    if (comp(hi, mid) < 0)
+    {
+      swap<T>(mid, hi);
+    }
+    else
+    {
+      goto jump_over;
+    }
+    if (comp(mid, lo) < 0)
+    {
+      swap<T>(mid, lo);
+    }
+
+  jump_over:
+
+    T *left_ptr = lo + 1;
+    T *right_ptr = hi - 1;
+
+    do
+    {
+      while (comp(left_ptr, mid) < 0)
+      {
+        left_ptr++;
+      }
+      while (comp(mid, right_ptr) < 0)
+      {
+        right_ptr--;
+      }
+      if (left_ptr < right_ptr)
+      {
+        swap<T>(left_ptr, right_ptr);
+        if (mid == left_ptr)
+        {
+          mid = right_ptr;
+        }
+        else if (mid == right_ptr)
+        {
+          mid = left_ptr;
+        }
+
+        left_ptr++;
+        right_ptr--;
+      }
+      else if (left_ptr == right_ptr)
+      {
+        left_ptr++;
+        right_ptr--;
+        break;
+      }
+    } while (left_ptr <= right_ptr);
+
+    if (right_ptr > lo)
+    {
+      PUSH(lo, right_ptr);
+    }
+    if (left_ptr < hi)
+    {
+      PUSH(left_ptr, hi);
+    }
+  }
+}
+
 #endif /* SORT_HPP_ */

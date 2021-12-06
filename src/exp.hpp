@@ -92,6 +92,11 @@ boost::timer::cpu_times time(const std::string& method, const size_t& threshold,
     timer.start();
     qsort_cpp_no_comp(to_sort, size, threshold);
   }
+  else if (method == "qsort_vanilla")
+  {
+    timer.start();
+    qsort_vanilla(to_sort, size, compare<T>);
+  }
   else if (method == "fail")
   {
     timer.start();
