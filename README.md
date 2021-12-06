@@ -169,7 +169,32 @@ this procedure is used to generate and run the tests.
    Open a web browser to [http://localhost:8050](http://localhost:8050) and
    you should be able to pick various parameters to visualize your results.
 
-### QST Supported Sorting Methods
+## Cachegrind Output
+
+- `Ir`: Number of instructions executed.
+- `I1mr`: Instruction cache I1 read misses.
+- `ILmr`: Instruction cache LL read misses.
+- `Dr`: Number of memory reads.
+- `D1mr`: Data cache D1 read misses.
+- `DLmr`: Data cache LL read misses.
+- `Dw`: Number of memory writes.
+- `D1mw`: Data cache D1 write misses.
+- `DLmw`: Data cache LL write misses.
+- `Bc`: Conditional branches executed.
+- `Bcm`: Conditional branches mispredicted.
+- `Bi`: Indirect branches executed.
+- `Bim`: Indirect branches mispredicted.
+
+> D1 total accesses is given by D1mr + D1mw, and that L2 total accesses is
+> given by I2mr + D2mr + D2mw.
+
+On a modern machine, an L1 miss will typically cost around 10 cycles, and an L2
+miss can cost as much as 200 cycles.
+
+[Official
+Docs](https://www.cs.cmu.edu/afs/cs.cmu.edu/project/cmt-40/Nice/RuleRefinement/bin/valgrind-3.2.0/docs/html/cg-manual.html)
+
+## QST Supported Sorting Methods
 
 Supported sorting methods for QST. Essentially the possible options for
 `--method/-m`:
