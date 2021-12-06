@@ -264,7 +264,9 @@ def update_threshold_v_runtime(
 
     # Try to use insertion sort and std as baselines
     # ins_sort_df = df[(df["method"] == "insertion_sort")]
-    std_sort_df = df[(df["method"] == "std")]
+    # Retain backwards compatilbility with older naming scheme
+    std_sort_df = df[(df["method"] == "std::sort") | (df["method"] == "std")]
+    vanilla_df = df[df["method"] == "qsort_vanilla"]
 
     # Get all methods that support a varying threshold.
     df = df[df["threshold"] != 0]
@@ -283,6 +285,12 @@ def update_threshold_v_runtime(
     #         df = df.append(row)
 
     for _, row in std_sort_df.iterrows():
+        row["threshold"] = df["threshold"].min()
+        df = df.append(row)
+        row["threshold"] = df["threshold"].max()
+        df = df.append(row)
+
+    for _, row in vanilla_df.iterrows():
         row["threshold"] = df["threshold"].min()
         df = df.append(row)
         row["threshold"] = df["threshold"].max()
@@ -345,6 +353,7 @@ def update_cachegrind(json_df, opts):
         opts = []
 
     df = pd.read_json(json_df)
+    print(df)
 
     groups = df.groupby(["method", "size"])
     means = groups.aggregate(np.mean)
@@ -371,8 +380,10 @@ def update_cachegrind(json_df, opts):
                 relative[miss] /= relative[total]
                 relative[miss] *= 100
         misses = relative[["method"] + MISS_COLS]
+        y_axis_title = "Percent"
     else:
         misses = means[["method"] + MISS_COLS]
+        y_axis_title = "Number of misses"
 
     # TODO: Find a more pythonic way to do this.
     bars = []
@@ -384,6 +395,9 @@ def update_cachegrind(json_df, opts):
 
     fig.update_xaxes(
         showticklabels=True,
+    )
+    fig.update_yaxes(
+        title=y_axis_title,
     )
     if "log" in opts:
         fig.update_yaxes(
@@ -433,11 +447,36 @@ def update_threshold_v_cache(json_df, opts, metric, size=None):
     if size is None or not any(df["size"] == size):
         size = df["size"].min()
 
+    std_sort_df = df[df["method"] == "std::sort"]
+    vanilla_df = df[df["method"] == "qsort_vanilla"]
+
     df = df[df["size"] == size]
     df = df[df["threshold"] != 0]
     df = df.sort_values(["threshold", "method"])
     if df.empty:
         return px.line()
+
+    # Create dummy values for insertion sort, since it isn't affected by threshold,
+    # we are just illustrating a comparison. It is okay to manually iterate over the
+    # rows here, since there should only ever be one row per input data type.
+    # TODO: Find a way to generalize / make the user pick baselines.
+    # TODO: Reevaluate the performance implifications of this.
+    # for _, row in ins_sort_df.iterrows():
+    #     for t in df["threshold"].unique():
+    #         row["threshold"] = t
+    #         df = df.append(row)
+
+    for _, row in std_sort_df.iterrows():
+        row["threshold"] = df["threshold"].min()
+        df = df.append(row)
+        row["threshold"] = df["threshold"].max()
+        df = df.append(row)
+
+    for _, row in vanilla_df.iterrows():
+        row["threshold"] = df["threshold"].min()
+        df = df.append(row)
+        row["threshold"] = df["threshold"].max()
+        df = df.append(row)
 
     # Associate totals with subgroups
     # COL_MAP = {
@@ -463,8 +502,6 @@ def update_threshold_v_cache(json_df, opts, metric, size=None):
         y_axis_title = f"Percent of {COL_MAP[metric]}"
     else:
         y_axis_title = f"Number of {COL_MAP[metric]} misses"
-
-    print(df)
 
     fig = px.line(
         df,
