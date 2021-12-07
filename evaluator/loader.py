@@ -173,7 +173,7 @@ def preprocess_csv(csv_file: Path, valgrind_dir: Union[None, Path] = None):
     raw_df["user_secs"] = raw_df["user_nsecs"] / 1_000_000_000
     raw_df["system_secs"] = raw_df["system_nsecs"] / 1_000_000_000
 
-    # Downcast whenever possible
+    # Downcast whenever possible to save memory.
     uint_columns = [
         "id",
         "threshold",
@@ -223,8 +223,7 @@ def preprocess_csv(csv_file: Path, valgrind_dir: Union[None, Path] = None):
 
 def load_without_cache(in_csv: Path):
     valgrind_dir = in_csv.parent / "valgrind"
-    valgrind_dir = valgrind_dir if valgrind_dir.exists() else None
-    return preprocess_csv(in_csv, valgrind_dir)
+    return preprocess_csv(in_csv, valgrind_dir if valgrind_dir.exists() else None)
 
 
 def load(in_dir=None):
@@ -241,14 +240,17 @@ def load(in_dir=None):
     in_raw_parq = None
     in_stat_parq = None
     in_cachegrind_parq = None
-    in_csv = None
+
     if len(csvs):
         in_csv = Path(csvs[0])
+    else:
+        in_csv = None
 
     if IGNORE_CACHE and in_csv is None:
         raise FileNotFoundError("No CSV data files found.")
 
     if IGNORE_CACHE:
+        # Load without cache
         raw_df, stat_df, cachegrind_df = load_without_cache(in_csv)
     else:
         # Load with cache
@@ -268,6 +270,7 @@ def load(in_dir=None):
         else:
             if in_csv is None:
                 raise FileNotFoundError("Neither CSV nor parquet data files found.")
+            # Parquets do not exist, fallback to loading from CSV.
             raw_df, stat_df, cachegrind_df = load_without_cache(in_csv)
 
     info_path = in_dir / JOB_DETAILS_FILE
@@ -281,6 +284,7 @@ def load(in_dir=None):
         partition = partition_path.read_text()
     else:
         partition = None
+
     info["partition"] = partition
     info["actual_num_sorts"] = len(raw_df)
 
