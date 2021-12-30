@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 1.8.5
+  VERSION 1.8.7
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES C CXX ASM)
 configure_file(src/config.h.in config.hpp)
@@ -66,13 +66,15 @@ target_compile_options(${EXECUTABLE_NAME} PRIVATE -Wall -Wextra -Wconversion
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
   message("Build type: Debug")
-  target_compile_options(${EXECUTABLE_NAME} PRIVATE -ggdb -fsanitize=address)
+  set(SANITIZER_OPTS -fsanitize=address)
+  target_compile_options(${EXECUTABLE_NAME} PRIVATE -Og -ggdb ${SANITIZER_OPTS})
+  target_link_options(${EXECUTABLE_NAME} PRIVATE ${SANITIZER_OPTS})
 elseif(CMAKE_BUILD_TYPE MATCHES "Valgrind")
   message("Build type: Valgrind")
-  target_compile_options(${EXECUTABLE_NAME} PRIVATE -Ofast -ggdb)
+  target_compile_options(${EXECUTABLE_NAME} PRIVATE -O2 -ggdb)
 else()
   message("Build type: Release")
-  target_compile_options(${EXECUTABLE_NAME} PRIVATE -Ofast)
+  target_compile_options(${EXECUTABLE_NAME} PRIVATE -O2)
 endif()
 
 # Docs
