@@ -9,6 +9,8 @@ running on a local multi-core machine.
 Usage:
     jobs.py <DATA_DIR> [options]
     jobs.py <DATA_DIR> [options] (--threshold=THRESH ...)
+    jobs.py <DATA_DIR> [options] (--valgrind-opt=OPT ...)
+    jobs.py <DATA_DIR> [options] (--threshold=THRESH ...) (--valgrind-opt=OPT ...)
     jobs.py -h | --help
 
 Options:
@@ -23,8 +25,14 @@ Options:
     -t, --threshold=THRESH   Comma seperated range for threshold (min,max,[step])
                              including both endpoints, or a single value.
 
+    --valgrind-opt=OPT       Any additional options to pass through to valgrind.
+                             Can be specified multiple times. Each and every
+    CLI argument
+                             must be paired with this flag, otherwise a
+                             CalledProcess exception will be raised.
+
     --base                   Collect a normal sample along with any valgrind options.
-                             Ignored if not accompanied by either of the following options.
+                             Ignored if not accompanied by any of the following options.
     --callgrind              Enable callgrind data collection for each job.
     --cachegrind             Enable cachegrind data collection for each job.
     --massif                 Enable massif data collection for each job.
@@ -43,6 +51,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from pprint import pprint
+from typing import Optional
 
 from docopt import docopt
 from tqdm import tqdm
@@ -95,6 +105,8 @@ class Job:
     cachegrind: bool
     massif: bool
 
+    valgrind_opts: Optional[list[str]]
+
     def __init__(
         self,
         job_id,
@@ -109,6 +121,7 @@ class Job:
         callgrind=False,
         cachegrind=False,
         massif=False,
+        valgrind_opts=None,
     ):
         self.job_id = job_id
         self.exec_path = exec_path
@@ -123,6 +136,7 @@ class Job:
         self.callgrind = None
         self.cachegrind = None
         self.massif = None
+        self.valgrind_opts = valgrind_opts
 
         if callgrind:
             self.callgrind = (
@@ -169,7 +183,7 @@ class Job:
             str(self.threshold),
         ]
         base_valgrind_opts = [
-            "valgrind",
+            "/usr/bin/valgrind",
             "--time-stamp=yes",
             "--quiet",
         ]
@@ -196,8 +210,12 @@ class Job:
                 "--collect-bus=yes",
                 "--cache-sim=yes",
                 "--branch-sim=yes",
-                "--",
             ]
+            if self.valgrind_opts is not None:
+                opts.extend(self.valgrind_opts)
+                pprint(opts)
+            opts.append("--")
+
             my_pt = deepcopy(passthrough_opts)
             my_pt["run_type"] = "callgrind"
             all_commands.append(
@@ -217,8 +235,11 @@ class Job:
                 f"--cachegrind-out-file={out}",
                 "--cache-sim=yes",
                 "--branch-sim=yes",
-                "--",
             ]
+            if self.valgrind_opts is not None:
+                opts.extend(self.valgrind_opts)
+            opts.append("--")
+
             my_pt = deepcopy(passthrough_opts)
             my_pt["run_type"] = "cachegrind"
             all_commands.append(
@@ -237,8 +258,10 @@ class Job:
                 "--tool=massif",
                 f"--massif-out-file={out}",
                 "--stacks=yes",
-                "--",
             ]
+            if self.valgrind_opts is not None:
+                opts.extend(self.valgrind_opts)
+            opts.append("--")
 
             my_pt = deepcopy(passthrough_opts)
             my_pt["run_type"] = "massif"
@@ -268,7 +291,8 @@ class Job:
                 print(" ".join(i))
             elif pbar is not None:
                 pbar.update()
-            subprocess.run(i, capture_output=True)
+
+            subprocess.run(i, capture_output=True, check=True)
 
     def __len__(self):
         return len(self.commands)
@@ -367,6 +391,7 @@ def parse_args(args):
     parsed["callgrind"] = args.get("--callgrind")
     parsed["cachegrind"] = args.get("--cachegrind")
     parsed["massif"] = args.get("--callgrind")
+    parsed["valgrind_opts"] = args.get("--valgrind-opt")
 
     if parsed["slurm"] is None:
         Path(parsed["output"].parent, "valgrind").mkdir(exist_ok=True)
@@ -392,9 +417,10 @@ class Scheduler:
         callgrind: bool,
         cachegrind: bool,
         massif: bool,
+        valgrind_opts: Optional[list[str]],
     ):
         """
-        Define the base parameters
+        Define the base parameters.
 
         @param data_dir: Path to input data.
         @param exec: Path to QST executable.
@@ -423,6 +449,7 @@ class Scheduler:
         self.callgrind = callgrind
         self.cachegrind = cachegrind
         self.massif = massif
+        self.valgrind_opts = valgrind_opts
 
         if not any([self.callgrind, self.cachegrind, self.massif]):
             self.base = True
@@ -466,6 +493,7 @@ class Scheduler:
                 "callgrind": self.callgrind,
                 "cachegrind": self.cachegrind,
                 "massif": self.massif,
+                "valgrind_opts": self.valgrind_opts,
             }
             for method in self.methods:
                 params["method"] = method
