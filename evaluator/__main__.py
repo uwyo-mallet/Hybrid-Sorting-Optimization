@@ -15,16 +15,8 @@ from dash import dcc
 from dash.dependencies import Input, Output, State
 
 from .layout import gen_layout, md_template
-from .loader import (
-    CACHEGRIND_COLS,
-    CLOCKS,
-    DATA_TYPES,
-    GRAPH_ORDER,
-    THRESHOLD_METHODS,
-    UNITS,
-    load,
-)
-
+from .loader import (CACHEGRIND_COLS, CLOCKS, DATA_TYPES, GRAPH_ORDER,
+                     THRESHOLD_METHODS, load)
 
 # Debug Options
 # pd.set_option("display.max_columns", None)
@@ -32,9 +24,8 @@ from .loader import (
 # pd.set_option("display.max_columns", 500)
 # pd.set_option("display.width", 1000)
 
-
 app = dash.Dash(__name__)
-app.layout = partial(gen_layout, UNITS, CLOCKS, DATA_TYPES, None)
+app.layout = partial(gen_layout, CLOCKS, DATA_TYPES, None)
 
 
 @app.callback(
@@ -416,7 +407,7 @@ def update_cachegrind(json_df, opts):
     fig.update_layout(
         legend_title_text="Sorting Method",
         title={
-            "text": "Mean Cache Performance Accross All Types and Thresholds",
+            "text": "Mean Cache Performance Across All Types and Thresholds",
             "xanchor": "left",
         },
         font=dict(

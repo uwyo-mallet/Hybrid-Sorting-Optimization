@@ -31,7 +31,7 @@ QST Version:
 """
 
 
-def gen_layout(units, clocks, data_types, dirs=None):
+def gen_layout(clocks, data_types, dirs=None):
     if dirs is None:
         dirs = sorted(list(RESULTS_DIR.iterdir()))
     res = html.Div(
