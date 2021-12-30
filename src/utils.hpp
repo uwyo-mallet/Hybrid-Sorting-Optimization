@@ -37,6 +37,28 @@ void print(const T *arr, const size_t &n)
 }
 
 /**
+ * Print an array to stdout in segments of threshold
+ *
+ * @param arr: Array to print
+ * @param n: Length of array
+ * @param thresh: Number of elements to delimit on
+ */
+template <typename T>
+void print(const T *arr, const size_t &n, const size_t &thresh)
+{
+  for (size_t i = 0; i < n; i++)
+  {
+    if (i > 0 && i % thresh == 0)
+    {
+      std::cout << std::endl;
+    }
+    std::cout << arr[i] << " ";
+  }
+
+  std::cout << std::endl;
+}
+
+/**
  * Check if two arrays are equal.
  *
  * @param a: First array
