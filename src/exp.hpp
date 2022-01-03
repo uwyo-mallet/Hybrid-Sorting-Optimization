@@ -3,7 +3,6 @@
 #define EXP_HPP_
 
 #include <algorithm>
-#include <boost/multiprecision/cpp_int.hpp>
 #include <boost/timer/timer.hpp>
 #include <stdexcept>
 #include <string>

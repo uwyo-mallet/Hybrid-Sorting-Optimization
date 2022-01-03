@@ -244,7 +244,7 @@ void qsort_c_swp(void *const pbase, const size_t total_elems, const size_t size,
   {
     char *const end_ptr = &base_ptr[size * (total_elems - 1)];
     char *tmp_ptr = base_ptr;
-    char *thresh = min(end_ptr, base_ptr + max_thresh);
+    char *thresh = MIN(end_ptr, base_ptr + max_thresh);
     char *run_ptr;
 
     /*
@@ -502,7 +502,7 @@ void qsort_c_sep_ins(void *const pbase, const size_t total_elems,
   {
     char *const end_ptr = &base_ptr[size * (total_elems - 1)];
     char *tmp_ptr = base_ptr;
-    char *thresh = min(end_ptr, base_ptr + max_thresh);
+    char *thresh = MIN(end_ptr, base_ptr + max_thresh);
     char *run_ptr;
 
     /*

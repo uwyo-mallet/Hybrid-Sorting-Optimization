@@ -3,7 +3,6 @@
 #define SORT_HPP_
 
 #include <algorithm>
-#include <boost/multiprecision/cpp_int.hpp>
 #include <climits>
 #include <cstdint>
 #include <iostream>
@@ -169,6 +168,11 @@ struct node
 template <typename T, typename Comparator>
 void qsort_cpp(T *arr, const size_t &n, const size_t &thresh, Comparator comp)
 {
+  if (arr == nullptr)
+  {
+    return;
+  }
+
   if (n < thresh)
   {
     insertion_sort(arr, n, comp);
@@ -257,7 +261,7 @@ void qsort_cpp(T *arr, const size_t &n, const size_t &thresh, Comparator comp)
   T *const end = arr + n - 1;
   T *tmp_ptr = arr;
   T *run_ptr;
-  T *first_thresh = min(end, arr + thresh);
+  T *first_thresh = MIN(end, arr + thresh);
   /*
     Find smallest element in first threshold and place it at the
     array's beginning.  This is the smallest array element,
@@ -381,7 +385,7 @@ void qsort_cpp_no_comp(T *arr, const size_t &n, const size_t &thresh)
   T *const end = arr + n - 1;
   T *tmp_ptr = arr;
   T *run_ptr;
-  T *first_thresh = min(end, arr + thresh);
+  T *first_thresh = MIN(end, arr + thresh);
   /*
     Find smallest element in first threshold and place it at the
     array's beginning.  This is the smallest array element,

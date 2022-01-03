@@ -21,7 +21,7 @@ typedef struct
 #define PUSH(low, high) (((top->lo = (low)), (top->hi = (high)), ++top))
 #define POP(low, high) ((--top, (low = top->lo), (high = top->hi)))
 #define STACK_NOT_EMPTY (stack < top)
-#define min(x, y) ((x) < (y) ? (x) : (y))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 #define SWAP(a, b, size)         \
   do                             \

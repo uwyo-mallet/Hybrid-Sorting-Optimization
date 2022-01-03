@@ -22,10 +22,8 @@ namespace fs = boost::filesystem;
 #define VERSION                                                              \
   QST_VERSION "\n\tC COMPILER : " C_COMPILER_ID " " C_COMPILER_VERSION       \
               "\n\tCXX COMPILER : " CXX_COMPILER_ID " " CXX_COMPILER_VERSION \
-              "\n\tType: " CMAKE_BUILD_TYPE                                  \
-              "\n\tBOOST CPP INT: [" BOOST_CPP_INT                           \
-              "]"                                                            \
-              "\n\tASM Methods: [" ASM_ENABLED "]"
+              "\n\tType: " CMAKE_BUILD_TYPE "\n\tASM Methods: [" ASM_ENABLED \
+              "]"
 
 const char* argp_program_version = VERSION;
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
@@ -110,15 +108,6 @@ int main(int argc, char** argv)
     arguments.threshold = 0;
   }
 
-#ifdef USE_BOOST_CPP_INT
-  const std::vector<bmp::cpp_int> orig_data =
-      from_disk<bmp::cpp_int>(arguments.in_file);
-  std::vector<bmp::cpp_int> sorted_data(orig_data);
-  std::sort(sorted_data.begin(), sorted_data.end());
-
-  const size_t DATA_LEN = orig_data.size();
-  bmp::cpp_int* to_sort = new bmp::cpp_int[DATA_LEN];
-#else
   const std::vector<uint64_t> orig_data =
       from_disk<uint64_t>(arguments.in_file);
   std::vector<uint64_t> sorted_data(orig_data);
@@ -126,7 +115,6 @@ int main(int argc, char** argv)
 
   const size_t DATA_LEN = orig_data.size();
   uint64_t* to_sort = new uint64_t[DATA_LEN];
-#endif
 
   bool checked = false;
 
@@ -337,15 +325,6 @@ void version_json()
   std::cout << "\t\"cxx_compiler_version\": "
             << "\"" CXX_COMPILER_VERSION "\""
             << "," << std::endl;
-
-  // boost_cpp_int
-  std::cout << "\t\"boost_cpp_int\": ";
-#ifdef USE_BOOST_CPP_INT
-  std::cout << "1";
-#else
-  std::cout << "0";
-#endif  // USE_BOOST_CPP_INT
-  std::cout << "," << std::endl;
 
   // asm_enabled
   std::cout << "\t\"asm_enabled\": ";
