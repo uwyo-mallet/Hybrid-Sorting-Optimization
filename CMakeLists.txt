@@ -40,8 +40,7 @@ if(benchmark_FOUND)
 
   # Include
   target_include_directories(GB_QST PRIVATE ${PROJECT_SOURCE_DIR}/src
-                                            ${PROJECT_SOURCE_DIR}/src/)
-  target_include_directories(GB_QST PRIVATE ${PROJECT_BINARY_DIR})
+                                            ${PROJECT_SOURCE_DIR}/src/gb)
 
   # Linking
   target_link_libraries(GB_QST Boost::iostreams Boost::filesystem
@@ -49,19 +48,15 @@ if(benchmark_FOUND)
 
   # Build Types
   if(CMAKE_BUILD_TYPE MATCHES "Debug")
-    message("Build type: Debug")
     # Address sanitizer
     set(SANITIZER_OPTS -fsanitize=address)
     target_compile_options(GB_QST PRIVATE -Og -ggdb ${SANITIZER_OPTS})
     target_link_options(GB_QST PRIVATE ${SANITIZER_OPTS})
   elseif(CMAKE_BUILD_TYPE MATCHES "Valgrind")
-    message("Build type: Valgrind")
     target_compile_options(GB_QST PRIVATE -O2 -ggdb)
   else()
-    message("Build type: Release")
     target_compile_options(GB_QST PRIVATE -O2)
   endif()
-
 else()
   message("Google Benchmark not found, not building GB_QST")
 endif()
@@ -86,7 +81,6 @@ target_include_directories(QST PRIVATE ${PROJECT_BINARY_DIR})
 
 # Linking
 target_link_libraries(QST Boost::iostreams Boost::filesystem Boost::timer)
-
 target_compile_options(QST PRIVATE -Wall -Wextra -Wconversion -Wsign-conversion
                                    -pedantic)
 
