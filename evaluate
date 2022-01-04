@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+"""
+Evaluator for QST data collection.
+
+Usage:
+    evaluate
+    evaluate gb
+"""
+from docopt import docopt
+
+from evaluator import __version__
+
+if __name__ == "__main__":
+    args = docopt(__doc__, version=__version__)
+    if args["gb"]:
+        from evaluator.gb import app
+    else:
+        from evaluator.qst import app
+
+    app.run_server(debug=True)
