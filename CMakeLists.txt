@@ -41,6 +41,7 @@ if(benchmark_FOUND)
   # Include
   target_include_directories(GB_QST PRIVATE ${PROJECT_SOURCE_DIR}/src
                                             ${PROJECT_SOURCE_DIR}/src/gb)
+  target_include_directories(GB_QST PRIVATE ${PROJECT_BINARY_DIR})
 
   # Linking
   target_link_libraries(GB_QST Boost::iostreams Boost::filesystem
