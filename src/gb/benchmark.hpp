@@ -7,7 +7,7 @@
 #include <vector>
 
 extern std::vector<uint64_t> orig_data;
-static uint64_t threshold;
+extern uint64_t threshold;
 
 class SortFixture : public benchmark::Fixture
 {

@@ -61,7 +61,9 @@ struct arguments
 static error_t parse_opt(int key, char* arg, struct argp_state* state);
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
+// Globals for test fixture
 std::vector<uint64_t> orig_data;
+uint64_t threshold;
 
 int main(int argc, char** argv)
 {
@@ -102,11 +104,13 @@ int main(int argc, char** argv)
 
   // Load the data
   orig_data = from_disk<uint64_t>(arguments.in_file);
+  threshold = arguments.threshold;
 
-  // Pass the rest of the CLI args to google benchmark, and run.
+  // Pass the rest of the CLI args to google benchmark.
   int num_benchmark_parameters = benchmark_parameters.size();
   ::benchmark::Initialize(&num_benchmark_parameters,
                           benchmark_parameters.data());
+  // Run the actual benchmarks
   ::benchmark::RunSpecifiedBenchmarks();
 
   return 0;
