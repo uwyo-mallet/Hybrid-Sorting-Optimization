@@ -59,8 +59,10 @@ from tqdm import tqdm
 
 from info import write_info
 
-VERSION = "1.1.4"
+VERSION = "1.1.5"
 
+
+# TODO: Find a way to have the QST executable dynamically generate this.
 VALID_METHODS = {
     "insertion_sort",
     "insertion_sort_asm",
@@ -74,6 +76,7 @@ VALID_METHODS = {
     "qsort_vanilla",
     "std::sort",
 }
+# ... and this.
 THRESHOLD_METHODS = {
     "qsort_asm",
     "qsort_c",
@@ -91,6 +94,8 @@ MAX_BATCH = 4_500
 
 @dataclass
 class Job:
+    """Represent a single call to QST."""
+
     job_id: int
     exec_path: Path
     infile_path: Path
@@ -123,6 +128,30 @@ class Job:
         massif=False,
         valgrind_opts=None,
     ):
+        """
+        Define the base parameters.
+
+        @param job_id: Unique identifier for this 'run'.
+        @param exec_path: Path to QST executable.
+        @param infile_path: Path to input data file for QST.
+        @param description: Input data description.
+        @param method: Methods to use to sort.
+        @param runs: Number of times to sort the same data.
+        @param output: CSV to write resulting time data.
+        @param threshold: Value at which to switch to insertion sort if supported
+                          for this method.
+
+        @param base: Run without valgrind.
+        @param callgrind: Run with callgrind.
+        @param cachegrind: Run with cachegrind.
+        @param massif: Run with massif.
+
+        Any of the last 4 options can be True at the same time. All of them will
+        run depending on their status.
+
+        @param valgrind_opts: Other arguments to pass to valgrind. Only used
+                              when callgrind, cachegrind, or massif are True.
+        """
         self.job_id = job_id
         self.exec_path = exec_path
         self.infile_path = infile_path
@@ -153,7 +182,8 @@ class Job:
             self.base = True
 
     @staticmethod
-    def _passthrough_args(passthrough):
+    def _passthrough_args(passthrough) -> list[str]:
+        """Generate arguments for passthrough options."""
         return [
             "--cols",
             ",".join(passthrough.keys()),
@@ -163,7 +193,7 @@ class Job:
 
     @property
     def commands(self):
-        """Return all possible commands given the parameters from init."""
+        """Return all possible subproccess commands given the parameters from init."""
         all_commands = []
         passthrough_opts = {
             "id": str(self.job_id),
@@ -183,7 +213,7 @@ class Job:
             str(self.threshold),
         ]
         base_valgrind_opts = [
-            "/usr/bin/valgrind",
+            "valgrind",
             "--time-stamp=yes",
             "--quiet",
         ]
@@ -280,8 +310,8 @@ class Job:
         return all_commands
 
     @property
-    def cli(self):
-        # """Return the raw CLI equivalent of the subprocess.Popen command."""
+    def cli(self) -> list[str]:
+        """Return the raw CLI equivalent of the subprocess command(s)."""
         return [" ".join([str(i) for i in command]) for command in self.commands]
 
     def run(self, quiet=False, pbar=None):
@@ -294,11 +324,18 @@ class Job:
 
             subprocess.run(i, capture_output=True, check=True)
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """Return the number of required subcommand calls."""
         return len(self.commands)
 
 
 def parse_threshold_arg(user_input):
+    """
+    Parse the --threshold argument from the CLI.
+
+    @param user_input: User input from the --threshold CLI argument.
+    @returns: List of range of thresholds to test.
+    """
     if not user_input:
         return range(1, 2, 1)
 
