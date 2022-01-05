@@ -15,7 +15,7 @@ Options:
     -e, --exec=EXEC          Path to GB_QST executable.
     -m, --methods=METHODS    Comma seperated list of methods to use for sorters.
     -o, --output=FILE        Output JSON to save results from GB_QST.
-    -r, --runs=N             Number of times to run the same input data.
+    -s, --slurm=DIR          Generate a batch of slurm data files in this dir.
     -t, --threshold=THRESH   Comma seperated range for threshold (min,max,[step])
                                including both endpoints, or a single value.
                                Can be specified multiple times.
@@ -23,6 +23,7 @@ Options:
 
 import itertools
 import json
+import shutil
 import subprocess
 import sys
 from collections import defaultdict, deque
@@ -48,6 +49,10 @@ THRESHOLD_METHODS = {
     "qsort_cpp_no_comp",
 }
 DATA_TYPES = {"ascending", "descending", "random", "single_num"}
+
+# Maximum array index supported by slurm
+# https://slurm.schedmd.com/job_array.html
+MAX_BATCH = 4_500
 
 
 def get_valid_methods(gb_qst_exe: Path, input_file: Path) -> list[str]:
@@ -132,10 +137,23 @@ def parse_args(args):
         methods = valid_methods
     parsed["methods"] = methods
 
+    # Slurm
+    parsed["slurm"] = (
+        Path(args.get("--slurm")) if args.get("--slurm") is not None else None
+    )
+
     # Output directory
+    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     if args.get("--output_dir") is None:
-        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        parsed["output_dir"] = Path(f"./results/gb_{now}/")
+        if parsed["slurm"] is not None:
+            # Don't create an output folder if using slurm,
+            # that is the shell script's responsibility.
+            # Assume that the output should be in the folder I'm in.
+            parsed["output_dir"] = Path(".")
+        else:
+            parsed["output_dir"] = Path(f"./results/gb_{now}/")
+    else:
+        parsed["output_dir"] = Path(args.get("--output_dir"))
 
     # Threshold
     parsed["threshold"] = parse_threshold_arg(args.get("--threshold"))
@@ -192,7 +210,7 @@ class Job:
             str(self.threshold),
             f"--benchmark_filter={'|'.join(self.methods)}",
             f"--benchmark_context=job_id={self.job_id},description={self.description},threshold={self.threshold}",
-            f"--benchmark_out={str(out_file.absolute())}",
+            f"--benchmark_out={str(out_file)}",
             "--benchmark_out_format=json",
             "--benchmark_format=console",
         ]
@@ -220,6 +238,7 @@ class Scheduler:
         exec: Path,
         methods: list[str],
         output_dir: Path,
+        slurm: Path,
         threshold: int,
     ):
         """
@@ -237,6 +256,7 @@ class Scheduler:
         self.exec = exec
         self.methods = set(methods)
         self.output_dir = output_dir
+        self.slurm = slurm
         self.threshold = threshold
 
         self.job_queue: "deque[Job]" = deque()
@@ -373,10 +393,45 @@ class Scheduler:
 
         self._merge_json()
 
+    def gen_slurm(self):
+        """Create the slurm.d/ directory with all the necessary parameters."""
+        if self.slurm.exists() and self.slurm.is_dir():
+            shutil.rmtree(self.slurm)
+        elif self.slurm.is_file():
+            raise FileExistsError("Slurm output cannot be a file")
+        self.slurm.mkdir(exist_ok=True, parents=True)
+
+        total_num_jobs = len(self.job_queue)
+        write_info(
+            self.slurm,
+            command=" ".join(sys.argv),
+            concurrent="slurm",
+            data_details_path=Path(self.data_dir, "details.json"),
+            qst_vers=self._get_exec_version(),
+            runs=1,
+            total_num_jobs=total_num_jobs,
+            total_num_sorts=total_num_jobs,
+        )
+
+        index = 0
+        while self.job_queue:
+            current_file = Path(self.slurm, f"{index}.dat")
+            with open(current_file, "w") as slurm_file:
+                size = 0
+                while self.job_queue and size < MAX_BATCH:
+                    job = self.job_queue.popleft()
+                    slurm_file.write(job.cli + "\n")
+                    size += 1
+            print(f"{current_file}: {size}")
+            index += 1
+
 
 if __name__ == "__main__":
     raw_args = docopt(__doc__, version=VERSION)
     args = parse_args(raw_args)
 
     s = Scheduler(**args)
-    s.run_jobs()
+    if args["slurm"]:
+        s.gen_slurm()
+    else:
+        s.run_jobs()
