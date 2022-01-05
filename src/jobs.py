@@ -27,9 +27,8 @@ Options:
 
     --valgrind-opt=OPT       Any additional options to pass through to valgrind.
                              Can be specified multiple times. Each and every
-    CLI argument
-                             must be paired with this flag, otherwise a
-                             CalledProcess exception will be raised.
+                             CLI argument must be paired with this flag,
+                             otherwise a CalledProcess exception will be raised.
 
     --base                   Collect a normal sample along with any valgrind options.
                              Ignored if not accompanied by any of the following options.
