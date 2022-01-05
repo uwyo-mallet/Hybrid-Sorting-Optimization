@@ -30,6 +30,9 @@ include_directories(${BOOST_INCLUDE_DIRS})
 # Google Benchmark
 find_package(benchmark)
 if(benchmark_FOUND)
+  # pthreads
+  find_package(Threads REQUIRED)
+
   set(GB_QST_SRC_FILES
       ${PROJECT_SOURCE_DIR}/src/gb/gb_main.cpp
       ${PROJECT_SOURCE_DIR}/src/gb/benchmark.cpp
@@ -45,7 +48,7 @@ if(benchmark_FOUND)
 
   # Linking
   target_link_libraries(GB_QST Boost::iostreams Boost::filesystem
-                        benchmark::benchmark)
+                        Threads::Threads benchmark::benchmark)
 
   # Build Types
   if(CMAKE_BUILD_TYPE MATCHES "Debug")
