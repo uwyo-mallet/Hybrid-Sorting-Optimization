@@ -5,6 +5,7 @@ results/
 *.csv
 *.dat
 *slurm.d*
+gb_results/
 
 # Jupyter notebook
 .ipynb_checkpoints/

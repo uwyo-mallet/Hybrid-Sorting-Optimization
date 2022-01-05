@@ -111,7 +111,7 @@ def submit(args):
         input_files = tuple(slurm_dir.glob("*.dat"))
         results_dir = (
             args.cwd
-            / "results"
+            / ("gb_results" if "gb" in str(slurm_dir) else "results")
             / f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{args.partition}_{slurm_dir.name}"
         )
         valgrind_dir = results_dir / "valgrind"

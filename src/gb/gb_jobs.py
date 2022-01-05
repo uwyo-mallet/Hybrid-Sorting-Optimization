@@ -261,8 +261,6 @@ class Scheduler:
 
         self.job_queue: "deque[Job]" = deque()
 
-        self.output_dir.mkdir(exist_ok=True)
-
         self._threshold_job_ids = []
         self._gen_jobs()
 
@@ -373,6 +371,7 @@ class Scheduler:
         print("Okay, lets do it!", file=sys.stderr)
 
         # Ensure output directory exists
+        print(self.output_dir)
         self.output_dir.mkdir(exist_ok=True, parents=True)
 
         # Log system info
@@ -420,7 +419,7 @@ class Scheduler:
                 size = 0
                 while self.job_queue and size < MAX_BATCH:
                     job = self.job_queue.popleft()
-                    slurm_file.write(job.cli + "\n")
+                    slurm_file.write(f"{job.cli} >/dev/null\n")
                     size += 1
             print(f"{current_file}: {size}")
             index += 1
