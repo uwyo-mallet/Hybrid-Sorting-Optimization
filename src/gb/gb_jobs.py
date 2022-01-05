@@ -205,7 +205,7 @@ class Job:
 
         base_params = [
             str(self.exec_path.absolute()),
-            str(self.infile_path),
+            str(self.infile_path.absolute()),
             "--threshold",
             str(self.threshold),
             f"--benchmark_filter={'|'.join(self.methods)}",
