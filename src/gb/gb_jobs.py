@@ -1,25 +1,24 @@
 #!/usr/bin/env python3
 """
-Automatically dispatch sort jobs of varying inputs, methods, and threshold values.
-
-This essentially serves as a job scheduler, with optional features to easily
-dispatch slurm job array batches. Only use the native scheduling features if
-running on a local multi-core machine.
+Automatically dispatch google benchmark tests varying inputs, and threshold values.
 
 Usage:
-    jobs.py <DATA_DIR> [options]
-    jobs.py <DATA_DIR> [options] (--threshold=THRESH ...)
-    jobs.py -h | --help
+    gb_jobs.py <DATA_DIR> [options]
+    gb_jobs.py <DATA_DIR> [options] [--threshold=THRESH ...] [--benchmark-opt=ARG ...]
+    gb_jobs.py <DATA_DIR> [options]
+    gb_jobs.py -h | --help
 
 Options:
     -h, --help               Show this help.
+    -b, --benchmark-opt=ARG  Send a benchmark CLI option directly to the GB_QST
+                               executable. Can be used multiple times.
     -e, --exec=EXEC          Path to GB_QST executable.
     -m, --methods=METHODS    Comma seperated list of methods to use for sorters.
     -o, --output=FILE        Output JSON to save results from GB_QST.
     -r, --runs=N             Number of times to run the same input data.
     -t, --threshold=THRESH   Comma seperated range for threshold (min,max,[step])
-                             including both endpoints, or a single value. Can be
-                             specified multiple times.
+                               including both endpoints, or a single value.
+                               Can be specified multiple times.
 """
 
 import itertools
@@ -33,12 +32,14 @@ from pathlib import Path
 from docopt import docopt
 
 # HACK, maybe globalize info as a module?
+# TODO: Rework write info just for GB to capture more useful information?
 sys.path.insert(0, str(Path(sys.path[0]).parent.absolute()))
 
 from info import write_info
 
-VERSION = "0.0.1"
+VERSION = "1.0.0"
 
+# TODO: Find a way to have the QST executable dynamically generate this.
 THRESHOLD_METHODS = {
     "qsort_asm",
     "qsort_c",
@@ -49,8 +50,18 @@ THRESHOLD_METHODS = {
 DATA_TYPES = {"ascending", "descending", "random", "single_num"}
 
 
-def get_valid_methods(gb_qst_exe: Path, input_file: Path):
-    """Call the GB_QST subprocess and capture all the currently implemented benchmarks."""
+def get_valid_methods(gb_qst_exe: Path, input_file: Path) -> list[str]:
+    """
+    Call the GB_QST subprocess and capture all the currently implemented benchmarks.
+
+    @param gb_qst_exe: Path to GB_QST executable.
+    @param input_file: Valid data input file for GB_QST.
+    @returns: List of methods currently supported by GB_QST.
+
+    GB_QST requires a valid input file to access the help options of the google
+    benchmark library. This could change in the future, but for now it is just
+    easier to pass the input file anyways, since we validate that file as well.
+    """
     command = (
         str(gb_qst_exe.absolute()),
         str(input_file.absolute()),
@@ -59,12 +70,18 @@ def get_valid_methods(gb_qst_exe: Path, input_file: Path):
     result = subprocess.run(command, capture_output=True, check=True)
     result = result.stdout.decode()
 
-    # Careful, not very resiliant.
+    # Will break if the test interface changes in GB_QST.
     methods = [i.rsplit("/")[1] for i in result.split()]
     return methods
 
 
-def parse_threshold_arg(user_input):
+def parse_threshold_arg(user_input) -> list[range]:
+    """
+    Parse the --threshold argument from the CLI.
+
+    @param user_input: User input from the --threshold CLI argument.
+    @returns: List of range of thresholds to test.
+    """
     if not user_input:
         return range(1, 2, 1)
 
@@ -89,16 +106,21 @@ def parse_args(args):
     """Parse CLI args from docopt."""
     parsed = {}
 
+    # Data dir
     parsed["data_dir"] = Path(args.get("<DATA_DIR>"))
     if not parsed["data_dir"].is_dir():
         raise NotADirectoryError("Invalid data directory")
 
+    # Benchmark Paramters
+    parsed["benchmark_params"] = args["--benchmark-opt"]
+
+    # GB_QST Executable
     parsed["exec"] = args.get("--exec") or "./build/GB_QST"
     parsed["exec"] = Path(parsed["exec"])
-
     if not parsed["exec"].is_file():
         raise FileNotFoundError(f"{parsed['exec']} does not exist.")
 
+    # Methods
     valid_methods = get_valid_methods(parsed["exec"], parsed["data_dir"])
     try:
         methods = args.get("--methods").rsplit(",")
@@ -110,20 +132,24 @@ def parse_args(args):
         methods = valid_methods
     parsed["methods"] = methods
 
-    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    # Output directory
     if args.get("--output_dir") is None:
+        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         parsed["output_dir"] = Path(f"./results/gb_{now}/")
-    parsed["output_dir"].mkdir(exist_ok=True, parents=True)
 
+    # Threshold
     parsed["threshold"] = parse_threshold_arg(args.get("--threshold"))
 
     return parsed
 
 
 class Job:
+    """Represent a single call to GB_QST."""
+
     def __init__(
         self,
         job_id: int,
+        benchmark_params: list[str],
         exec_path: Path,
         infile_path: Path,
         methods: list[str],
@@ -131,8 +157,21 @@ class Job:
         threshold: int,
         output_dir: Path,
     ):
+        """
+        Define the base parameters.
 
+        @param job_id: Unique identifier for this 'run'.
+        @param benchmark_params: List of additional CLI arguments to pass to GB_QST.
+        @param exec_path: Path to GB_QST executable.
+        @param infile_path: Path to input data file for GB_QST.
+        @param threshold: Threshold to pass on to GB_QST.
+        @param methods: Methods to pass on to GB_QST.
+        @param output_dir: Output directory to save JSON benchmark results.
+                           Output files are named as job_id.description.
+                           This allows for easy globbing and post-processing.
+        """
         self.job_id = job_id
+        self.benchmark_params = benchmark_params
         self.exec_path = exec_path
         self.infile_path = infile_path
         self.methods = methods
@@ -142,29 +181,31 @@ class Job:
         self.output_dir = output_dir
 
     @property
-    def command(self):
-        """Return CLI command for this job."""
-
+    def command(self) -> list[str]:
+        """Return subprocess command for this job."""
         out_file = self.output_dir / f"{self.job_id}.{self.description}"
 
-        return (
+        base_params = [
             str(self.exec_path.absolute()),
             str(self.infile_path),
             "--threshold",
             str(self.threshold),
             f"--benchmark_filter={'|'.join(self.methods)}",
-            f"--benchmark_context='description={self.description}','threshold={self.threshold}'",
+            f"--benchmark_context=job_id={self.job_id},description={self.description},threshold={self.threshold}",
             f"--benchmark_out={str(out_file.absolute())}",
             "--benchmark_out_format=json",
             "--benchmark_format=console",
-        )
+        ]
+        base_params.extend(self.benchmark_params)
+
+        return base_params
 
     @property
-    def cli(self):
-        """Return the raw CLI equivalent of the subprocess.Popen command."""
+    def cli(self) -> str:
+        """Return the raw CLI equivalent of the subprocess command."""
         return " ".join(self.command)
 
-    def run(self, quiet=False):
+    def run(self, quiet=False) -> None:
         """Call the subprocess and run the job."""
         subprocess.run(self.command, capture_output=quiet, check=True)
 
@@ -175,6 +216,7 @@ class Scheduler:
     def __init__(
         self,
         data_dir: Path,
+        benchmark_params: list[str],
         exec: Path,
         methods: list[str],
         output_dir: Path,
@@ -184,22 +226,24 @@ class Scheduler:
         Define the base parameters.
 
         @param data_dir: Path to input data.
+        @param benchmark_params: List of additional CLI arguments to pass to GB_QST.
         @param exec: Path to GB_QST executable.
         @param methods: List of all the methods to test.
         @param output_dir: Path to output folder where JSON files with all test results will be saved.
         @param threshold: Range of thresholds to test with each method.
         """
         self.data_dir = data_dir
+        self.benchmark_params = benchmark_params
         self.exec = exec
         self.methods = set(methods)
         self.output_dir = output_dir
         self.threshold = threshold
 
         self.job_queue: "deque[Job]" = deque()
-        self.active_queue: "deque[Job]" = deque()
 
         self.output_dir.mkdir(exist_ok=True)
 
+        self._threshold_job_ids = []
         self._gen_jobs()
 
     def _get_exec_version(self) -> str:
@@ -209,19 +253,50 @@ class Scheduler:
         stdout, _ = p.communicate()
         return stdout.decode()
 
-    def _merge_json(self):
-        # data = {i : {"benchmarks": []} for i in }
-        data = defaultdict(list)
+    def _merge_json(self) -> None:
+        """
+        Merge all the relevant information from all the output files from GB_QST.
+
+        Write to `output_dir/output.json`.
+
+        == Output Format ==
+        Dict of datatypes with a nested dict of threshold values
+        (0 if not supported for those methods):
+
+        {
+          "ascending":
+            {
+                1: [Name:"qsort_c", "cpu_time": 1234, . . .],
+                1: [Name:"qsort_c", "cpu_time": 1234, . . .],
+                0: [Name: "insertion_sort", "cpu_time": 1234, . . .],
+            }
+          "descending":
+            . . .
+        }
+
+        When written to JSON, keys and values are marshalled according to this
+        RFC (https://datatracker.ietf.org/doc/html/rfc7159.html) and this
+        (https://www.ecma-international.org/publications-and-standards/standards/ecma-404/)
+        standard. Most notably, integer keys become strings.
+        """
+        data = defaultdict(lambda: defaultdict(list))
+
         for i in DATA_TYPES:
             for f in self.output_dir.rglob(f"*.{i}"):
                 with open(f, "r") as json_file:
                     raw = json.load(json_file)
-                    data[i] = raw["benchmarks"]
+                    threshold = int(raw["context"]["threshold"])
+                    job_id = int(raw["context"]["job_id"])
+
+                    if job_id in self._threshold_job_ids:
+                        data[i][threshold].extend(raw["benchmarks"])
+                    else:
+                        data[i][0].extend(raw["benchmarks"])
 
         with open(self.output_dir / "output.json", "w") as out_file:
-            json.dump(data, out_file, indent=4)
+            json.dump(data, out_file, indent=4, sort_keys=True)
 
-    def _gen_jobs(self):
+    def _gen_jobs(self) -> None:
         files = self.data_dir.glob(r"**/*.gz")
         self.job_queue.clear()
 
@@ -242,6 +317,7 @@ class Scheduler:
 
             params = {
                 "job_id": job_id,
+                "benchmark_params": self.benchmark_params,
                 "exec_path": self.exec,
                 "infile_path": f,
                 "description": desc,
@@ -255,6 +331,9 @@ class Scheduler:
                 params["threshold"] = thresh
                 job = Job(**params)
                 self.job_queue.append(job)
+                # Keep track of which job_ids are for threshold dependent methods.
+                # Allows for easier post-processing.
+                self._threshold_job_ids.append(job_id)
                 job_id += 1
                 params["job_id"] = job_id
 
@@ -265,15 +344,16 @@ class Scheduler:
                 self.job_queue.append(job)
                 job_id += 1
 
-        self.active_queue = self.job_queue
-
-    def run_jobs(self):
-        """Run all the jobs on the local machine."""
-        total_num_jobs = len(self.active_queue)
+    def run_jobs(self) -> None:
+        """Run all the jobs."""
+        total_num_jobs = len(self.job_queue)
         print("===========================", file=sys.stderr)
         print(f"About to run {total_num_jobs} jobs", file=sys.stderr)
         print("===========================", file=sys.stderr)
         print("Okay, lets do it!", file=sys.stderr)
+
+        # Ensure output directory exists
+        self.output_dir.mkdir(exist_ok=True, parents=True)
 
         # Log system info
         write_info(
@@ -287,14 +367,16 @@ class Scheduler:
             total_num_sorts=total_num_jobs,
         )
 
-        while self.active_queue:
-            job = self.active_queue.pop()
+        while self.job_queue:
+            job = self.job_queue.popleft()
             job.run()
 
         self._merge_json()
 
 
 if __name__ == "__main__":
-    args = parse_args(docopt(__doc__, version=VERSION))
+    raw_args = docopt(__doc__, version=VERSION)
+    args = parse_args(raw_args)
+
     s = Scheduler(**args)
     s.run_jobs()
