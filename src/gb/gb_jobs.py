@@ -38,7 +38,7 @@ sys.path.insert(0, str(Path(sys.path[0]).parent.absolute()))
 
 from info import write_info
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 # TODO: Find a way to have the QST executable dynamically generate this.
 THRESHOLD_METHODS = {
@@ -208,7 +208,7 @@ class Job:
             str(self.infile_path.absolute()),
             "--threshold",
             str(self.threshold),
-            f"--benchmark_filter={'|'.join(self.methods)}",
+            f"--benchmark_filter=\"{'|'.join(self.methods)}\"",
             f"--benchmark_context=job_id={self.job_id},description={self.description},threshold={self.threshold}",
             f"--benchmark_out={str(out_file)}",
             "--benchmark_out_format=json",
