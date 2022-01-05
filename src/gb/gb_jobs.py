@@ -151,7 +151,7 @@ def parse_args(args):
             # Assume that the output should be in the folder I'm in.
             parsed["output_dir"] = Path(".")
         else:
-            parsed["output_dir"] = Path(f"./results/gb_{now}/")
+            parsed["output_dir"] = Path(f"./gb_results/{now}/")
     else:
         parsed["output_dir"] = Path(args.get("--output_dir"))
 
