@@ -5,12 +5,17 @@ project(
   VERSION 2.0.2
   DESCRIPTION "Optimizing Quicksort"
   LANGUAGES C CXX ASM)
-configure_file(src/config.h.in config.hpp)
+
+project(
+  GB_QST
+  VERSION 1.0.0
+  DESCRIPTION "Evaluating sorting algorithms with Google Benchmark"
+  LANGUAGES C CXX ASM)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 message("C Compiler Path: " ${CMAKE_C_COMPILER})
@@ -59,6 +64,7 @@ if(benchmark_FOUND)
   elseif(CMAKE_BUILD_TYPE MATCHES "Valgrind")
     target_compile_options(GB_QST PRIVATE -O2 -ggdb)
   else()
+    set(CMAKE_BUILD_TYPE "Release")
     target_compile_options(GB_QST PRIVATE -O2)
   endif()
 else()
@@ -69,6 +75,7 @@ endif()
 set(QST_SRC_FILES
     ${PROJECT_SOURCE_DIR}/src/main.cpp ${PROJECT_SOURCE_DIR}/src/qsort_c.c
     ${PROJECT_SOURCE_DIR}/src/sort.c ${PROJECT_SOURCE_DIR}/src/utils.cpp)
+
 if(DISABLE_ASM)
   add_definitions(-DDISABLE_ASM)
 else()
@@ -98,8 +105,11 @@ elseif(CMAKE_BUILD_TYPE MATCHES "Valgrind")
   target_compile_options(QST PRIVATE -O2 -ggdb)
 else()
   message("Build type: Release")
+  set(CMAKE_BUILD_TYPE "Release")
   target_compile_options(QST PRIVATE -O2)
 endif()
+
+configure_file(src/config.h.in config.hpp)
 
 # Docs
 add_subdirectory("docs")
