@@ -1,8 +1,8 @@
 from dash import dcc, html
+
 from pathlib import Path
 
-RESULTS_DIR = Path("./results")
-
+# TODO: Add some more info here
 md_template = """\
 `{command}`
 
@@ -18,26 +18,21 @@ Cores: {num_cpus}
 
 Concurrent jobs: {num_concurrent}
 
-Runs: {runs}
-
-Expected \# of sorts: {total_num_sorts}
-
-Actual \# of sorts: {actual_num_sorts}
-
-QST Version:
+GB_QST Version:
 ```txt
 {qst_version}
 ```
 """
 
+RESULTS_DIR = Path("./gb_results")
 
-def gen_layout(clocks, data_types, dirs=None):
+
+def gen_layout(dirs=None):
     if dirs is None:
-        dirs = sorted(list(RESULTS_DIR.iterdir()))
+        dirs = sorted(tuple(RESULTS_DIR.iterdir()))
     res = html.Div(
         [
-            dcc.Store(id="stat-data"),
-            dcc.Store(id="cachegrind-data"),
+            dcc.Store(id="gb-data"),
             dcc.Store(id="info-data"),
             html.Div(
                 [
@@ -112,34 +107,6 @@ def gen_layout(clocks, data_types, dirs=None):
                             ),
                             html.Div(
                                 [
-                                    html.Label(
-                                        "Clock Type", style={"margin-top": "5px"}
-                                    ),
-                                    dcc.RadioItems(
-                                        id="clock-type",
-                                        options=[
-                                            {
-                                                "label": i.capitalize(),
-                                                "value": i,
-                                            }
-                                            for i in clocks
-                                        ],
-                                        value=clocks[0],
-                                    ),
-                                    html.Label(
-                                        "Data Type", style={"margin-top": "5px"}
-                                    ),
-                                    dcc.RadioItems(
-                                        id="data-type",
-                                        options=[
-                                            {
-                                                "label": i.capitalize(),
-                                                "value": i,
-                                            }
-                                            for i in data_types
-                                        ],
-                                        value=data_types[0],
-                                    ),
                                     dcc.Checklist(
                                         id="error-bars-checkbox",
                                         options=[
@@ -225,74 +192,6 @@ def gen_layout(clocks, data_types, dirs=None):
                             ),
                         ]
                     )
-                ],
-                className="row pretty_container",
-            ),
-            html.Div(
-                [
-                    html.Div(
-                        [
-                            html.P(
-                                "Options",
-                                className="control_label",
-                                style={
-                                    "fontWeight": "bold",
-                                    "textAlign": "center",
-                                },
-                            ),
-                            dcc.Checklist(
-                                id="cachegrind-options",
-                                options=[
-                                    {
-                                        "label": "Relative",
-                                        "value": "relative",
-                                    },
-                                    {
-                                        "label": "Log Scale",
-                                        "value": "log",
-                                    },
-                                ],
-                                value=["log"],
-                                labelStyle={"display": "inline-block"},
-                                style={"margin-top": "5px"},
-                            ),
-                        ],
-                        className="pretty_container",
-                    ),
-                    html.Div(
-                        [
-                            dcc.Graph(
-                                id="cachegrind-figure",
-                            ),
-                        ]
-                    ),
-                    dcc.Dropdown(
-                        id="cachegrind-metric-dropdown",
-                        options=[
-                            {
-                                "label": str(i),
-                                "value": str(i),
-                            }
-                            for i in [
-                                "I1mr",
-                                "ILmr",
-                                "D1mr",
-                                "DLmr",
-                                "D1mw",
-                                "DLmw",
-                                "Bcm",
-                                "Bim",
-                            ]
-                        ],
-                        value="I1mr",
-                    ),
-                    html.Div(
-                        [
-                            dcc.Graph(
-                                id="threshold-vs-cache",
-                            ),
-                        ]
-                    ),
                 ],
                 className="row pretty_container",
             ),

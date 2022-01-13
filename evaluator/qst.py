@@ -9,12 +9,20 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import dcc
 from dash.dependencies import Input, Output, State
 
-from .layout import gen_layout, md_template
-from .loader import (CACHEGRIND_COLS, CLOCKS, DATA_TYPES, GRAPH_ORDER,
-                     THRESHOLD_METHODS, load)
+from .qst_layout import gen_layout
+from .qst_loader import load
+from .generics import (
+    CACHEGRIND_COLS,
+    CLOCKS,
+    DATA_TYPES,
+    GRAPH_ORDER,
+    THRESHOLD_METHODS,
+    update_info,
+    df_from_json,
+)
+
 
 # Debug Options
 # pd.set_option("display.max_columns", None)
@@ -22,8 +30,10 @@ from .loader import (CACHEGRIND_COLS, CLOCKS, DATA_TYPES, GRAPH_ORDER,
 # pd.set_option("display.max_columns", 500)
 # pd.set_option("display.width", 1000)
 
+RESULTS_DIR = sorted(list(Path("./results").iterdir()))
+
 app = dash.Dash(__name__)
-app.layout = partial(gen_layout, CLOCKS, DATA_TYPES, None)
+app.layout = partial(gen_layout, CLOCKS, DATA_TYPES, RESULTS_DIR)
 
 
 @app.callback(
@@ -45,51 +55,10 @@ def load_result(n_clicks, results_dir):
     return res.stat_df.to_json(), res.cachegrind_df.to_json(), json.dumps(res.info)
 
 
-@app.callback(
+update_info = app.callback(
     Output("info", "children"),
     Input("info-data", "data"),
-)
-def update_info(info_json):
-    info = json.loads(info_json)
-    arch = info["Processor"]
-    command = info["Command"]
-    node = info["Node"]
-    num_cpus = info["Number of CPUs"]
-    num_concurrent = info["Number of concurrent jobs"]
-    platform = info["Platform"]
-    partition = info["partition"]
-    qst_version = info["QST Version"]
-    runs = info["Runs"]
-    total_num_sorts = info["Total number of sorts"]
-
-    actual_num_sorts = info["actual_num_sorts"]
-    if actual_num_sorts != total_num_sorts:
-        actual_num_sorts = f"\[Warning\] {actual_num_sorts}"
-
-    formatted_md = md_template.format(
-        arch=arch,
-        command=command,
-        node=node,
-        num_cpus=num_cpus,
-        num_concurrent=num_concurrent,
-        platform=platform,
-        partition=partition,
-        qst_version=qst_version,
-        runs=runs,
-        total_num_sorts=total_num_sorts,
-        actual_num_sorts=actual_num_sorts,
-    )
-
-    return [dcc.Markdown(formatted_md)]
-
-
-def df_from_json(json_df):
-    if not json_df:
-        raise dash.exceptions.PreventUpdate
-    df = pd.read_json(json_df)
-    tuples = [ast.literal_eval(i) for i in df.columns]
-    df.columns = pd.MultiIndex.from_tuples(tuples)
-    return df
+)(update_info)
 
 
 @app.callback(

@@ -10,6 +10,9 @@ from typing import Union
 import numpy as np
 import pandas as pd
 
+from .generics import QST_RESULTS_DIR
+
+
 # Debug Options
 # pd.set_option("display.max_columns", None)
 # pd.set_option("display.max_rows", 500)
@@ -19,21 +22,7 @@ import pandas as pd
 IGNORE_CACHE = False
 JOB_DETAILS_FILE = "job_details.json"
 PARTITION_FILE = "partition"
-RESULTS_DIR = Path("./results")
 
-THRESHOLD_METHODS = {
-    "qsort_asm",
-    "qsort_c",
-    "qsort_c_swp",
-    "qsort_cpp",
-    "qsort_cpp_no_comp",
-}
-GRAPH_ORDER = (
-    "random",
-    "ascending",
-    "descending",
-    "single_num",
-)
 UNITS = {
     "seconds": "_secs",
     "milliseconds": "_msecs",
@@ -229,7 +218,7 @@ def load_without_cache(in_csv: Path):
 def load(in_dir=None):
     if in_dir is None:
         try:
-            dirs = sorted(list(RESULTS_DIR.iterdir()))
+            dirs = sorted(list(QST_RESULTS_DIR.iterdir()))
             in_dir = dirs[-1]
         except IndexError as e:
             raise FileNotFoundError("No result directories found") from e
