@@ -208,8 +208,8 @@ class Job:
             str(self.infile_path.absolute()),
             "--threshold",
             str(self.threshold),
-            f"--benchmark_filter=\"{'|'.join(self.methods)}\"",
-            f"--benchmark_context=job_id={self.job_id},description={self.description},threshold={self.threshold}",
+            f"--benchmark_filter={'|'.join(self.methods)}",
+            f"--benchmark_context=job_id={self.job_id},description={self.description}",
             f"--benchmark_out={str(out_file)}",
             "--benchmark_out_format=json",
             "--benchmark_format=console",
@@ -225,6 +225,7 @@ class Job:
 
     def run(self, quiet=False) -> None:
         """Call the subprocess and run the job."""
+        print(self.cli)
         subprocess.run(self.command, capture_output=quiet, check=True)
 
 
@@ -303,13 +304,21 @@ class Scheduler:
             for f in self.output_dir.rglob(f"*.{i}"):
                 with open(f, "r") as json_file:
                     raw = json.load(json_file)
+                    input_file = raw["context"]["input"]
+                    size = int(raw["context"]["size"])
                     threshold = int(raw["context"]["threshold"])
                     job_id = int(raw["context"]["job_id"])
 
                     if job_id in self._threshold_job_ids:
-                        data[i][threshold].extend(raw["benchmarks"])
+                        for run in raw["benchmarks"]:
+                            run["input"] = input_file
+                            run["size"] = size
+                            data[i][threshold].append(run)
                     else:
-                        data[i][0].extend(raw["benchmarks"])
+                        for run in raw["benchmarks"]:
+                            run["input"] = input_file
+                            run["size"] = size
+                            data[i][0].append(run)
 
         with open(self.output_dir / "output.json", "w") as out_file:
             json.dump(data, out_file, indent=4, sort_keys=True)
