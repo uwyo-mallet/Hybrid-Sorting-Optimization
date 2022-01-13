@@ -3,13 +3,13 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(
   QST
   VERSION 2.0.2
-  DESCRIPTION "Optimizing Quicksort"
+  DESCRIPTION "Evaluating sorting algorithms with homebrew methods."
   LANGUAGES C CXX ASM)
 
 project(
   GB_QST
-  VERSION 1.0.0
-  DESCRIPTION "Evaluating sorting algorithms with Google Benchmark"
+  VERSION 1.0.1
+  DESCRIPTION "Evaluating sorting algorithms with Google Benchmark."
   LANGUAGES C CXX ASM)
 
 set(CMAKE_C_STANDARD 11)

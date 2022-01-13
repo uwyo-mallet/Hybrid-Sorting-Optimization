@@ -2,8 +2,14 @@
 
 #include <algorithm>
 #include <boost/filesystem.hpp>
-#include <boost/filesystem/directory.hpp>
 #include <boost/filesystem/path.hpp>
+
+// Older versions of boost require this file be included.
+// TODO: Test this!
+#if __has_include(<boost/filesystem/directory.h>)
+#include <boost/filesystem/directory.h>
+#endif
+
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -32,8 +38,7 @@ const char* argp_program_version = VERSION;
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 
 // Documentation
-static char doc[] =
-    "A simple CLI app to save the runtime of sorting using various methods.";
+static char doc[] = QST_DESCRIPTION;
 static char args_doc[] = "INPUT";
 
 // Accepted methods
