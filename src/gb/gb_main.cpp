@@ -3,8 +3,14 @@
 
 #include <algorithm>
 #include <boost/filesystem.hpp>
-#include <boost/filesystem/directory.hpp>
 #include <boost/filesystem/path.hpp>
+
+// Older versions of boost require this file be included.
+// TODO: Test this!
+#if __has_include(<boost/filesystem/directory.h>)
+#include <boost/filesystem/directory.h>
+#endif
+
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -34,19 +40,12 @@ const char* argp_program_version = VERSION;
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 
 // Documentation
-static char doc[] =
-    "A simple CLI app to save the runtime of sorting using various methods.";
+static char doc[] = GB_QST_DESCRIPTION;
 static char args_doc[] = "INPUT";
 
 #define VERSION_JSON_SHORT_OPT 0x80
-// #define COLS_SHORT_OPT 0x81
-// #define VALS_SHORT_OPT 0x82
 static struct argp_option options[] = {
     {"threshold", 't', "THRESH", 0, "Threshold to switch to insertion sort."},
-    // {"cols", COLS_SHORT_OPT, "COLS", 0,
-    //  "Additional columns to pass through to the output CSV."},
-    // {"vals", VALS_SHORT_OPT, "VALS", 0,
-    //  "Values to use for the additional columns."},
     {"version-json", VERSION_JSON_SHORT_OPT, 0, 0,
      "Output version information in machine readable format."},
     {0},
@@ -56,8 +55,6 @@ struct arguments
 {
   fs::path in_file;
   int64_t threshold;
-  // std::vector<std::string> cols;
-  // std::vector<std::string> vals;
 };
 
 // Option parser
@@ -113,10 +110,20 @@ int main(int argc, char** argv)
   int num_benchmark_parameters = benchmark_parameters.size();
   ::benchmark::Initialize(&num_benchmark_parameters,
                           benchmark_parameters.data());
+  if (::benchmark::ReportUnrecognizedArguments(num_benchmark_parameters,
+                                               benchmark_parameters.data()))
+  {
+    return EXIT_FAILURE;
+  }
+
+  ::benchmark::AddCustomContext("input", arguments.in_file.string());
+  ::benchmark::AddCustomContext("size", std::to_string(orig_data.size()));
+  ::benchmark::AddCustomContext("threshold", std::to_string(threshold));
+
   // Run the actual benchmarks
   ::benchmark::RunSpecifiedBenchmarks();
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 /** Parse a single CLI option. */
@@ -143,14 +150,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
         return 1;
       }
       break;
-
-      // case COLS_SHORT_OPT:
-      //   args->cols = parse_comma_sep_args(std::string(arg));
-      //   break;
-
-      // case VALS_SHORT_OPT:
-      //   args->vals = parse_comma_sep_args(std::string(arg));
-      //   break;
 
     case VERSION_JSON_SHORT_OPT:
       // version_json();
