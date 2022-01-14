@@ -22,7 +22,7 @@ void SortFixture::TearDown(const ::benchmark::State& state)
   n = 0;
 }
 
-BENCHMARK_F(SortFixture, insertion_sort)(benchmark::State& st)
+BENCHMARK_DEFINE_F(SortFixture, insertion_sort)(benchmark::State& st)
 {
   for (auto _ : st)
   {
@@ -33,7 +33,7 @@ BENCHMARK_F(SortFixture, insertion_sort)(benchmark::State& st)
   }
 }
 
-BENCHMARK_F(SortFixture, qsort_sanity)(benchmark::State& st)
+BENCHMARK_DEFINE_F(SortFixture, qsort_sanity)(benchmark::State& st)
 {
   for (auto _ : st)
   {
@@ -44,7 +44,7 @@ BENCHMARK_F(SortFixture, qsort_sanity)(benchmark::State& st)
   }
 }
 
-BENCHMARK_F(SortFixture, std)(benchmark::State& st)
+BENCHMARK_DEFINE_F(SortFixture, std)(benchmark::State& st)
 {
   for (auto _ : st)
   {
@@ -55,7 +55,7 @@ BENCHMARK_F(SortFixture, std)(benchmark::State& st)
   }
 }
 
-BENCHMARK_F(SortFixture, qsort_c)(benchmark::State& st)
+BENCHMARK_DEFINE_F(SortFixture, qsort_c)(benchmark::State& st)
 {
   for (auto _ : st)
   {
@@ -66,7 +66,7 @@ BENCHMARK_F(SortFixture, qsort_c)(benchmark::State& st)
   }
 }
 
-BENCHMARK_F(SortFixture, qsort_cpp)(benchmark::State& st)
+BENCHMARK_DEFINE_F(SortFixture, qsort_cpp)(benchmark::State& st)
 {
   for (auto _ : st)
   {
@@ -76,3 +76,11 @@ BENCHMARK_F(SortFixture, qsort_cpp)(benchmark::State& st)
     qsort_cpp(phead, n, threshold, compare<uint64_t>);
   }
 }
+
+// clang-format off
+BENCHMARK_REGISTER_F(SortFixture, insertion_sort) ->Unit(benchmark::kMillisecond);
+BENCHMARK_REGISTER_F(SortFixture, qsort_sanity)->Unit(benchmark::kMillisecond);
+BENCHMARK_REGISTER_F(SortFixture, std)->Unit(benchmark::kMillisecond);
+BENCHMARK_REGISTER_F(SortFixture, qsort_c)->Unit(benchmark::kMillisecond);
+BENCHMARK_REGISTER_F(SortFixture, qsort_cpp)->Unit(benchmark::kMillisecond);
+// clang-format on
