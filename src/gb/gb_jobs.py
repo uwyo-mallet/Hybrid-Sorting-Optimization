@@ -212,7 +212,6 @@ class Job:
             f"--benchmark_context=job_id={self.job_id},description={self.description}",
             f"--benchmark_out={str(out_file)}",
             "--benchmark_out_format=json",
-            "--benchmark_format=console",
         ]
         base_params.extend(self.benchmark_params)
 
@@ -225,7 +224,6 @@ class Job:
 
     def run(self, quiet=False) -> None:
         """Call the subprocess and run the job."""
-        print(self.cli)
         subprocess.run(self.command, capture_output=quiet, check=True)
 
 
@@ -331,7 +329,7 @@ class Scheduler:
         # jobs. Threshold methods need several runs while normal methods
         # can be run just once.
         threshold_methods = self.methods & THRESHOLD_METHODS
-        normal_methods = [i for i in self.methods if i not in THRESHOLD_METHODS]
+        normal_methods = self.methods - THRESHOLD_METHODS
 
         job_id = 0
         for f in files:
@@ -380,7 +378,6 @@ class Scheduler:
         print("Okay, lets do it!", file=sys.stderr)
 
         # Ensure output directory exists
-        print(self.output_dir)
         self.output_dir.mkdir(exist_ok=True, parents=True)
 
         # Log system info
@@ -428,7 +425,7 @@ class Scheduler:
                 size = 0
                 while self.job_queue and size < MAX_BATCH:
                     job = self.job_queue.popleft()
-                    slurm_file.write(f"{job.cli} >/dev/null\n")
+                    slurm_file.write(f"{job.cli}\n")
                     size += 1
             print(f"{current_file}: {size}")
             index += 1
