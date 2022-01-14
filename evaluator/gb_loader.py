@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from json.decoder import JSONDecodeError
 from .generics import GB_RESULTS_DIR, DATA_TYPES
 import json
 
@@ -88,7 +89,11 @@ def merge_json(in_dir: Path, ignore_existing=False) -> dict:
     for i in DATA_TYPES:
         for f in in_dir.rglob(f"*.{i}"):
             with open(f, "r") as json_file:
-                raw = json.load(json_file)
+                try:
+                    raw = json.load(json_file)
+                except JSONDecodeError:
+                    print(f"Malformed JSON: {f}")
+                    continue
 
                 input_file = raw["context"]["input"]
                 size = int(raw["context"]["size"])
