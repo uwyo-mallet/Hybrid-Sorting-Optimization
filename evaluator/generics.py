@@ -9,9 +9,6 @@ import ast
 QST_RESULTS_DIR = Path("./results")
 GB_RESULTS_DIR = Path("./gb_results")
 
-from .qst_layout import md_template
-
-
 THRESHOLD_METHODS = {
     "qsort_asm",
     "qsort_c",
@@ -31,6 +28,33 @@ DATA_TYPES = {
     "random",
     "single_num",
 }
+
+md_template = """\
+`{command}`
+
+Architecture: {arch}
+
+Node: {node}
+
+Platform: {platform}
+
+Partition: {partition}
+
+Cores: {num_cpus}
+
+Concurrent jobs: {num_concurrent}
+
+Runs: {runs}
+
+Expected \# of sorts: {total_num_sorts}
+
+Actual \# of sorts: {actual_num_sorts}
+
+QST Version:
+```txt
+{qst_version}
+```
+"""
 
 
 def update_info(info_json):

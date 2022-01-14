@@ -1,33 +1,6 @@
 from dash import dcc, html
 from .generics import QST_RESULTS_DIR
 
-md_template = """\
-`{command}`
-
-Architecture: {arch}
-
-Node: {node}
-
-Platform: {platform}
-
-Partition: {partition}
-
-Cores: {num_cpus}
-
-Concurrent jobs: {num_concurrent}
-
-Runs: {runs}
-
-Expected \# of sorts: {total_num_sorts}
-
-Actual \# of sorts: {actual_num_sorts}
-
-QST Version:
-```txt
-{qst_version}
-```
-"""
-
 
 def gen_layout(clocks, data_types, dirs=None):
     if dirs is None:

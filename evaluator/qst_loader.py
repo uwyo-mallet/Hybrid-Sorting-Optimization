@@ -34,12 +34,7 @@ CLOCKS = (
     "user",
     "system",
 )
-DATA_TYPES = (
-    "base",
-    "callgrind",
-    "cachegrind",
-    "massif",
-)
+
 RAW_COLUMNS = {
     "id": np.uint64,
     "method": str,

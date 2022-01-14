@@ -2,34 +2,12 @@ from dash import dcc, html
 
 from pathlib import Path
 
-# TODO: Add some more info here
-md_template = """\
-`{command}`
-
-Architecture: {arch}
-
-Node: {node}
-
-Platform: {platform}
-
-Partition: {partition}
-
-Cores: {num_cpus}
-
-Concurrent jobs: {num_concurrent}
-
-GB_QST Version:
-```txt
-{qst_version}
-```
-"""
-
-RESULTS_DIR = Path("./gb_results")
+from .generics import GB_RESULTS_DIR
 
 
 def gen_layout(dirs=None):
     if dirs is None:
-        dirs = sorted(tuple(RESULTS_DIR.iterdir()))
+        dirs = sorted(tuple(GB_RESULTS_DIR.iterdir()))
     res = html.Div(
         [
             dcc.Store(id="gb-data"),

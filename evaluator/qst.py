@@ -11,10 +11,8 @@ import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 
 from .qst_layout import gen_layout
-from .qst_loader import load
+from .qst_loader import load, CACHEGRIND_COLS, CLOCKS
 from .generics import (
-    CACHEGRIND_COLS,
-    CLOCKS,
     GRAPH_ORDER,
     THRESHOLD_METHODS,
     update_info,
