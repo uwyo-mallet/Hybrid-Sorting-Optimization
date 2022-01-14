@@ -7,7 +7,7 @@
 
 #SBATCH --job-name=Quicksort-Tuning
 #SBATCH --account=mallet
-#SBATCH --time=12:00:00
+#SBATCH --time=23:00:00
 #SBATCH --nodes=1
 #SBATCH --mem=4G
 #SBATCH --signal=TERM@300
