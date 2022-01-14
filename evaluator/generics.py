@@ -1,6 +1,5 @@
 import json
 from dash import dcc
-import numpy as np
 from pathlib import Path
 
 import dash
@@ -26,6 +25,12 @@ GRAPH_ORDER = (
     "descending",
     "single_num",
 )
+DATA_TYPES = {
+    "ascending",
+    "descending",
+    "random",
+    "single_num",
+}
 
 
 def update_info(info_json):

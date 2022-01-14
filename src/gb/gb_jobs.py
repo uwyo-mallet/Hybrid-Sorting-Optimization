@@ -22,11 +22,10 @@ Options:
 """
 
 import itertools
-import json
 import shutil
 import subprocess
 import sys
-from collections import defaultdict, deque
+from collections import deque
 from datetime import datetime
 from pathlib import Path
 
@@ -48,7 +47,12 @@ THRESHOLD_METHODS = {
     "qsort_cpp",
     "qsort_cpp_no_comp",
 }
-DATA_TYPES = {"ascending", "descending", "random", "single_num"}
+DATA_TYPES = {
+    "ascending",
+    "descending",
+    "random",
+    "single_num",
+}
 
 # Maximum array index supported by slurm
 # https://slurm.schedmd.com/job_array.html
@@ -170,7 +174,7 @@ class Job:
         benchmark_params: list[str],
         exec_path: Path,
         infile_path: Path,
-        methods: list[str],
+        methods: set[str],
         description: str,
         threshold: int,
         output_dir: Path,
@@ -198,6 +202,8 @@ class Job:
         self.methods = methods
         self.output_dir = output_dir
 
+        self._uses_threshold = 1 if (self.methods & THRESHOLD_METHODS) else 0
+
     @property
     def command(self) -> list[str]:
         """Return subprocess command for this job."""
@@ -209,7 +215,7 @@ class Job:
             "--threshold",
             str(self.threshold),
             f"--benchmark_filter={'|'.join(self.methods)}",
-            f"--benchmark_context=job_id={self.job_id},description={self.description}",
+            f"--benchmark_context=description={self.description},uses_threshold={self._uses_threshold}",
             f"--benchmark_out={str(out_file)}",
             "--benchmark_out_format=json",
         ]
@@ -269,57 +275,6 @@ class Scheduler:
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         stdout, _ = p.communicate()
         return stdout.decode()
-
-    def _merge_json(self) -> None:
-        """
-        Merge all the relevant information from all the output files from GB_QST.
-
-        Write to `output_dir/output.json`.
-
-        == Output Format ==
-        Dict of datatypes with a nested dict of threshold values
-        (0 if not supported for those methods):
-
-        {
-          "ascending":
-            {
-                1: [Name:"qsort_c", "cpu_time": 1234, . . .],
-                1: [Name:"qsort_c", "cpu_time": 1234, . . .],
-                0: [Name: "insertion_sort", "cpu_time": 1234, . . .],
-            }
-          "descending":
-            . . .
-        }
-
-        When written to JSON, keys and values are marshalled according to this
-        RFC (https://datatracker.ietf.org/doc/html/rfc7159.html) and this
-        (https://www.ecma-international.org/publications-and-standards/standards/ecma-404/)
-        standard. Most notably, integer keys become strings.
-        """
-        data = defaultdict(lambda: defaultdict(list))
-
-        for i in DATA_TYPES:
-            for f in self.output_dir.rglob(f"*.{i}"):
-                with open(f, "r") as json_file:
-                    raw = json.load(json_file)
-                    input_file = raw["context"]["input"]
-                    size = int(raw["context"]["size"])
-                    threshold = int(raw["context"]["threshold"])
-                    job_id = int(raw["context"]["job_id"])
-
-                    if job_id in self._threshold_job_ids:
-                        for run in raw["benchmarks"]:
-                            run["input"] = input_file
-                            run["size"] = size
-                            data[i][threshold].append(run)
-                    else:
-                        for run in raw["benchmarks"]:
-                            run["input"] = input_file
-                            run["size"] = size
-                            data[i][0].append(run)
-
-        with open(self.output_dir / "output.json", "w") as out_file:
-            json.dump(data, out_file, indent=4, sort_keys=True)
 
     def _gen_jobs(self) -> None:
         files = self.data_dir.glob(r"**/*.gz")
@@ -395,8 +350,6 @@ class Scheduler:
         while self.job_queue:
             job = self.job_queue.popleft()
             job.run()
-
-        self._merge_json()
 
     def gen_slurm(self):
         """Create the slurm.d/ directory with all the necessary parameters."""

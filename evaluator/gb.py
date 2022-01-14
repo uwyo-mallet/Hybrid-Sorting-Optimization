@@ -4,9 +4,7 @@ Google benchmark result comparer/viewer.
 
 """
 
-from functools import partial
 from pathlib import Path
-from pprint import pprint
 
 import dash
 import json
@@ -17,7 +15,6 @@ from .gb_loader import load
 import pandas as pd
 
 import plotly.express as px
-import plotly.graph_objects as go
 
 
 from dash.dependencies import Input, Output, State

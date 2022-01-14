@@ -1,5 +1,4 @@
 """QST Evaluator."""
-import ast
 import json
 from functools import partial
 from pathlib import Path
@@ -16,13 +15,18 @@ from .qst_loader import load
 from .generics import (
     CACHEGRIND_COLS,
     CLOCKS,
-    DATA_TYPES,
     GRAPH_ORDER,
     THRESHOLD_METHODS,
     update_info,
     df_from_json,
 )
 
+RUN_TYPES = (
+    "base",
+    "callgrind",
+    "cachegrind",
+    "massif",
+)
 
 # Debug Options
 # pd.set_option("display.max_columns", None)
@@ -30,10 +34,9 @@ from .generics import (
 # pd.set_option("display.max_columns", 500)
 # pd.set_option("display.width", 1000)
 
-RESULTS_DIR = sorted(list(Path("./results").iterdir()))
 
 app = dash.Dash(__name__)
-app.layout = partial(gen_layout, CLOCKS, DATA_TYPES, RESULTS_DIR)
+app.layout = partial(gen_layout, CLOCKS, RUN_TYPES, None)
 
 
 @app.callback(
