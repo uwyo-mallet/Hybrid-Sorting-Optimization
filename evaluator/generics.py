@@ -98,3 +98,25 @@ def df_from_json(json_df):
     tuples = [ast.literal_eval(i) for i in df.columns]
     df.columns = pd.MultiIndex.from_tuples(tuples)
     return df
+
+
+def update_threshold_slider(json_df):
+    df = df_from_json(json_df)
+    marks = {int(i): "" for i in sorted(df["threshold"].unique())}
+    return (
+        int(df["threshold"].unique().min()),
+        int(df["threshold"].unique().max()),
+        marks,
+    )
+
+
+def update_size_slider(json_df):
+    df = df_from_json(json_df)
+    # Format marks as 'general'
+    # https://docs.python.org/3.4/library/string.html#format-string-syntax
+    marks = {int(i): "" for i in sorted(df["size"].unique())}
+    return (
+        int(df["size"].unique().min()),
+        int(df["size"].unique().max()),
+        marks,
+    )
