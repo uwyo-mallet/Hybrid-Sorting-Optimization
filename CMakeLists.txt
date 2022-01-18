@@ -8,7 +8,7 @@ project(
 
 project(
   GB_QST
-  VERSION 1.0.2
+  VERSION 1.0.3
   DESCRIPTION "Evaluating sorting algorithms with Google Benchmark."
   LANGUAGES C CXX ASM)
 

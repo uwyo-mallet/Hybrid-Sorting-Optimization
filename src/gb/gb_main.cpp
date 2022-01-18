@@ -6,7 +6,6 @@
 #include <boost/filesystem/path.hpp>
 
 // Older versions of boost require this file be included.
-// TODO: Test this!
 #if __has_include(<boost/filesystem/directory.h>)
 #include <boost/filesystem/directory.h>
 #endif
@@ -102,10 +101,6 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
-  // Load the data
-  orig_data = from_disk<uint64_t>(arguments.in_file);
-  threshold = arguments.threshold;
-
   // Pass the rest of the CLI args to google benchmark.
   int num_benchmark_parameters = benchmark_parameters.size();
   ::benchmark::Initialize(&num_benchmark_parameters,
@@ -115,6 +110,10 @@ int main(int argc, char** argv)
   {
     return EXIT_FAILURE;
   }
+
+  // Load the data
+  orig_data = from_disk<uint64_t>(arguments.in_file);
+  threshold = arguments.threshold;
 
   ::benchmark::AddCustomContext("input", arguments.in_file.string());
   ::benchmark::AddCustomContext("size", std::to_string(orig_data.size()));

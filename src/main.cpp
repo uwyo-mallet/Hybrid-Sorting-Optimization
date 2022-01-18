@@ -5,7 +5,6 @@
 #include <boost/filesystem/path.hpp>
 
 // Older versions of boost require this file be included.
-// TODO: Test this!
 #if __has_include(<boost/filesystem/directory.h>)
 #include <boost/filesystem/directory.h>
 #endif
