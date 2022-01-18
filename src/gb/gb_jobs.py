@@ -37,7 +37,7 @@ sys.path.insert(0, str(Path(sys.path[0]).parent.absolute()))
 
 from info import write_info
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 # TODO: Find a way to have the QST executable dynamically generate this.
 THRESHOLD_METHODS = {
@@ -207,14 +207,16 @@ class Job:
     @property
     def command(self) -> list[str]:
         """Return subprocess command for this job."""
-        out_file = self.output_dir / f"{self.job_id}.{self.description}"
+        out_file = self.output_dir / f"{self.job_id}.{self.description}.json"
+
+        methods = [f"SortFixture/{i}" for i in self.methods]
 
         base_params = [
             str(self.exec_path.absolute()),
             str(self.infile_path.absolute()),
             "--threshold",
             str(self.threshold),
-            f"--benchmark_filter={'|'.join(self.methods)}",
+            f"--benchmark_filter=^{'|'.join(methods)}$",
             f"--benchmark_context=description={self.description},uses_threshold={self._uses_threshold}",
             f"--benchmark_out={str(out_file)}",
             "--benchmark_out_format=json",
@@ -302,20 +304,21 @@ class Scheduler:
                 "infile_path": f,
                 "description": desc,
                 "methods": None,
-                "output_dir": self.output_dir,
+                "output_dir": self.output_dir / "json",
                 "threshold": 1,
             }
 
-            params["methods"] = threshold_methods
-            for thresh in self.threshold:
-                params["threshold"] = thresh
-                job = Job(**params)
-                self.job_queue.append(job)
-                # Keep track of which job_ids are for threshold dependent methods.
-                # Allows for easier post-processing.
-                self._threshold_job_ids.append(job_id)
-                job_id += 1
-                params["job_id"] = job_id
+            if threshold_methods:
+                params["methods"] = threshold_methods
+                for thresh in self.threshold:
+                    params["threshold"] = thresh
+                    job = Job(**params)
+                    self.job_queue.append(job)
+                    # Keep track of which job_ids are for threshold dependent methods.
+                    # Allows for easier post-processing.
+                    self._threshold_job_ids.append(job_id)
+                    job_id += 1
+                    params["job_id"] = job_id
 
             if normal_methods:
                 params["methods"] = normal_methods
@@ -333,7 +336,8 @@ class Scheduler:
         print("Okay, lets do it!", file=sys.stderr)
 
         # Ensure output directory exists
-        self.output_dir.mkdir(exist_ok=True, parents=True)
+        sub_output = self.output_dir / "json"
+        sub_output.mkdir(exist_ok=True, parents=True)
 
         # Log system info
         write_info(

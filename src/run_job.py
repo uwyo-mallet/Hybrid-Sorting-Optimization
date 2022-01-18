@@ -25,7 +25,7 @@ from pathlib import Path
 
 from docopt import docopt
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 
 class cd:
@@ -122,7 +122,8 @@ def submit(args):
 
         # All user inputs are valid, prep for job submission.
         if not args.dry_run:
-            results_dir.mkdir(parents=True, exist_ok=True)
+            sub_results_dir = results_dir / "json"
+            sub_results_dir.mkdir(parents=True, exist_ok=True)
             valgrind_dir.mkdir(parents=True, exist_ok=True)
 
             shutil.copy(Path(slurm_dir, "job_details.json"), results_dir)
