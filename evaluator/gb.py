@@ -1,36 +1,20 @@
-#!/usr/bin/env python3
-"""
-Google benchmark result comparer/viewer.
+"""GB_QST result viewer."""
 
-"""
-
+import json
 from pathlib import Path
 
 import dash
-import json
-
-from .generics import (
-    GRAPH_ORDER,
-    df_from_json,
-    update_info,
-    update_size_slider,
-    update_threshold_slider,
-)
-from .gb_layout import gen_layout
-from .gb_loader import load
-import pandas as pd
-
 import plotly.express as px
-
-
 from dash.dependencies import Input, Output, State
 
-# Debug Options
-pd.set_option("display.max_columns", None)
-pd.set_option("display.max_rows", 500)
-pd.set_option("display.max_columns", 500)
-pd.set_option("display.width", 1000)
+from .gb_layout import gen_layout
+from .gb_loader import load
+from .generics import (GRAPH_ORDER, df_from_json, update_info,
+                       update_size_slider, update_threshold_slider)
 
+# Debug Options
+# print("DEBUG")
+# from .debug import *
 
 app = dash.Dash(__name__)
 app.layout = gen_layout
@@ -43,15 +27,16 @@ app.layout = gen_layout
     State("result-dropdown", "value"),
 )
 def load_result(n_clicks, results_dir=None):
+    """User callback to load results from disk."""
     if not n_clicks:
         raise dash.exceptions.PreventUpdate
 
     try:
-        res = load(Path(results_dir))
+        df, info = load(Path(results_dir))
     except FileNotFoundError as e:
         return dash.no_update, str(e)
 
-    return res.df.to_json(), json.dumps(res.info)
+    return df.to_json(), json.dumps(info)
 
 
 update_info = app.callback(
@@ -83,16 +68,11 @@ update_size_slider = app.callback(
         Input("error-bars-checkbox", "value"),
     ],
 )
-def update_size_v_runtime(
-    json_df,
-    threshold=None,
-    error_bars=False,
-):
+def update_size_v_runtime(json_df, threshold=None, error_bars=False):
+    """User callback to update size vs. runtime plots."""
     if not json_df:
         return px.line()
     df = df_from_json(json_df)
-    print(df)
-    print(threshold)
 
     if threshold is None or not any(df["threshold"] == threshold):
         threshold = df["threshold"].min()
@@ -185,11 +165,8 @@ def update_size_v_runtime(
         Input("error-bars-checkbox", "value"),
     ],
 )
-def update_threshold_v_runtime(
-    json_df,
-    size=None,
-    error_bars=False,
-):
+def update_threshold_v_runtime(json_df, size=None, error_bars=False):
+    """User callback to update threshold vs. runtime plots."""
     df = df_from_json(json_df)
 
     if size is None or not any(df["size"] == size):
@@ -209,15 +186,11 @@ def update_threshold_v_runtime(
     if df.empty:
         return px.line()
 
-    # Create dummy values for insertion sort, since it isn't affected by threshold,
+    # Create dummy values for std::sort, since it isn't affected by threshold,
     # we are just illustrating a comparison. It is okay to manually iterate over the
     # rows here, since there should only ever be one row per input data type.
     # TODO: Find a way to generalize / make the user pick baselines.
     # TODO: Reevaluate the performance implifications of this.
-    # for _, row in ins_sort_df.iterrows():
-    #     for t in df["threshold"].unique():
-    #         row["threshold"] = t
-    #         df = df.append(row)
 
     for _, row in std_sort_df.iterrows():
         row["threshold"] = df["threshold"].min()
