@@ -1,21 +1,18 @@
-from dataclasses import dataclass
-from json.decoder import JSONDecodeError
-from .generics import GB_RESULTS_DIR, DATA_TYPES
+"""Loader for GB_QST results."""
 import json
-
-
-import pandas as pd
-import numpy as np
-
 from collections import defaultdict
+from json.decoder import JSONDecodeError
 from pathlib import Path
+from typing import Optional
+
+import numpy as np
+import pandas as pd
+
+from .generics import GB_RESULTS_DIR
 
 # Debug Options
-pd.set_option("display.max_columns", None)
-pd.set_option("display.max_rows", 500)
-pd.set_option("display.max_columns", 500)
-pd.set_option("display.width", 1000)
-
+# print("DEBUG")
+# from .debug import *
 
 RAW_COLUMNS = {
     "method",
@@ -31,14 +28,11 @@ RAW_COLUMNS = {
     "repetitions_index",
     "repetitions",
 }
-JOB_DETAILS_FILE = "job_details.json"
-DATA_FILENAME = "output.json"
 
-
-@dataclass
-class Result:
-    df: pd.DataFrame
-    info: dict
+IGNORE_CACHE = False
+JOB_DETAILS_FILENAME = "job_details.json"
+MERGED_JSON_FILENAME = "output.json"
+CACHE_FILENAME = "output.parquet"
 
 
 def lookup_run_name(run_name: str):
@@ -77,7 +71,7 @@ def merge_json(in_dir: Path, ignore_existing=False) -> dict:
     (https://www.ecma-international.org/publications-and-standards/standards/ecma-404/)
     standard. Most notably, integer keys become strings.
     """
-    out_file = in_dir / DATA_FILENAME
+    out_file = in_dir / MERGED_JSON_FILENAME
 
     # Merge was done before, just return the saved contents.
     if out_file.exists() and not ignore_existing:
@@ -86,30 +80,27 @@ def merge_json(in_dir: Path, ignore_existing=False) -> dict:
 
     data = defaultdict(lambda: defaultdict(list))
 
-    for i in DATA_TYPES:
-        for f in in_dir.rglob(f"*.{i}"):
-            with open(f, "r") as json_file:
-                try:
-                    raw = json.load(json_file)
-                except JSONDecodeError:
-                    print(f"Malformed JSON: {f}")
-                    continue
+    for f in in_dir.rglob("*.json"):
+        with open(f, "r") as json_file:
+            try:
+                raw = json.load(json_file)
+            except JSONDecodeError:
+                print(f"Malformed JSON file: {f}")
+                continue
 
-                input_file = raw["context"]["input"]
-                size = int(raw["context"]["size"])
-                threshold = int(raw["context"]["threshold"])
-                uses_threshold = int(raw["context"]["uses_threshold"])
+            description = raw["context"].get("description", "N/A")
+            input_file = raw["context"]["input"]
+            size = int(raw["context"]["size"])
 
-                if uses_threshold:
-                    for run in raw["benchmarks"]:
-                        run["input"] = input_file
-                        run["size"] = size
-                        data[i][threshold].append(run)
-                else:
-                    for run in raw["benchmarks"]:
-                        run["input"] = input_file
-                        run["size"] = size
-                        data[i][0].append(run)
+            uses_threshold = int(raw["context"]["uses_threshold"])
+            threshold = int(raw["context"]["threshold"]) if uses_threshold else 0
+
+            for run in raw["benchmarks"]:
+                # Ignore aggregate results
+                if run["run_type"] == "iteration":
+                    run["input"] = input_file
+                    run["size"] = size
+                    data[description][threshold].append(run)
 
     with open(out_file, "w") as out_file:
         json.dump(data, out_file, indent=4, sort_keys=True)
@@ -117,7 +108,18 @@ def merge_json(in_dir: Path, ignore_existing=False) -> dict:
     return data
 
 
-def load(in_dir=None):
+def load(in_dir: Optional[Path] = None) -> (pd.DataFrame, dict):
+    """
+    Load a GB_QST result directory from disk.
+
+    If necessary, merges all JSON output files, then caches the resulting
+    dataframe as a parquet file (in_dir/CACHE_FILENAME). Technically there are
+    two caches, since the merged json files are also saved as
+    in_dir/json/OUTPUT_FILENAME.
+
+    @param in_dir: GB_QST result directory.
+    @returns: Processed pandas dataframe, and general system information.
+    """
     if in_dir is None:
         try:
             dirs = sorted(list(GB_RESULTS_DIR.iterdir()))
@@ -125,38 +127,46 @@ def load(in_dir=None):
         except IndexError as e:
             raise FileNotFoundError("No result directories found") from e
 
-    raw_data = merge_json(in_dir)
+    # Actually loading the results
+    cache_file = Path(in_dir, CACHE_FILENAME)
+    if not IGNORE_CACHE and cache_file.is_file():
+        df = pd.read_parquet(cache_file)
+    else:
+        # No cache available, process the raw data.
+        raw_data = merge_json(in_dir / "json")
 
-    data = []
-    for input_type in raw_data:
-        for threshold in raw_data[input_type]:
-            for result in raw_data[input_type][threshold]:
-                if "aggregate_name" not in result.keys():
+        # Cleanup and convert to pandas df
+        data = []
+        for input_type in raw_data:
+            for threshold in raw_data[input_type]:
+                for result in raw_data[input_type][threshold]:
                     row = {
                         "description": input_type,
                         "threshold": threshold,
+                        # Discard unused keys
                         **{k: v for k, v in result.items() if k in RAW_COLUMNS},
                     }
                     row["name"] = lookup_run_name(row["name"])
                     data.append(row)
 
-    df = pd.DataFrame.from_dict(data)
-    df = df.rename(columns={"name": "method"})
+        df = pd.DataFrame.from_dict(data)
+        df = df.rename(columns={"name": "method"})
 
-    stats = (np.mean, np.std)
-    df = df.groupby(["input", "description", "threshold", "size", "method",]).agg(
-        {
-            "cpu_time": stats,
-            "real_time": stats,
-        }
-    )
-    df = df.reset_index()
-    df = df.sort_values(["size"])
+        # Compute mean and stddev
+        stats = (np.mean, np.std)
+        df = df.groupby(["input", "description", "threshold", "size", "method"])
+        df = df.agg({"cpu_time": stats, "real_time": stats})
+        df = df.reset_index()
+        df = df.sort_values(["size"])
 
-    info_path = in_dir / JOB_DETAILS_FILE
+        # Cache so we don't have to compute this again.
+        df.to_parquet(cache_file)
+
+    # System info
+    info_path = in_dir / JOB_DETAILS_FILENAME
     if info_path.is_file():
         info = json.loads(info_path.read_text())
     else:
         info = {}
 
-    return Result(df, info)
+    return df, info

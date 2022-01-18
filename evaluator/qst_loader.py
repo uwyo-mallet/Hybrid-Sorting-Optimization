@@ -1,23 +1,18 @@
-#!/usr/bin/env python3
-
+"""Loader for QST results."""
 import json
 import re
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 
 from .generics import QST_RESULTS_DIR
 
-
 # Debug Options
-# pd.set_option("display.max_columns", None)
-# pd.set_option("display.max_rows", 500)
-# pd.set_option("display.max_columns", 500)
-# pd.set_option("display.width", 1000)
+# print("DEBUG")
+# from .debug import *
 
 IGNORE_CACHE = False
 JOB_DETAILS_FILE = "job_details.json"
@@ -79,20 +74,13 @@ CACHEGRIND_COLS = [
 ]
 
 
-@dataclass
-class Result:
-    raw_df: pd.DataFrame
-    stat_df: pd.DataFrame
-    cachegrind_df: pd.DataFrame
-    info: dict
-
-
-def downcast(df, cols, cast="unsigned"):
+def downcast(df: pd.DataFrame, cols: list[str], cast="unsigned"):
+    """Convert columns to their smallest possible datatype to save some memory."""
     df[cols] = df[cols].apply(pd.to_numeric, downcast=cast)
     return df
 
 
-def load_cachegrind(df, valgrind_dir: Union[None, Path]):
+def load_cachegrind(df, valgrind_dir: Optional[Path]):
     # TODO: Handle a different method name in CSV vs C source code.
     BASE_COLS = [
         # "input",
@@ -141,7 +129,7 @@ def load_cachegrind(df, valgrind_dir: Union[None, Path]):
     return cachegrind_df
 
 
-def preprocess_csv(csv_file: Path, valgrind_dir: Union[None, Path] = None):
+def preprocess_csv(csv_file: Path, valgrind_dir: Optional[Path] = None):
     in_raw_parq = Path(csv_file.parent, csv_file.stem + "_raw.parquet")
     in_stat_parq = Path(csv_file.parent, csv_file.stem + "_stat.parquet")
     in_cg_parq = Path(csv_file.parent, csv_file.stem + "_cachegrind.parquet")
@@ -237,7 +225,7 @@ def load(in_dir=None):
         # Load without cache
         raw_df, stat_df, cachegrind_df = load_without_cache(in_csv)
     else:
-        # Load with cache
+        # Load from cache
         for i in parqs:
             if str(i).endswith("_raw.parquet"):
                 in_raw_parq = Path(i)
@@ -272,17 +260,17 @@ def load(in_dir=None):
     info["partition"] = partition
     info["actual_num_sorts"] = len(raw_df)
 
-    return Result(raw_df, stat_df, cachegrind_df, info)
+    return raw_df, stat_df, cachegrind_df, info
 
 
 if __name__ == "__main__":
-    res = load()
-    print(res.raw_df)
-    print(res.stat_df)
-    print(res.cachegrind_df)
+    raw_df, stat_df, cachegrind_df = load()
+    print(raw_df)
+    print(stat_df)
+    print(cachegrind_df)
 
     # Basic memory benchmarking
-    # print(res.raw_df.memory_usage(deep=True))
-    # print(res.raw_df.dtypes)
-    # print(res.stat_df.memory_usage(deep=True))
-    # print(res.stat_df.dtypes)
+    # print(raw_df.memory_usage(deep=True))
+    # print(raw_df.dtypes)
+    # print(stat_df.memory_usage(deep=True))
+    # print(stat_df.dtypes)

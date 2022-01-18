@@ -1,4 +1,4 @@
-"""QST Evaluator."""
+"""QST result viewer."""
 import json
 from functools import partial
 from pathlib import Path
@@ -10,16 +10,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 
+from .generics import (GRAPH_ORDER, THRESHOLD_METHODS, df_from_json,
+                       update_info, update_size_slider,
+                       update_threshold_slider)
 from .qst_layout import gen_layout
-from .qst_loader import load, CACHEGRIND_COLS, CLOCKS
-from .generics import (
-    GRAPH_ORDER,
-    THRESHOLD_METHODS,
-    update_info,
-    df_from_json,
-    update_size_slider,
-    update_threshold_slider,
-)
+from .qst_loader import CACHEGRIND_COLS, CLOCKS, load
 
 RUN_TYPES = (
     "base",
@@ -51,11 +46,11 @@ def load_result(n_clicks, results_dir):
         raise dash.exceptions.PreventUpdate
 
     try:
-        res = load(Path(results_dir))
+        stat_df, cachegrind_df, info = load(Path(results_dir))
     except FileNotFoundError as e:
         return dash.no_update, str(e)
 
-    return res.stat_df.to_json(), res.cachegrind_df.to_json(), json.dumps(res.info)
+    return stat_df.to_json(), cachegrind_df.to_json(), json.dumps(info)
 
 
 update_info = app.callback(
