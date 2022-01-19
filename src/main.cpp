@@ -24,16 +24,7 @@
 
 namespace fs = boost::filesystem;
 
-// clang-format off
-#define VERSION                                                        \
-  QST_VERSION                                                          \
-  "\n\tC COMPILER: " C_COMPILER_ID " " C_COMPILER_VERSION              \
-  "\n\tCXX COMPILER: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION        \
-  "\n\tType: " CMAKE_BUILD_TYPE                                        \
-  "\n\tASM Methods: [" ASM_ENABLED "]"
-// clang-format on
-
-const char* argp_program_version = VERSION;
+const char* argp_program_version = VERSION(QST_VERSION);
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 
 // Documentation
@@ -311,27 +302,27 @@ void version_json()
   // version
   std::cout << "\t\"version:\": "
             << "\"" QST_VERSION "\""
-            << "," << std::endl;
+            << ",\n";
 
   // C compiler id
   std::cout << "\t\"c_compiler_id\": "
             << "\"" C_COMPILER_ID "\""
-            << "," << std::endl;
+            << ",\n";
 
   // C compiler version
   std::cout << "\t\"c_compiler_version\": "
             << "\"" C_COMPILER_VERSION "\""
-            << "," << std::endl;
+            << ",\n";
 
   // C++ compiler id
   std::cout << "\t\"cxx_compiler_id\": "
             << "\"" CXX_COMPILER_ID "\""
-            << "," << std::endl;
+            << ",\n";
 
   // C++ compiler version
   std::cout << "\t\"cxx_compiler_version\": "
             << "\"" CXX_COMPILER_VERSION "\""
-            << "," << std::endl;
+            << ",\n";
 
   // asm_enabled
   std::cout << "\t\"asm_enabled\": ";
@@ -340,7 +331,7 @@ void version_json()
 #else
   std::cout << "0";
 #endif  // USE_BOOST_CPP_INT
-  std::cout << std::endl;
+  std::cout << "\n";
 
-  std::cout << "}" << std::endl;
+  std::cout << "}\n";
 }

@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 2.0.2
+  VERSION 2.0.3
   DESCRIPTION "Evaluating sorting algorithms with homebrew methods."
   LANGUAGES C CXX ASM)
 
 project(
   GB_QST
-  VERSION 1.0.3
+  VERSION 1.0.4
   DESCRIPTION "Evaluating sorting algorithms with Google Benchmark."
   LANGUAGES C CXX ASM)
 
@@ -17,6 +17,16 @@ set(CMAKE_C_STANDARD_REQUIRED True)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+if(USE_LIBCPP)
+  # If you don't use clang, you'll have a bad time...
+  message(
+    WARNING "Using libc++ instead of libstdc++.\n"
+            "Only clang is currently supported.\n"
+            "Ensure you set CMAKE_PREFIX_PATH correctly!\n"
+            "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+endif()
 
 message("C Compiler Path: " ${CMAKE_C_COMPILER})
 message("C Compiler ID: " ${CMAKE_C_COMPILER_ID})
@@ -28,7 +38,6 @@ message("CXX Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Boost
 find_package(Boost 1.67.0 REQUIRED COMPONENTS iostreams filesystem timer)
 include_directories(${BOOST_INCLUDE_DIRS})
 

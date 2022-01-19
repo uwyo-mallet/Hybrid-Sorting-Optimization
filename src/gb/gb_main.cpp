@@ -26,16 +26,7 @@
 
 namespace fs = boost::filesystem;
 
-// clang-format off
-#define VERSION                                                        \
-  GB_QST_VERSION                                                       \
-  "\n\tC COMPILER: " C_COMPILER_ID " " C_COMPILER_VERSION              \
-  "\n\tCXX COMPILER: " CXX_COMPILER_ID " " CXX_COMPILER_VERSION        \
-  "\n\tType: " CMAKE_BUILD_TYPE                                        \
-  "\n\tASM Methods: [" ASM_ENABLED "]"
-// clang-format on
-
-const char* argp_program_version = VERSION;
+const char* argp_program_version = VERSION(GB_QST_VERSION);
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 
 // Documentation
