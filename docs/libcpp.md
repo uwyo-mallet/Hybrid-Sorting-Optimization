@@ -151,14 +151,14 @@ not using the `GB_QST` executable these steps can be skipped.
 
     Ensure you set CMAKE_PREFIX_PATH correctly!
 
-    CMAKE_PREFIX_PATH: ~/workRepos/quicksort-tuning/libcpp_libs
+    CMAKE_PREFIX_PATH: ~/quicksort-tuning/libcpp_libs
 
 
     C Compiler Path: /usr/bin/clang
     C Compiler ID: Clang
     CXX Compiler Path: /usr/bin/clang++
     CXX Compiler ID: Clang
-    -- Found Boost: /home/joshua/workRepos/quicksort-tuning/libcpp_libs/lib/cmake/Boost-1.78.0/BoostConfig.cmake (found suitable version "1.78.0", minimum required is "1.67.0") found components: iostreams filesystem timer
+    -- Found Boost: /home/joshua/quicksort-tuning/libcpp_libs/lib/cmake/Boost-1.78.0/BoostConfig.cmake (found suitable version "1.78.0", minimum required is "1.67.0") found components: iostreams filesystem timer
     -- Looking for pthread.h
     -- Looking for pthread.h - found
     -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
@@ -168,7 +168,7 @@ not using the `GB_QST` executable these steps can be skipped.
     -- Found Doxygen: /usr/bin/doxygen (found version "1.9.1") found components: doxygen dot
     -- Configuring done
     -- Generating done
-    -- Build files have been written to: /home/joshua/workRepos/quicksort-tuning/build
+    -- Build files have been written to: /home/joshua/quicksort-tuning/build
    ```
 
 4. Build.
