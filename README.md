@@ -28,23 +28,27 @@ Compiling QST and setting up the required python environment on ARCC.
 
 2. Compile QST
 
+   If Google benchmark is available, `GB_QST` will also be built.
+
    ```
    $ mkdir build
    $ cd build
 
-   # Optionally enable boost CPP int with: -DUSE_BOOST_CPP_INT=ON
    # Optionally disable assembly sorting methods with: -DDISABLE_ASM=ON
-   $ cmake .. -DCMAKE_BUILD_TYPE=RELEASE
+   $ cmake .. -DCMAKE_BUILD_TYPE=Release
    $ make
 
    $ ./QST --version
-   1.6.0
-   	C COMPILER : GNU 11.2.1
-   	CXX COMPILER : GNU 11.2.1
-   	Type: RELEASE
-   	BOOST CPP INT: [-]
-   	ASM Methods: [+]
+   2.0.3
+       C COMPILER: Clang 13.0.0
+       CXX COMPILER: Clang 13.0.0
+       Type: Debug
+       ASM Methods: [+]
+       Using GLIBCXX: [+]
    ```
+
+   > QST and GB_QST can be built against `libc++` instead of `libstdc++` as well.
+   > More info [here](./docs/libcpp.md)
 
 3. Setup the python environment
 
@@ -68,6 +72,8 @@ this procedure is used to generate and run the tests.
    - Descending
    - Entirely random
    - Repeated single number (42)
+   - Binary (repeated 0s or 1s)
+   - Organ Pipe (Half ascending, half descending)
 
    Use `src/data.py` to specify the threshold and generate the data with:
 
