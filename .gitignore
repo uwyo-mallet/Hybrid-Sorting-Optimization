@@ -6,6 +6,7 @@ results/
 *.dat
 *slurm.d/
 gb_*/
+libcpp_libs/
 
 # Jupyter notebook
 .ipynb_checkpoints/
