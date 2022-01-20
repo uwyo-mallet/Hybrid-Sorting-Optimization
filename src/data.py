@@ -138,7 +138,7 @@ class DataGen:
         self._generic(output, data)
 
     def single_num(self, output: Path):
-        """The number 42 repeated."""
+        """Repeated single number, 42."""
         data = np.empty(self.max + 1, dtype=np.int64)
         data.fill(42)
         self._generic(output, data)

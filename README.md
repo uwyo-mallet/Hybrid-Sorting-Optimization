@@ -72,8 +72,6 @@ this procedure is used to generate and run the tests.
    - Descending
    - Entirely random
    - Repeated single number (42)
-   - Binary (repeated 0s or 1s)
-   - Organ Pipe (Half ascending, half descending)
 
    Use `src/data.py` to specify the threshold and generate the data with:
 
