@@ -68,7 +68,7 @@ Boost requires some configuration at build time to support `libc++`.
 3. Build boost with `b2`, ensuring to target `libc++`.
 
    ```sh
-   $ ./b2 toolset=clang cxxflags="-stdlib=libc++" stage=release --prefix="$LIB_CPP_PREFIX_PATH" --build-type=complete --layout=versioned
+   $ ./b2 toolset=clang cxxflags="-stdlib=libc++" --prefix="$LIB_CPP_PREFIX_PATH" --build-type=complete --layout=versioned
    ```
 
 4. Ensure no errors occur during the build, then install to our prefix path,
