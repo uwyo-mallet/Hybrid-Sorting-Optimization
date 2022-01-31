@@ -196,17 +196,23 @@ if __name__ == "__main__":
         # Parse threshold and validate
         if args.get("--threshold") is not None:
             try:
-                buf = args.get("--threshold").rsplit(",")
-                if len(buf) != 2 and len(buf) != 3:
+                buf = args.get("--threshold").rstrip(",")
+                buf = buf.split(",")
+                if 0 <= len(buf) > 3:
                     raise ValueError
                 buf = [int(i) for i in buf]
 
-                minimum = buf[0]
-                maximum = buf[1]
-                try:
-                    increment = buf[2]
-                except IndexError:
-                    increment = minimum
+                if len(buf) == 1:
+                    minimum = buf[0]
+                    maximum = buf[0]
+                    increment = buf[0]
+                else:
+                    minimum = buf[0]
+                    maximum = buf[1]
+                    try:
+                        increment = buf[2]
+                    except IndexError:
+                        increment = minimum
 
             except ValueError as e:
                 raise ValueError(f"Invalid threshold: {buf}") from e
