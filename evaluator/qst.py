@@ -46,7 +46,7 @@ def load_result(n_clicks, results_dir):
         raise dash.exceptions.PreventUpdate
 
     try:
-        stat_df, cachegrind_df, info = load(Path(results_dir))
+        raw_df, stat_df, cachegrind_df, info = load(Path(results_dir))
     except FileNotFoundError as e:
         return dash.no_update, str(e)
 
