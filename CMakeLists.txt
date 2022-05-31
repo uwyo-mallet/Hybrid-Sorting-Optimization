@@ -8,7 +8,7 @@ project(
 
 project(
   GB_QST
-  VERSION 1.0.4
+  VERSION 1.0.3
   DESCRIPTION "Evaluating sorting algorithms with Google Benchmark."
   LANGUAGES C CXX ASM)
 
@@ -17,16 +17,6 @@ set(CMAKE_C_STANDARD_REQUIRED True)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-if(USE_LIBCPP)
-  # If you don't use clang, you'll have a bad time...
-  message(
-    WARNING "Using libc++ instead of libstdc++.\n"
-            "Only clang is currently supported.\n"
-            "Ensure you set CMAKE_PREFIX_PATH correctly!\n"
-            "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-endif()
 
 message("C Compiler Path: " ${CMAKE_C_COMPILER})
 message("C Compiler ID: " ${CMAKE_C_COMPILER_ID})
@@ -38,6 +28,7 @@ message("CXX Compiler ID: " ${CMAKE_CXX_COMPILER_ID})
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Boost
 find_package(Boost 1.67.0 REQUIRED COMPONENTS iostreams filesystem timer)
 include_directories(${BOOST_INCLUDE_DIRS})
 
@@ -71,10 +62,10 @@ if(benchmark_FOUND)
     target_compile_options(GB_QST PRIVATE -Og -ggdb ${SANITIZER_OPTS})
     target_link_options(GB_QST PRIVATE ${SANITIZER_OPTS})
   elseif(CMAKE_BUILD_TYPE MATCHES "Valgrind")
-    target_compile_options(GB_QST PRIVATE -O2 -ggdb)
+    target_compile_options(GB_QST PRIVATE -O0 -ggdb)
   else()
     set(CMAKE_BUILD_TYPE "Release")
-    target_compile_options(GB_QST PRIVATE -O2)
+    target_compile_options(GB_QST PRIVATE -O0)
   endif()
 else()
   message("Google Benchmark not found, not building GB_QST")
@@ -101,8 +92,17 @@ target_include_directories(QST PRIVATE ${PROJECT_BINARY_DIR})
 
 # Linking
 target_link_libraries(QST Boost::iostreams Boost::filesystem Boost::timer)
-target_compile_options(QST PRIVATE -Wall -Wextra -Wconversion -Wsign-conversion
-                                   -pedantic)
+target_compile_options(
+  QST
+  PRIVATE -Wall
+          -Wextra
+          -Wconversion
+          -pedantic
+          -Wno-sign-compare
+          -Wno-sign-conversion
+          -Wno-unused-function
+          -Wno-missing-field-initializers
+          -Wno-unused-command-line-argument)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
   message("Build type: Debug")
@@ -111,11 +111,11 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
   target_link_options(QST PRIVATE ${SANITIZER_OPTS})
 elseif(CMAKE_BUILD_TYPE MATCHES "Valgrind")
   message("Build type: Valgrind")
-  target_compile_options(QST PRIVATE -O2 -ggdb)
+  target_compile_options(QST PRIVATE -O0 -ggdb)
 else()
   message("Build type: Release")
   set(CMAKE_BUILD_TYPE "Release")
-  target_compile_options(QST PRIVATE -O2)
+  target_compile_options(QST PRIVATE -O0)
 endif()
 
 configure_file(src/config.h.in config.hpp)

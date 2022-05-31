@@ -14,17 +14,27 @@
 #include "sort.h"
 
 // Hybrid methods which support a threshold value.
-// clang-format off
+static const std::set<std::string> METHODS{
+    "insertion_sort",
+    "insertion_sort_c",
+    "insertion_sort_c_swp",
+    "qsort_sanity",
+    "std::sort",
+    "msort_c",
+#ifdef ARCH_X86
+    "insertion_sort_asm",
+#endif  // ARCH_X86
+};
 static const std::set<std::string> THRESHOLD_METHODS{
-    "qsort_asm",
     "qsort_c",
-    "qsort_c_no_comp",
     "qsort_c_sep_ins",
     "qsort_c_swp",
     "qsort_cpp",
     "qsort_cpp_no_comp",
+#ifdef ARCH_X86
+    "qsort_asm",
+#endif  // ARCH_X86
 };
-// clang-format on
 
 // x86 assembly methods
 #ifdef ARCH_X86
@@ -37,7 +47,7 @@ extern "C" void qsort_asm(uint64_t *arr, const uint64_t n,
 @see https://en.cppreference.com/w/c/algorithm/qsort
 */
 template <typename T>
-int __attribute__((noinline)) compare(const void *ap, const void *bp)
+int compare(const void *ap, const void *bp)
 {
   T *a = (T *)ap;
   T *b = (T *)bp;
@@ -49,7 +59,7 @@ int __attribute__((noinline)) compare(const void *ap, const void *bp)
 
 /** Comparator for std::sort */
 template <typename T>
-bool __attribute__((noinline)) compare_std(const T &a, const T &b)
+bool compare_std(const T &a, const T &b)
 {
   return (a < b);
 }

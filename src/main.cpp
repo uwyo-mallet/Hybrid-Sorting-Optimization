@@ -32,22 +32,24 @@ static char doc[] = QST_DESCRIPTION;
 static char args_doc[] = "INPUT";
 
 // Accepted methods
-#define VERSION_JSON_SHORT_OPT 0x80
-#define COLS_SHORT_OPT 0x81
-#define VALS_SHORT_OPT 0x82
+#define COLS_OPT 0x80
+#define VALS_OPT 0x81
+#define METHODS_OPT 0x82
+#define VERSION_OPT 0x83
+
+// clang-format off
 static struct argp_option options[] = {
     {"method", 'm', "METHOD", 0, "Sorting method."},
     {"output", 'o', "FILE", 0, "Output to FILE instead of STDOUT."},
     {"runs", 'r', "N", 0, "Number of times to sort the same data. Default: 1"},
     {"threshold", 't', "THRESH", 0, "Threshold to switch to insertion sort."},
-    {"cols", COLS_SHORT_OPT, "COLS", 0,
-     "Additional columns to pass through to the output CSV."},
-    {"vals", VALS_SHORT_OPT, "VALS", 0,
-     "Values to use for the additional columns."},
-    {"version-json", VERSION_JSON_SHORT_OPT, 0, 0,
-     "Output version information in machine readable format."},
+    {"cols", COLS_OPT, "COLS", 0, "Columns to pass through to the CSV."},
+    {"vals", VALS_OPT, "VALS", 0, "Values to pass through to the oCSV."},
+    {"show-methods", METHODS_OPT, "TYPE", OPTION_ARG_OPTIONAL,
+     "Print all supported methods or of type 'TYPE' (threshold, nonthreshold)."},
     {0},
 };
+// clang-format on
 
 struct arguments
 {
@@ -58,6 +60,9 @@ struct arguments
   int64_t threshold;
   std::vector<std::string> cols;
   std::vector<std::string> vals;
+
+  bool print_standard_methods;
+  bool print_threshold_methods;
 };
 
 // Option parser
@@ -79,6 +84,8 @@ int main(int argc, char** argv)
   arguments.runs = 1;
   // Threshold is only used for supported sorting methods.
   arguments.threshold = 4;
+  arguments.print_standard_methods = false;
+  arguments.print_threshold_methods = false;
 
   // Ensure no parsing errors occured
   // The assumption is that argp_parse correctly alerts the user
@@ -88,6 +95,26 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
+  if (arguments.print_standard_methods || arguments.print_threshold_methods)
+  {
+    if (arguments.print_standard_methods)
+    {
+      for (const std::string& i : METHODS)
+      {
+        std::cout << i << "\n";
+      }
+    }
+    if (arguments.print_threshold_methods)
+    {
+      for (const std::string& i : THRESHOLD_METHODS)
+      {
+        std::cout << i << "\n";
+      }
+    }
+
+    return EXIT_SUCCESS;
+  }
+
   if (arguments.cols.size() != arguments.vals.size())
   {
     throw std::runtime_error("Number of cols and vals don't match.");
@@ -95,7 +122,8 @@ int main(int argc, char** argv)
 
   // Cleanup, remove whitespace and lowercase.
   trim(arguments.method);
-  std::transform(arguments.method.begin(), arguments.method.end(),
+  std::transform(arguments.method.begin(),
+                 arguments.method.end(),
                  arguments.method.begin(),
                  [](const unsigned char& c) { return std::tolower(c); });
 
@@ -106,8 +134,17 @@ int main(int argc, char** argv)
     arguments.threshold = 0;
   }
 
-  const std::vector<uint64_t> orig_data =
-      from_disk<uint64_t>(arguments.in_file);
+  std::vector<uint64_t> orig_data;
+  try
+  {
+    orig_data = from_disk<uint64_t>(arguments.in_file);
+  }
+  catch (std::ios_base::failure e)
+  {
+    std::cerr << e.what() << std::endl;
+    return EXIT_FAILURE;
+  }
+
   std::vector<uint64_t> sorted_data(orig_data);
   std::sort(sorted_data.begin(), sorted_data.end());
 
@@ -120,7 +157,7 @@ int main(int argc, char** argv)
   {
     std::copy(orig_data.begin(), orig_data.end(), to_sort);
     const boost::timer::cpu_times res =
-        time(arguments.method, arguments.threshold, to_sort, DATA_LEN);
+        time(arguments.method, (size_t)arguments.threshold, to_sort, DATA_LEN);
     times.push_back(res);
 
     if (!checked)
@@ -151,11 +188,9 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
     case 'm':
       args->method = std::string(arg);
       break;
-
     case 'o':
       args->out_file = fs::path(arg);
       break;
-
     case 'r':
       args->runs = std::stoi(std::string(arg));
       if (args->runs <= 0)
@@ -163,7 +198,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
         throw std::invalid_argument("Runs must be > 0");
       }
       break;
-
     case 't':
       try
       {
@@ -181,19 +215,36 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
         return 1;
       }
       break;
-
-    case COLS_SHORT_OPT:
+    case COLS_OPT:
       args->cols = parse_comma_sep_args(std::string(arg));
       break;
-
-    case VALS_SHORT_OPT:
+    case VALS_OPT:
       args->vals = parse_comma_sep_args(std::string(arg));
       break;
-
-    case VERSION_JSON_SHORT_OPT:
+    case VERSION_OPT:
       version_json();
       exit(EXIT_SUCCESS);
-
+    case METHODS_OPT:
+      if (arg != NULL)
+      {
+        if (strcmp(arg, "standard") == 0 || strcmp(arg, "nonthreshold") == 0)
+        {
+          args->print_standard_methods = true;
+        }
+        else if (strcmp(arg, "threshold") == 0)
+        {
+          args->print_threshold_methods = true;
+        }
+        else
+        {
+          args->print_standard_methods = true;
+          args->print_threshold_methods = true;
+        }
+        break;
+      }
+      args->print_standard_methods = true;
+      args->print_threshold_methods = true;
+      break;
     case ARGP_KEY_ARG:
       if (state->arg_num >= 1)
       {
@@ -202,7 +253,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
       }
       args->in_file = fs::path(arg);
       break;
-
     case ARGP_KEY_END:
       if (state->arg_num < 1)
       {
@@ -210,7 +260,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
         argp_usage(state);
       }
       break;
-
     default:
       return ARGP_ERR_UNKNOWN;
   }

@@ -50,6 +50,8 @@ extern "C"
                         compar_d_fn_t cmp);
   void insertion_sort_c_swp(void *const arr, size_t n, size_t size,
                             swp_fn_t swp, compar_d_fn_t cmp);
+  void msort_c(void *const pbase, const size_t total_elems, const size_t size,
+               compar_d_fn_t cmp);
 
   // Threshold -----------------------------------------------------------------
   void qsort_c(void *const pbase, const size_t total_elems, const size_t size,
