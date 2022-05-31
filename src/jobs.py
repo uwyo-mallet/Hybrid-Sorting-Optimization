@@ -58,37 +58,41 @@ from tqdm import tqdm
 
 from info import write_info
 
-VERSION = "1.1.5"
+VERSION = "1.1.6"
 
 
-# TODO: Find a way to have the QST executable dynamically generate this.
-VALID_METHODS = {
-    "insertion_sort",
-    "insertion_sort_asm",
-    "insertion_sort_c",
-    "qsort_asm",
-    "qsort_c",
-    "qsort_c_swp",
-    "qsort_cpp",
-    "qsort_cpp_no_comp",
-    "qsort_sanity",
-    "qsort_vanilla",
-    "std::sort",
-}
-# ... and this.
-THRESHOLD_METHODS = {
-    "qsort_asm",
-    "qsort_c",
-    "qsort_c_swp",
-    "qsort_cpp",
-    "qsort_cpp_no_comp",
-}
 DATA_TYPES = {"ascending", "descending", "random", "single_num"}
-
 
 # Maximum array index supported by slurm
 # https://slurm.schedmd.com/job_array.html
 MAX_BATCH = 4_500
+
+
+def get_supported_methods(qst_path: Path):
+    """TODO."""
+    valid_methods = (
+        subprocess.run(
+            [qst_path, "dummy", "--show-methods=standard"],
+            capture_output=True,
+            check=True,
+        )
+        .stdout.decode()
+        .split()
+    )
+
+    threshold_methods = (
+        subprocess.run(
+            [qst_path, "dummy", "--show-methods=threshold"],
+            capture_output=True,
+            check=True,
+        )
+        .stdout.decode()
+        .split()
+    )
+
+    valid_methods += threshold_methods
+
+    return {"all": valid_methods, "threshold": threshold_methods}
 
 
 @dataclass
@@ -370,6 +374,9 @@ def parse_args(args):
     if not parsed["exec"].is_file():
         raise FileNotFoundError("Can't find QST executable")
 
+    # Populate the supported methods by calling the subprocess.
+    valid_methods = get_supported_methods(parsed["exec"])
+
     # Num jobs
     if args.get("--jobs") == "CPU":
         parsed["jobs"] = multiprocessing.cpu_count() - 1
@@ -384,10 +391,10 @@ def parse_args(args):
     try:
         methods = args.get("--methods").rsplit(",")
         for i in methods:
-            if i not in VALID_METHODS:
+            if i not in valid_methods["all"]:
                 raise ValueError(f"Invalid method: {i}")
     except AttributeError:
-        methods = VALID_METHODS
+        methods = valid_methods["all"]
     parsed["methods"] = methods
 
     # Progress bar
@@ -505,6 +512,7 @@ class Scheduler:
     def _gen_jobs(self):
         """Populate the queue with jobs."""
         files = self.data_dir.glob(r"**/*.gz")
+        valid_methods = get_supported_methods(self.exec)
         self.job_queue.clear()
 
         job_id = 0
@@ -536,7 +544,7 @@ class Scheduler:
                 # Only methods in THRESHOLD_METHODS care about threshold value.
                 # For the others, we can use just one dummy value (42).
                 # QST (> V1.0) corrects this to 0 on the CSV output.
-                if method in THRESHOLD_METHODS:
+                if method in valid_methods["threshold"]:
                     for thresh in self.threshold:
                         params["threshold"] = thresh
                         job = Job(**params)
