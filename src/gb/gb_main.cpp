@@ -33,18 +33,27 @@ const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 static char doc[] = GB_QST_DESCRIPTION;
 static char args_doc[] = "INPUT";
 
-#define VERSION_JSON_SHORT_OPT 0x80
+#define VERSION_OPT 0x80
+#define METHODS_OPT 0x82
+
+// clang-format off
 static struct argp_option options[] = {
     {"threshold", 't', "THRESH", 0, "Threshold to switch to insertion sort."},
-    {"version-json", VERSION_JSON_SHORT_OPT, 0, 0,
+    {"version-json", VERSION_OPT, 0, 0,
      "Output version information in machine readable format."},
+    {"show-methods", METHODS_OPT, "TYPE", OPTION_ARG_OPTIONAL,
+     "Print all supported methods or of type 'TYPE' (threshold, nonthreshold)."},
     {0},
 };
+// clang-format on
 
 struct arguments
 {
   fs::path in_file;
   int64_t threshold;
+
+  bool print_standard_methods;
+  bool print_threshold_methods;
 };
 
 // Option parser
@@ -62,6 +71,8 @@ int main(int argc, char** argv)
   // Default CLI options
   // Threshold is only used for supported sorting methods.
   arguments.threshold = 4;
+  arguments.print_standard_methods = false;
+  arguments.print_threshold_methods = false;
 
   std::vector<char*> benchmark_parameters = {argv[0]};
   int num_args = argc;
@@ -90,6 +101,26 @@ int main(int argc, char** argv)
   if (argp_parse(&argp, num_args, argv, 0, 0, &arguments) != 0)
   {
     return EXIT_FAILURE;
+  }
+
+  if (arguments.print_standard_methods || arguments.print_threshold_methods)
+  {
+    if (arguments.print_standard_methods)
+    {
+      for (const std::string& i : METHODS)
+      {
+        std::cout << i << "\n";
+      }
+    }
+    if (arguments.print_threshold_methods)
+    {
+      for (const std::string& i : THRESHOLD_METHODS)
+      {
+        std::cout << i << "\n";
+      }
+    }
+
+    return EXIT_SUCCESS;
   }
 
   // Pass the rest of the CLI args to google benchmark.
@@ -140,11 +171,30 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
         return 1;
       }
       break;
-
-    case VERSION_JSON_SHORT_OPT:
+    case VERSION_OPT:
       // version_json();
       exit(EXIT_SUCCESS);
-
+    case METHODS_OPT:
+      if (arg != NULL)
+      {
+        if (strcmp(arg, "standard") == 0 || strcmp(arg, "nonthreshold") == 0)
+        {
+          args->print_standard_methods = true;
+        }
+        else if (strcmp(arg, "threshold") == 0)
+        {
+          args->print_threshold_methods = true;
+        }
+        else
+        {
+          args->print_standard_methods = true;
+          args->print_threshold_methods = true;
+        }
+        break;
+      }
+      args->print_standard_methods = true;
+      args->print_threshold_methods = true;
+      break;
     case ARGP_KEY_ARG:
       if (state->arg_num >= 1)
       {
@@ -153,7 +203,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
       }
       args->in_file = fs::path(arg);
       break;
-
     case ARGP_KEY_END:
       if (state->arg_num < 1)
       {
@@ -161,7 +210,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
         argp_usage(state);
       }
       break;
-
     default:
       return ARGP_ERR_UNKNOWN;
   }

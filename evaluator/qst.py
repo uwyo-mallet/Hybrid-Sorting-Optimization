@@ -10,9 +10,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 
-from .generics import (GRAPH_ORDER, THRESHOLD_METHODS, df_from_json,
-                       update_info, update_size_slider,
-                       update_threshold_slider)
+from .generics import (
+    GRAPH_ORDER,
+    df_from_json,
+    update_info,
+    update_size_slider,
+    update_threshold_slider,
+)
 from .qst_layout import gen_layout
 from .qst_loader import CACHEGRIND_COLS, CLOCKS, load
 
@@ -22,6 +26,17 @@ RUN_TYPES = (
     "cachegrind",
     "massif",
 )
+
+CACHE_MAP = {
+    "I1mr": "Ir",
+    "ILmr": "Ir",
+    "D1mr": "Dr",
+    "DLmr": "Dr",
+    "D1mw": "Dw",
+    "DLmw": "Dw",
+    "Bcm": "Bc",
+    "Bim": "Bi",
+}
 
 # Debug Options
 # pd.set_option("display.max_columns", None)
@@ -206,48 +221,36 @@ def update_threshold_v_runtime(
     df = df[df["size"] == size]
     df = df[df["run_type"] == data_type]
 
-    # Try to use insertion sort and std as baselines
-    # ins_sort_df = df[(df["method"] == "insertion_sort")]
-    # Retain backwards compatilbility with older naming scheme
-    std_sort_df = df[(df["method"] == "std::sort") | (df["method"] == "std")]
-    vanilla_df = df[df["method"] == "qsort_vanilla"]
+    non_threshold_methods = df[df["threshold"] == 0]["method"].unique()
+    non_threshold_df = df[df["threshold"] == 0]
+    df["has_threshold"] = np.where(df["threshold"] > 0, True, False)
 
-    # Get all methods that support a varying threshold.
     df = df[df["threshold"] != 0]
     df = df.sort_values(["threshold", "method"])
     if df.empty:
         return px.line()
 
-    # Create dummy values for insertion sort, since it isn't affected by threshold,
-    # we are just illustrating a comparison. It is okay to manually iterate over the
-    # rows here, since there should only ever be one row per input data type.
-    # TODO: Find a way to generalize / make the user pick baselines.
-    # TODO: Reevaluate the performance implifications of this.
-    # for _, row in ins_sort_df.iterrows():
-    #     for t in df["threshold"].unique():
-    #         row["threshold"] = t
-    #         df = df.append(row)
+    min_thresh = df["threshold"].min()
+    max_thresh = df["threshold"].max()
 
-    for _, row in std_sort_df.iterrows():
-        row["threshold"] = df["threshold"].min()
-        df = df.append(row)
-        row["threshold"] = df["threshold"].max()
-        df = df.append(row)
+    for method in non_threshold_methods:
+        method_df = non_threshold_df[non_threshold_df["method"] == method]
+        method_df["has_threshold"] = False
+        method_df[(index, "std")] = 0
 
-    for _, row in vanilla_df.iterrows():
-        row["threshold"] = df["threshold"].min()
-        df = df.append(row)
-        row["threshold"] = df["threshold"].max()
-        df = df.append(row)
+        method_df["threshold"] = min_thresh
+        df = df.append(method_df)
+        method_df["threshold"] = max_thresh
+        df = df.append(method_df)
 
     fig = px.line(
         df,
         x=df["threshold"],
         y=list(df[(index, "mean")]),
         error_y=list(df[(index, "std")]) if error_bars else None,
+        line_dash="has_threshold",
         facet_col="description",
         facet_col_wrap=1,
-        facet_row_spacing=0.04,
         category_orders={"description": GRAPH_ORDER},
         color=df["method"],
         markers=True,
@@ -274,6 +277,13 @@ def update_threshold_v_runtime(
             size=18,
         ),
         legend=dict(yanchor="top", xanchor="left"),
+    )
+
+    # Fix legend names
+    fig.for_each_trace(
+        lambda t: t.update(
+            name=t.name.replace(", True", "").replace(", False", ""),
+        )
     )
 
     # Fix facet titles
@@ -378,10 +388,11 @@ def update_cachegrind(json_df, opts):
         Input("cachegrind-data", "data"),
         Input("cachegrind-options", "value"),
         Input("cachegrind-metric-dropdown", "value"),
+        Input("info-data", "data"),
         Input("size-slider", "value"),
     ],
 )
-def update_threshold_v_cache(json_df, opts, metric, size=None):
+def update_threshold_v_cache(json_df, opts, metric, run_info, size=None):
     if json_df is None:
         return px.line()
     if opts is None:
@@ -391,8 +402,9 @@ def update_threshold_v_cache(json_df, opts, metric, size=None):
     if size is None or not any(df["size"] == size):
         size = df["size"].min()
 
-    # TODO: Generalize this desparately!!!
-    non_threshold_dfs = df[~df["method"].isin(THRESHOLD_METHODS)]
+    run_info = json.loads(run_info)
+    threshold_methods = set(run_info["QST"]["Methods"]["Threshold"])
+    non_threshold_dfs = df[~df["method"].isin(threshold_methods)]
 
     df = df[df["size"] == size]
     df = df[df["threshold"] != 0]
@@ -410,29 +422,12 @@ def update_threshold_v_cache(json_df, opts, metric, size=None):
             df = df.append(row)
 
     # Associate totals with subgroups
-    # COL_MAP = {
-    #     "Ir": ("I1mr", "ILmr"),
-    #     "Dr": ("D1mr", "DLmr"),
-    #     "Dw": ("D1mw", "DLmw"),
-    #     "Bc": ("Bcm",),
-    #     "Bi": ("Bim",),
-    # }
-    COL_MAP = {
-        "I1mr": "Ir",
-        "ILmr": "Ir",
-        "D1mr": "Dr",
-        "DLmr": "Dr",
-        "D1mw": "Dw",
-        "DLmw": "Dw",
-        "Bcm": "Bc",
-        "Bim": "Bi",
-    }
     if "relative" in opts:
-        df[metric] /= df[COL_MAP[metric]]
+        df[metric] /= df[CACHE_MAP[metric]]
         df[metric] *= 100
-        y_axis_title = f"Percent of {COL_MAP[metric]}"
+        y_axis_title = f"Percent of {CACHE_MAP[metric]}"
     else:
-        y_axis_title = f"Number of {COL_MAP[metric]} misses"
+        y_axis_title = f"Number of {CACHE_MAP[metric]} misses"
 
     df = df.sort_values(["threshold", "method"])
     fig = px.line(

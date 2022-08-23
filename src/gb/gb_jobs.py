@@ -35,18 +35,10 @@ from docopt import docopt
 # TODO: Rework write info just for GB to capture more useful information?
 sys.path.insert(0, str(Path(sys.path[0]).parent.absolute()))
 
-from info import write_info
+from info import get_supported_methods, write_info
 
 VERSION = "1.0.2"
 
-# TODO: Find a way to have the QST executable dynamically generate this.
-THRESHOLD_METHODS = {
-    "qsort_asm",
-    "qsort_c",
-    "qsort_c_swp",
-    "qsort_cpp",
-    "qsort_cpp_no_comp",
-}
 DATA_TYPES = {
     "ascending",
     "descending",
@@ -57,31 +49,6 @@ DATA_TYPES = {
 # Maximum array index supported by slurm
 # https://slurm.schedmd.com/job_array.html
 MAX_BATCH = 4_500
-
-
-def get_valid_methods(gb_qst_exe: Path, input_file: Path) -> list[str]:
-    """
-    Call the GB_QST subprocess and capture all the currently implemented benchmarks.
-
-    @param gb_qst_exe: Path to GB_QST executable.
-    @param input_file: Valid data input file for GB_QST.
-    @returns: List of methods currently supported by GB_QST.
-
-    GB_QST requires a valid input file to access the help options of the google
-    benchmark library. This could change in the future, but for now it is just
-    easier to pass the input file anyways, since we validate that file as well.
-    """
-    command = (
-        str(gb_qst_exe.absolute()),
-        str(input_file.absolute()),
-        "--benchmark_list_tests",
-    )
-    result = subprocess.run(command, capture_output=True, check=True)
-    result = result.stdout.decode()
-
-    # Will break if the test interface changes in GB_QST.
-    methods = [i.rsplit("/")[1] for i in result.split()]
-    return methods
 
 
 def parse_threshold_arg(user_input) -> list[range]:
@@ -130,7 +97,7 @@ def parse_args(args):
         raise FileNotFoundError(f"{parsed['exec']} does not exist.")
 
     # Methods
-    valid_methods = get_valid_methods(parsed["exec"], parsed["data_dir"])
+    valid_methods, _ = get_supported_methods(parsed["exec"])
     try:
         methods = args.get("--methods").rsplit(",")
         methods = [i.lower() for i in methods]
@@ -202,7 +169,11 @@ class Job:
         self.methods = methods
         self.output_dir = output_dir
 
-        self._uses_threshold = 1 if (self.methods & THRESHOLD_METHODS) else 0
+        _, self.supported_threshold_methods = get_supported_methods(self.exec_path)
+        self.supported_threshold_methods = set(self.supported_threshold_methods)
+        self._uses_threshold = (
+            1 if (self.methods & self.supported_threshold_methods) else 0
+        )
 
     @property
     def command(self) -> list[str]:
@@ -266,6 +237,8 @@ class Scheduler:
         self.slurm = slurm
         self.threshold = threshold
 
+        _, self.supported_threshold_methods = get_supported_methods(self.exec)
+        self.supported_threshold_methods = set(self.supported_threshold_methods)
         self.job_queue: "deque[Job]" = deque()
 
         self._threshold_job_ids = []
@@ -285,8 +258,8 @@ class Scheduler:
         # Submit the threshold methods and normal methods as two separate
         # jobs. Threshold methods need several runs while normal methods
         # can be run just once.
-        threshold_methods = self.methods & THRESHOLD_METHODS
-        normal_methods = self.methods - THRESHOLD_METHODS
+        threshold_methods = self.methods & self.supported_threshold_methods
+        normal_methods = self.methods - self.supported_threshold_methods
 
         job_id = 0
         for f in files:
@@ -345,7 +318,7 @@ class Scheduler:
             command=" ".join(sys.argv),
             data_details_path=Path(self.data_dir, "details.json"),
             concurrent=1,
-            qst_vers=self._get_exec_version(),
+            qst_path=self.exec,
             runs=1,
             total_num_jobs=total_num_jobs,
             total_num_sorts=total_num_jobs,
@@ -369,7 +342,7 @@ class Scheduler:
             command=" ".join(sys.argv),
             concurrent="slurm",
             data_details_path=Path(self.data_dir, "details.json"),
-            qst_vers=self._get_exec_version(),
+            qst_path=self.exec,
             runs=1,
             total_num_jobs=total_num_jobs,
             total_num_sorts=total_num_jobs,

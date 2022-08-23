@@ -8,9 +8,9 @@ Usage:
 Options:
     -h, --help               Show this help.
     -c, --concurrent=N       Specify number of simultaenous runs jobs.
-    -q, --qst=QST            Specify QST version.
-    -r, --runs=N             Specify number of runs
-    -t, --total=N            Specify total number of jobs
+    -q, --qst=QST            Specify QST path.
+    -r, --runs=N             Specify number of runs.
+    -t, --total=N            Specify total number of jobs.
 
 
 Description:
@@ -24,11 +24,48 @@ Description:
 import json
 import multiprocessing
 import platform
+import subprocess
 from pathlib import Path
 
 from docopt import docopt
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
+
+
+def get_exec_version(exec_path: Path):
+    """Call the QST process and parse the version information."""
+    cmd = (str(exec_path), "--version")
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    stdout, _ = p.communicate()
+    return stdout.decode()
+
+
+def get_supported_methods(qst_path: Path):
+    """Call the QST process and parse the currently supported methods."""
+    valid_methods = (
+        subprocess.run(
+            (str(qst_path), "dummy", "--show-methods=standard"),
+            capture_output=True,
+            check=True,
+        )
+        .stdout.decode()
+        .split()
+    )
+
+    threshold_methods = (
+        subprocess.run(
+            (str(qst_path), "dummy", "--show-methods=threshold"),
+            capture_output=True,
+            check=True,
+        )
+        .stdout.decode()
+        .split()
+    )
+    valid_methods += threshold_methods
+
+    valid_methods = tuple(set(valid_methods))
+    threshold_methods = tuple(set(threshold_methods))
+    return valid_methods, threshold_methods
 
 
 def write_info(
@@ -36,7 +73,7 @@ def write_info(
     command=None,
     concurrent="slurm",
     data_details_path=None,
-    qst_vers="",
+    qst_path=None,
     runs=0,
     total_num_jobs=0,
     total_num_sorts=0,
@@ -51,7 +88,7 @@ def write_info(
     @param command: Command used to create the job (src/jobs.py).
     @param concurrent: The number of threads used to run jobs concurrently.
     @param data_details_path: Path to input data metadata file.
-    @param qst_vers: Version of QST executable.
+    @param qst_path: Path to QST executable.
     @param runs: Number of times this particular dataset is rerun.
     @param total_num_jobs: Total number of jobs to be submitted.
     @param total_num_sorts: Total number of sorts to take place across all jobs.
@@ -61,6 +98,9 @@ def write_info(
             data_details = json.load(data_details_file)
     else:
         data_details = None
+
+    qst_vers = get_exec_version(qst_path)
+    methods, threshold_methods = get_supported_methods(qst_path)
 
     info = {
         "Architecture": platform.architecture(),
@@ -72,7 +112,13 @@ def write_info(
         "Number of concurrent jobs": concurrent,
         "Platform": platform.platform(),
         "Processor": platform.processor(),
-        "QST Version": qst_vers,
+        "QST": {
+            "Version": qst_vers,
+            "Methods": {
+                "All": methods,
+                "Threshold": threshold_methods,
+            },
+        },
         "Release": platform.release(),
         "Runs": runs,
         "System": platform.system(),
@@ -104,7 +150,7 @@ if __name__ == "__main__":
     write_info(
         OUT_DIR,
         concurrent=concurrent,
-        qst_vers=args.get("--qst"),
+        qst_path=args.get("--qst"),
         runs=runs,
         total_num_jobs=total_num_jobs,
         total_num_sorts=total_num_jobs * runs,

@@ -1,21 +1,22 @@
+import ast
 import json
-from dash import dcc
 from pathlib import Path
 
 import dash
 import pandas as pd
-import ast
+from dash import dcc
 
+QST_EXEC_PATH = Path("./build/QST")
 QST_RESULTS_DIR = Path("./results")
 GB_RESULTS_DIR = Path("./gb_results")
 
-THRESHOLD_METHODS = {
-    "qsort_asm",
-    "qsort_c",
-    "qsort_c_swp",
-    "qsort_cpp",
-    "qsort_cpp_no_comp",
-}
+# THRESHOLD_METHODS = {
+#     "qsort_asm",
+#     "qsort_c",
+#     "qsort_c_swp",
+#     "qsort_cpp",
+#     "qsort_cpp_no_comp",
+# }
 GRAPH_ORDER = (
     "random",
     "ascending",
@@ -66,7 +67,7 @@ def update_info(info_json):
     num_concurrent = info["Number of concurrent jobs"]
     platform = info["Platform"]
     partition = info.get("partition", "")
-    qst_version = info["QST Version"]
+    qst_version = info["QST"]["Version"]
     runs = info["Runs"]
     total_num_sorts = info.get("Total number of sorts", "")
 

@@ -56,7 +56,7 @@ from typing import Optional
 from docopt import docopt
 from tqdm import tqdm
 
-from info import write_info
+from info import get_supported_methods, write_info
 
 VERSION = "1.1.6"
 
@@ -66,33 +66,6 @@ DATA_TYPES = {"ascending", "descending", "random", "single_num"}
 # Maximum array index supported by slurm
 # https://slurm.schedmd.com/job_array.html
 MAX_BATCH = 4_500
-
-
-def get_supported_methods(qst_path: Path):
-    """TODO."""
-    valid_methods = (
-        subprocess.run(
-            [qst_path, "dummy", "--show-methods=standard"],
-            capture_output=True,
-            check=True,
-        )
-        .stdout.decode()
-        .split()
-    )
-
-    threshold_methods = (
-        subprocess.run(
-            [qst_path, "dummy", "--show-methods=threshold"],
-            capture_output=True,
-            check=True,
-        )
-        .stdout.decode()
-        .split()
-    )
-
-    valid_methods += threshold_methods
-
-    return {"all": valid_methods, "threshold": threshold_methods}
 
 
 @dataclass
@@ -375,7 +348,7 @@ def parse_args(args):
         raise FileNotFoundError("Can't find QST executable")
 
     # Populate the supported methods by calling the subprocess.
-    valid_methods = get_supported_methods(parsed["exec"])
+    valid_methods, _ = get_supported_methods(parsed["exec"])
 
     # Num jobs
     if args.get("--jobs") == "CPU":
@@ -391,10 +364,10 @@ def parse_args(args):
     try:
         methods = args.get("--methods").rsplit(",")
         for i in methods:
-            if i not in valid_methods["all"]:
+            if i not in valid_methods:
                 raise ValueError(f"Invalid method: {i}")
     except AttributeError:
-        methods = valid_methods["all"]
+        methods = valid_methods
     parsed["methods"] = methods
 
     # Progress bar
@@ -500,6 +473,8 @@ class Scheduler:
         self.job_queue: "deque[Job]" = deque()
         self.active_queue: "deque[Job]" = deque()
 
+        self.valid_methods, self.threshold_methods = get_supported_methods(self.exec)
+
         self._gen_jobs()
 
     def _get_exec_version(self) -> str:
@@ -512,7 +487,6 @@ class Scheduler:
     def _gen_jobs(self):
         """Populate the queue with jobs."""
         files = self.data_dir.glob(r"**/*.gz")
-        valid_methods = get_supported_methods(self.exec)
         self.job_queue.clear()
 
         job_id = 0
@@ -544,7 +518,7 @@ class Scheduler:
                 # Only methods in THRESHOLD_METHODS care about threshold value.
                 # For the others, we can use just one dummy value (42).
                 # QST (> V1.0) corrects this to 0 on the CSV output.
-                if method in valid_methods["threshold"]:
+                if method in self.threshold_methods:
                     for thresh in self.threshold:
                         params["threshold"] = thresh
                         job = Job(**params)
@@ -588,7 +562,7 @@ class Scheduler:
             command=" ".join(sys.argv),
             data_details_path=Path(self.data_dir, "details.json"),
             concurrent=self.jobs,
-            qst_vers=self._get_exec_version(),
+            qst_path=self.exec,
             runs=self.runs,
             total_num_jobs=total_num_jobs,
             total_num_sorts=total_num_jobs * self.runs,
@@ -624,7 +598,7 @@ class Scheduler:
             command=" ".join(sys.argv),
             concurrent="slurm",
             data_details_path=Path(self.data_dir, "details.json"),
-            qst_vers=self._get_exec_version(),
+            qst_path=self.exec,
             runs=self.runs,
             total_num_jobs=total_num_jobs,
             total_num_sorts=total_num_jobs * self.runs,
