@@ -47,6 +47,7 @@ static struct argp_option options[] = {
     {"vals", VALS_OPT, "VALS", 0, "Values to pass through to the oCSV."},
     {"show-methods", METHODS_OPT, "TYPE", OPTION_ARG_OPTIONAL,
      "Print all supported methods or of type 'TYPE' (threshold, nonthreshold)."},
+    {"version-json", VERSION_OPT, 0, 0, "Version in machine-readable json format."},
     {0},
 };
 // clang-format on
@@ -254,7 +255,8 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
       args->in_file = fs::path(arg);
       break;
     case ARGP_KEY_END:
-      if (state->arg_num < 1)
+      if (state->arg_num < 1 && !args->print_standard_methods &&
+          !args->print_threshold_methods)
       {
         // Not enough arguments
         argp_usage(state);
@@ -349,7 +351,7 @@ void version_json()
   std::cout << "{" << std::endl;
 
   // version
-  std::cout << "\t\"version:\": "
+  std::cout << "\t\"version\": "
             << "\"" QST_VERSION "\""
             << ",\n";
 

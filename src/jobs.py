@@ -50,7 +50,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from pprint import pprint
 from typing import Optional
 
 from docopt import docopt
@@ -219,7 +218,6 @@ class Job:
             ]
             if self.valgrind_opts is not None:
                 opts.extend(self.valgrind_opts)
-                pprint(opts)
             opts.append("--")
 
             my_pt = deepcopy(passthrough_opts)
