@@ -23,12 +23,6 @@ GRAPH_ORDER = (
     "descending",
     "single_num",
 )
-DATA_TYPES = {
-    "ascending",
-    "descending",
-    "random",
-    "single_num",
-}
 
 md_template = """\
 `{command}`
@@ -59,6 +53,7 @@ QST Version:
 
 
 def update_info(info_json):
+    """TODO."""
     info = json.loads(info_json)
     arch = info["Processor"]
     command = info["Command"]
@@ -93,31 +88,30 @@ def update_info(info_json):
 
 
 def df_from_json(json_df):
+    """TODO."""
     if not json_df:
         raise dash.exceptions.PreventUpdate
     df = pd.read_json(json_df)
-    tuples = [ast.literal_eval(i) for i in df.columns]
-    df.columns = pd.MultiIndex.from_tuples(tuples)
     return df
 
 
 def update_threshold_slider(json_df):
+    """TODO."""
     df = df_from_json(json_df)
     marks = {int(i): "" for i in sorted(df["threshold"].unique())}
     return (
-        int(df["threshold"].unique().min()),
-        int(df["threshold"].unique().max()),
+        df["threshold"].min(),
+        df["threshold"].max(),
         marks,
     )
 
 
 def update_size_slider(json_df):
+    """TODO."""
     df = df_from_json(json_df)
-    # Format marks as 'general'
-    # https://docs.python.org/3.4/library/string.html#format-string-syntax
     marks = {int(i): "" for i in sorted(df["size"].unique())}
     return (
-        int(df["size"].unique().min()),
-        int(df["size"].unique().max()),
+        df["size"].min(),
+        df["size"].max(),
         marks,
     )
