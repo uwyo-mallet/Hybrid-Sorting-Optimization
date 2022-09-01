@@ -2,58 +2,50 @@
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import pandas as pd
-import sys
+from qstpy import QST
 
-from .generics import QST_RESULTS_DIR
+# IGNORE_CACHE = False
 
-IGNORE_CACHE = False
-JOB_DETAILS_FILE = "job_details.json"
-PARTITION_FILE = "partition"
+# UNITS = {
+#     "seconds": "_secs",
+#     "milliseconds": "_msecs",
+#     "microseconds": "_usecs",
+#     "nanoseconds": "_nsecs",
+# }
 
-UNITS = {
-    "seconds": "_secs",
-    "milliseconds": "_msecs",
-    "microseconds": "_usecs",
-    "nanoseconds": "_nsecs",
-}
-CLOCKS = (
-    "wall",
-    "user",
-    "system",
-)
-
-RAW_COLUMNS = {
-    "id": np.uint64,
-    "method": str,
-    "input": str,
-    "size": np.uint64,
-    "threshold": np.uint64,
-    "wall_nsecs": np.uint64,  # Elapsed wall time
-    "user_nsecs": np.uint64,  # Elapsed user cpu time
-    "system_nsecs": np.uint64,  # Elapsed system cpu time
-    "description": str,
-    "run_type": str,
-}
-POST_PROCESS_COLUMNS = [
-    "id",
-    "input",
-    "method",
-    "description",
-    "threshold",
-    "size",
-    "run_type",
-    "wall_nsecs",
-    "user_nsecs",
-    "system_nsecs",
-    "wall_secs",
-    "user_secs",
-    "system_secs",
-]
+# RAW_COLUMNS = {
+#     "id": np.uint64,
+#     "method": str,
+#     "input": str,
+#     "size": np.uint64,
+#     "threshold": np.uint64,
+#     "wall_nsecs": np.uint64,  # Elapsed wall time
+#     "user_nsecs": np.uint64,  # Elapsed user cpu time
+#     "system_nsecs": np.uint64,  # Elapsed system cpu time
+#     "description": str,
+#     "run_type": str,
+# }
+# POST_PROCESS_COLUMNS = [
+#     "id",
+#     "input",
+#     "method",
+#     "description",
+#     "threshold",
+#     "size",
+#     "run_type",
+#     "wall_nsecs",
+#     "user_nsecs",
+#     "system_nsecs",
+#     "wall_secs",
+#     "user_secs",
+#     "system_secs",
+# ]
 CACHEGRIND_COLS = [
     "Ir",
     "I1mr",
@@ -79,15 +71,15 @@ def downcast(df: pd.DataFrame, cols: list[str], cast="unsigned"):
 
 def load_cachegrind(df, valgrind_dir: Optional[Path]):
     # TODO: Handle a different method name in CSV vs C source code.
-    base_cols = [
-        "method",
-        "description",
-        "threshold",
-        "size",  # Necessary?
-    ]
-    cachegrind_df = pd.DataFrame(columns=base_cols + CACHEGRIND_COLS, dtype=np.uint64)
-    if valgrind_dir is None:
-        return cachegrind_df
+    # base_cols = [
+    #     "method",
+    #     "description",
+    #     "threshold",
+    #     "size",  # Necessary?
+    # ]
+    # cachegrind_df = pd.DataFrame(columns=base_cols + CACHEGRIND_COLS, dtype=np.uint64)
+    # if valgrind_dir is None:
+    #     return cachegrind_df
 
     pattern = re.compile(r"(\d+,?\d*)(?:\s+)")
 
@@ -130,148 +122,44 @@ def load_cachegrind(df, valgrind_dir: Optional[Path]):
     return cachegrind_df
 
 
-def preprocess_csv(csv_file: Path, valgrind_dir: Optional[Path] = None):
-    in_raw_parq = Path(csv_file.parent, csv_file.stem + "_raw.parquet")
-    in_stat_parq = Path(csv_file.parent, csv_file.stem + "_stat.parquet")
-    in_cg_parq = Path(csv_file.parent, csv_file.stem + "_cachegrind.parquet")
-
-    raw_df = pd.read_csv(
-        csv_file,
-        usecols=RAW_COLUMNS,
-        dtype=RAW_COLUMNS,
-        engine="c",
-    )
-
-    raw_df["wall_secs"] = raw_df["wall_nsecs"] / 1_000_000_000
-    raw_df["user_secs"] = raw_df["user_nsecs"] / 1_000_000_000
-    raw_df["system_secs"] = raw_df["system_nsecs"] / 1_000_000_000
-
-    # Downcast whenever possible to save memory.
-    uint_columns = [
-        "id",
-        "threshold",
-        "size",
-        "wall_nsecs",
-        "user_nsecs",
-        "system_nsecs",
-    ]
-    raw_df = downcast(raw_df, uint_columns)
-
-    # Reorder columns
-    raw_df = raw_df[POST_PROCESS_COLUMNS]
-
-    stats = (np.mean, np.std)
-    stat_df = raw_df
-    stat_df = stat_df.groupby(
-        [
-            "input",
-            "method",
-            "description",
-            "threshold",
-            "size",
-            "run_type",
-        ]
-    ).agg(
-        {
-            "wall_nsecs": stats,
-            "user_nsecs": stats,
-            "system_nsecs": stats,
-            "wall_secs": stats,
-            "user_secs": stats,
-            "system_secs": stats,
-        },
-    )
-    stat_df = stat_df.reset_index()
-    stat_df = stat_df.sort_values(["size"])
-
-    cachegrind_df = load_cachegrind(raw_df, valgrind_dir)
-
-    # Save to disk as cache
-    raw_df.to_parquet(in_raw_parq)
-    stat_df.to_parquet(in_stat_parq)
-    cachegrind_df.to_parquet(in_cg_parq)
-
-    return raw_df, stat_df, cachegrind_df
-
-
-def load_without_cache(in_csv: Path):
-    valgrind_dir = in_csv.parent / "valgrind"
-    return preprocess_csv(in_csv, valgrind_dir if valgrind_dir.exists() else None)
-
-
-def load(in_dir=None):
+def load(
+    in_dir=None,
+    qst_results_dir="./results",
+    job_details_file="job_details.json",
+    partition_file="partition",
+):
+    """TODO."""
     if in_dir is None:
         try:
-            dirs = sorted(list(QST_RESULTS_DIR.iterdir()))
+            qst_results_dir = Path(qst_results_dir)
+            dirs = sorted(list(qst_results_dir.iterdir()))
             in_dir = dirs[-1]
         except IndexError as e:
-            raise FileNotFoundError("No result directories found") from e
+            raise FileNotFoundError(
+                f"No result subdirectories in '{qst_results_dir}'"
+            ) from e
 
-    parqs = tuple(in_dir.glob("*.parquet"))
     csvs = tuple(in_dir.glob("*.csv"))
 
-    in_raw_parq = None
-    in_stat_parq = None
-    in_cachegrind_parq = None
+    if not csvs:
+        raise FileNotFoundError(f"No CSV files found in {in_dir}")
 
-    if len(csvs):
-        in_csv = Path(csvs[0])
-    else:
-        in_csv = None
+    # Load the data
+    in_csv = Path(csvs[0])
+    df = pd.read_csv(in_csv, engine="c")
+    df = df.drop(["input", "id"], axis=1)
+    df["wall_secs"] = df["wall_nsecs"] / 1_000_000_000
+    df["user_secs"] = df["user_nsecs"] / 1_000_000_000
+    df["system_secs"] = df["system_nsecs"] / 1_000_000_000
 
-    if IGNORE_CACHE and in_csv is None:
-        raise FileNotFoundError("No CSV data files found.")
+    # Load any misc metadata
+    info_path = in_dir / job_details_file
+    info = json.loads(info_path.read_text()) if info_path.is_file() else {}
 
-    if IGNORE_CACHE:
-        # Load without cache
-        raw_df, stat_df, cachegrind_df = load_without_cache(in_csv)
-    else:
-        # Load from cache
-        for i in parqs:
-            if str(i).endswith("_raw.parquet"):
-                in_raw_parq = Path(i)
-            elif str(i).endswith("_cachegrind.parquet"):
-                in_cachegrind_parq = Path(i)
-            elif str(i).endswith("_stat.parquet"):
-                in_stat_parq = Path(i)
-
-            if all([in_raw_parq, in_stat_parq, in_cachegrind_parq]):
-                raw_df = pd.read_parquet(in_raw_parq)
-                stat_df = pd.read_parquet(in_stat_parq)
-                cachegrind_df = pd.read_parquet(in_cachegrind_parq)
-                break
-        else:
-            if in_csv is None:
-                raise FileNotFoundError("Neither CSV nor parquet data files found.")
-            # Parquets do not exist, fallback to loading from CSV.
-            raw_df, stat_df, cachegrind_df = load_without_cache(in_csv)
-
-    info_path = in_dir / JOB_DETAILS_FILE
-    if info_path.is_file():
-        info = json.loads(info_path.read_text())
-    else:
-        info = {}
-
-    partition_path = in_dir / PARTITION_FILE
-    if partition_path.is_file():
-        partition = partition_path.read_text()
-    else:
-        partition = None
+    partition_path = in_dir / partition_file
+    partition = partition_path.read_text() if partition_path.is_file() else None
 
     info["partition"] = partition
-    info["actual_num_sorts"] = len(raw_df)
+    info["actual_num_sorts"] = len(df)
 
-    return raw_df, stat_df, cachegrind_df, info
-
-
-if __name__ == "__main__":
-    raw_df, stat_df, cachegrind_df = load()
-    print(raw_df)
-    print(stat_df)
-    print(cachegrind_df)
-
-    # Basic memory benchmarking
-    # print(raw_df.memory_usage(deep=True))
-    # print(raw_df.dtypes)
-    # print(stat_df.memory_usage(deep=True))
-    # print(stat_df.dtypes)
+    return df, info

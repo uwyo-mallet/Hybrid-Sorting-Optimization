@@ -9,7 +9,7 @@ from dash.dependencies import Input, Output, State
 
 from .gb_layout import gen_layout
 from .gb_loader import load
-from .generics import (GRAPH_ORDER, df_from_json, update_info,
+from .generics import (GRAPH_ORDER, df_from_json, update_info_callback,
                        update_size_slider, update_threshold_slider)
 
 # Debug Options
@@ -42,7 +42,7 @@ def load_result(n_clicks, results_dir=None):
 update_info = app.callback(
     Output("info", "children"),
     Input("info-data", "data"),
-)(update_info)
+)(update_info_callback)
 
 update_threshold_slider = app.callback(
     Output("threshold-slider", "min"),

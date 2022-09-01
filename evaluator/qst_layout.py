@@ -1,13 +1,16 @@
+"""TODO."""
 from dash import dcc, html
+
 from .generics import QST_RESULTS_DIR
 
 
 def gen_layout(clocks, data_types, dirs=None):
+    """TODO."""
     if dirs is None:
         dirs = sorted(list(QST_RESULTS_DIR.iterdir()))
     res = html.Div(
         [
-            dcc.Store(id="stat-data"),
+            dcc.Store(id="run-data"),
             dcc.Store(id="cachegrind-data"),
             dcc.Store(id="info-data"),
             html.Div(
@@ -90,18 +93,18 @@ def gen_layout(clocks, data_types, dirs=None):
                                         id="clock-type",
                                         options=[
                                             {
-                                                "label": i.capitalize(),
-                                                "value": i,
+                                                "label": k.capitalize(),
+                                                "value": v,
                                             }
-                                            for i in clocks
+                                            for k, v in clocks.items()
                                         ],
-                                        value=clocks[0],
+                                        value=next(iter(clocks.values())),
                                     ),
                                     html.Label(
                                         "Data Type", style={"margin-top": "5px"}
                                     ),
                                     dcc.RadioItems(
-                                        id="data-type",
+                                        id="run-type",
                                         options=[
                                             {
                                                 "label": i.capitalize(),
@@ -149,6 +152,8 @@ def gen_layout(clocks, data_types, dirs=None):
                                         id="threshold-slider",
                                         step=None,
                                         value=0,
+                                        min=0,
+                                        max=0,
                                         tooltip={
                                             "placement": "bottom",
                                             "always_visible": True,
@@ -183,6 +188,8 @@ def gen_layout(clocks, data_types, dirs=None):
                                         id="size-slider",
                                         step=None,
                                         value=0,
+                                        min=0,
+                                        max=0,
                                         tooltip={
                                             "placement": "bottom",
                                             "always_visible": True,
