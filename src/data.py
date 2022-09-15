@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Generate large amounts of testing data as fast as possible.
+TODO: Document why this is so esoteric...
 
 Usage:
     data.py evaluate FILE [options]
@@ -30,7 +31,7 @@ from pathlib import Path
 import numpy as np
 from docopt import docopt
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 # Default thresholds
 INCREMENT = 100_000
@@ -81,7 +82,7 @@ class DataGen:
 
     def _copy_and_append(self, prev: Path, current: Path, data):
         """
-        Copy a .gz file and append to the new file assuming the data is an Iterable
+        Copy a .gz file and append to the new file assuming the data is an Iterable.
 
         @param prev: Path to prev file.
         @param current: Path to new file to be created.
@@ -107,17 +108,16 @@ class DataGen:
         @param output: Path to folder to save outputs (0.EXT, 1.EXT, ...).
         @param data: Iterable to write to disk.
         """
-        self._save(Path(output, "0.gz"), data[: self.inc])
+        self._save(Path(output, "0.gz"), data[: self.min])
 
-        for i, n in enumerate(range(self.min, self.max - self.inc, self.inc), 1):
+        for i, n in enumerate(range(self.min, self.max - (2 * self.inc), self.inc), 1):
             prev = Path(output, f"{i - 1}.gz")
             current = Path(output, f"{i}.gz")
-
             self._copy_and_append(prev, current, data[n : n + self.inc])
 
     def ascending(self, output: Path):
         """Ascending data, 0, 1, 2, 3, 4."""
-        data = np.arange(self.min - self.inc, self.max - self.inc, dtype=np.uint64)
+        data = np.arange(self.min, self.max, dtype=np.uint64)
         self._generic(output, data)
 
     def descending(self, output: Path):
@@ -128,10 +128,10 @@ class DataGen:
         self._generic(output, data)
 
     def random(self, output: Path):
-        """Random data bounded by the min and max."""
+        """Random unbounded data."""
         data = np.random.randint(
-            low=self.min - self.inc,
-            high=self.max - self.inc,
+            low=0,
+            high=self.max + 1,
             size=self.max + 1,
             dtype=np.int64,
         )
@@ -220,6 +220,7 @@ if __name__ == "__main__":
             minimum = MIN_ELEMENTS
             maximum = MAX_ELEMENTS
             increment = INCREMENT
+
         if maximum < minimum or minimum < 0 or maximum < 0 or increment < 0:
             raise ValueError("Invalid threshold range")
 
