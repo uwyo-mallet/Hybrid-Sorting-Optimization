@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 
 project(
   QST
-  VERSION 2.0.4
+  VERSION 2.0.5
   DESCRIPTION "Evaluating sorting algorithms with homebrew methods."
   LANGUAGES C CXX ASM)
 
