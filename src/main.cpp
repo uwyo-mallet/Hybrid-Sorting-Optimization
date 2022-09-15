@@ -140,7 +140,7 @@ int main(int argc, char** argv)
   {
     orig_data = from_disk<uint64_t>(arguments.in_file);
   }
-  catch (std::ios_base::failure e)
+  catch (std::ios_base::failure& e)
   {
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
