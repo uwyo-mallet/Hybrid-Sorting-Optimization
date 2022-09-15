@@ -184,9 +184,11 @@ class Job:
             str(self.output),
             "--runs",
             str(self.runs),
-            "--threshold",
-            str(self.threshold),
         ]
+        if self.threshold is not None:
+            base_command.append("--threshold")
+            base_command.append(str(self.threshold))
+
         base_valgrind_opts = [
             "valgrind",
             "--time-stamp=yes",
@@ -201,7 +203,7 @@ class Job:
             )
 
         # Parse valgrind specific stuff
-        if self.callgrind is not None:
+        if self.callgrind:
             out = str(self.callgrind)
             opts = [
                 "--tool=callgrind",
@@ -232,7 +234,7 @@ class Job:
                     )
                 )
             )
-        if self.cachegrind is not None:
+        if self.cachegrind:
             out = str(self.cachegrind)
             opts = [
                 "--tool=cachegrind",
@@ -256,7 +258,7 @@ class Job:
                     )
                 )
             )
-        if self.massif is not None:
+        if self.massif:
             out = str(self.massif)
             opts = [
                 "--tool=massif",
@@ -363,7 +365,7 @@ def parse_args(args):
         methods = args.get("--methods").rsplit(",")
         for i in methods:
             if i not in valid_methods:
-                raise ValueError(f"Invalid method: {i}")
+                raise ValueError(f"Invalid method: '{i}'")
     except AttributeError:
         methods = valid_methods
     parsed["methods"] = methods
@@ -404,7 +406,7 @@ def parse_args(args):
     parsed["base"] = args.get("--base")
     parsed["callgrind"] = args.get("--callgrind")
     parsed["cachegrind"] = args.get("--cachegrind")
-    parsed["massif"] = args.get("--callgrind")
+    parsed["massif"] = args.get("--massif")
     parsed["valgrind_opts"] = args.get("--valgrind-opt")
 
     if parsed["slurm"] is None:
@@ -514,8 +516,6 @@ class Scheduler:
             for method in self.methods:
                 params["method"] = method
                 # Only methods in THRESHOLD_METHODS care about threshold value.
-                # For the others, we can use just one dummy value (42).
-                # QST (> V1.0) corrects this to 0 on the CSV output.
                 if method in self.threshold_methods:
                     for thresh in self.threshold:
                         params["threshold"] = thresh
@@ -524,13 +524,13 @@ class Scheduler:
                         job_id += 1
                         params["job_id"] = job_id
                 else:
-                    params["threshold"] = 42
+                    params["threshold"] = None
                     job = Job(**params)
                     self.job_queue.append(job)
                     job_id += 1
                     params["job_id"] = job_id
 
-        random.shuffle(self.job_queue)
+        # random.shuffle(self.job_queue)
         self.active_queue = self.job_queue
 
     def _restore_jobs(self):
