@@ -8,78 +8,19 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-from qstpy import QST
 
-# IGNORE_CACHE = False
+from .generics import CACHEGRIND_COLS
 
-# UNITS = {
-#     "seconds": "_secs",
-#     "milliseconds": "_msecs",
-#     "microseconds": "_usecs",
-#     "nanoseconds": "_nsecs",
-# }
-
-# RAW_COLUMNS = {
-#     "id": np.uint64,
-#     "method": str,
-#     "input": str,
-#     "size": np.uint64,
-#     "threshold": np.uint64,
-#     "wall_nsecs": np.uint64,  # Elapsed wall time
-#     "user_nsecs": np.uint64,  # Elapsed user cpu time
-#     "system_nsecs": np.uint64,  # Elapsed system cpu time
-#     "description": str,
-#     "run_type": str,
-# }
-# POST_PROCESS_COLUMNS = [
-#     "id",
-#     "input",
-#     "method",
-#     "description",
-#     "threshold",
-#     "size",
-#     "run_type",
-#     "wall_nsecs",
-#     "user_nsecs",
-#     "system_nsecs",
-#     "wall_secs",
-#     "user_secs",
-#     "system_secs",
-# ]
-CACHEGRIND_COLS = [
-    "Ir",
-    "I1mr",
-    "ILmr",
-    "Dr",
-    "D1mr",
-    "DLmr",
-    "Dw",
-    "D1mw",
-    "DLmw",
-    "Bc",
-    "Bcm",
-    "Bi",
-    "Bim",
-]
-
-
-def downcast(df: pd.DataFrame, cols: list[str], cast="unsigned"):
-    """Convert columns to their smallest possible datatype to save some memory."""
-    df[cols] = df[cols].apply(pd.to_numeric, downcast=cast)
-    return df
+# from qstpy import QST
 
 
 def load_cachegrind(df, valgrind_dir: Optional[Path]):
+    """TODO."""
     # TODO: Handle a different method name in CSV vs C source code.
-    # base_cols = [
-    #     "method",
-    #     "description",
-    #     "threshold",
-    #     "size",  # Necessary?
-    # ]
-    # cachegrind_df = pd.DataFrame(columns=base_cols + CACHEGRIND_COLS, dtype=np.uint64)
-    # if valgrind_dir is None:
-    #     return cachegrind_df
+    #
+    cachegrind_df = None
+    if valgrind_dir is None:
+        return None
 
     pattern = re.compile(r"(\d+,?\d*)(?:\s+)")
 
@@ -105,28 +46,37 @@ def load_cachegrind(df, valgrind_dir: Optional[Path]):
         lines = p.stdout.split("\n")
         for line in lines:
             line = line.lower()
-            if ("time" in line or method in line) and "command" not in line:
+            if "command" in line:
+                continue
+
+            if method in line:
                 tokens = [int(i.replace(",", "")) for i in pattern.findall(line)]
                 if len(tokens) != len(CACHEGRIND_COLS):
                     print("[Warning]: Malformed line found, skipping.", file=sys.stderr)
                     continue
 
-                data = {k: v for k, v in row._asdict().items() if k in base_cols}
+                data = row._asdict()
                 data.update(dict(zip(CACHEGRIND_COLS, tokens)))
+
+                # Dynamically figure out what columns we need
+                if cachegrind_df is None:
+                    cachegrind_df = pd.DataFrame(columns=list(data.keys()))
+
+                # Append row to output dataframe
                 cachegrind_df.loc[i] = data
                 break
         else:
             print(f"[Warning]: Could not locate method: {method}", file=sys.stderr)
 
-    cachegrind_df = downcast(cachegrind_df, CACHEGRIND_COLS)
     return cachegrind_df
 
 
 def load(
     in_dir=None,
-    qst_results_dir="./results",
-    job_details_file="job_details.json",
-    partition_file="partition",
+    qst_results_dir=Path("./results"),
+    job_details_file=Path("job_details.json"),
+    partition_file=Path("partition"),
+    valgrind_dir=Path("valgrind/"),
 ):
     """TODO."""
     if in_dir is None:
@@ -139,18 +89,29 @@ def load(
                 f"No result subdirectories in '{qst_results_dir}'"
             ) from e
 
-    csvs = tuple(in_dir.glob("*.csv"))
-
+    csvs = tuple(in_dir.glob("output*.csv"))
     if not csvs:
         raise FileNotFoundError(f"No CSV files found in {in_dir}")
 
     # Load the data
     in_csv = Path(csvs[0])
     df = pd.read_csv(in_csv, engine="c")
-    df = df.drop(["input", "id"], axis=1)
     df["wall_secs"] = df["wall_nsecs"] / 1_000_000_000
     df["user_secs"] = df["user_nsecs"] / 1_000_000_000
     df["system_secs"] = df["system_nsecs"] / 1_000_000_000
+
+    base_df = df[df["run_type"] == "base"]
+    base_df = base_df.drop(["input", "id"], axis=1)
+
+    # Load cachegrind
+    valgrind_path = in_dir / valgrind_dir
+    cachegrind_cache_path = Path(in_dir / "cachegrind.cache.csv")
+    if cachegrind_cache_path.is_file():
+        cachegrind_df = pd.read_csv(cachegrind_cache_path)
+    else:
+        cachegrind_df = df[df["run_type"] != "base"]
+        cachegrind_df = load_cachegrind(cachegrind_df, valgrind_path)
+        # cachegrind_df.to_csv(cachegrind_cache_path)
 
     # Load any misc metadata
     info_path = in_dir / job_details_file
@@ -162,4 +123,4 @@ def load(
     info["partition"] = partition
     info["actual_num_sorts"] = len(df)
 
-    return df, info
+    return base_df, cachegrind_df, info
