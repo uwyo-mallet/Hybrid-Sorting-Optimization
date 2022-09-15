@@ -1,4 +1,3 @@
-import ast
 import json
 from pathlib import Path
 
@@ -10,19 +9,28 @@ QST_EXEC_PATH = Path("./build/QST")
 QST_RESULTS_DIR = Path("./results")
 GB_RESULTS_DIR = Path("./gb_results")
 
-# THRESHOLD_METHODS = {
-#     "qsort_asm",
-#     "qsort_c",
-#     "qsort_c_swp",
-#     "qsort_cpp",
-#     "qsort_cpp_no_comp",
-# }
 GRAPH_ORDER = (
     "random",
     "ascending",
     "descending",
     "single_num",
 )
+
+CACHEGRIND_COLS = [
+    "Ir",
+    "I1mr",
+    "ILmr",
+    "Dr",
+    "D1mr",
+    "DLmr",
+    "Dw",
+    "D1mw",
+    "DLmw",
+    "Bc",
+    "Bcm",
+    "Bi",
+    "Bim",
+]
 
 md_template = """\
 `{command}`

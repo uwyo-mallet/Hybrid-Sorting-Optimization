@@ -4,7 +4,7 @@ from dash import dcc, html
 from .generics import QST_RESULTS_DIR
 
 
-def gen_layout(clocks, data_types, dirs=None):
+def gen_layout(clocks, data_types, cachegrind_metrics, dirs=None):
     """TODO."""
     if dirs is None:
         dirs = sorted(list(QST_RESULTS_DIR.iterdir()))
@@ -251,16 +251,7 @@ def gen_layout(clocks, data_types, dirs=None):
                                 "label": str(i),
                                 "value": str(i),
                             }
-                            for i in [
-                                "I1mr",
-                                "ILmr",
-                                "D1mr",
-                                "DLmr",
-                                "D1mw",
-                                "DLmw",
-                                "Bcm",
-                                "Bim",
-                            ]
+                            for i in cachegrind_metrics
                         ],
                         value="I1mr",
                     ),

@@ -6,11 +6,12 @@ import dash
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
 from qstpy import QST
 
-from .generics import (df_from_json, update_info, update_size_slider,
-                       update_threshold_slider)
+from .generics import (CACHEGRIND_COLS, df_from_json, update_info,
+                       update_size_slider, update_threshold_slider)
 from .qst_layout import gen_layout
 from .qst_loader import load
 
@@ -40,13 +41,13 @@ CACHE_MAP = {
 
 
 app = dash.Dash(__name__)
-app.layout = gen_layout(CLOCKS, RUN_TYPES)
+app.layout = gen_layout(CLOCKS, RUN_TYPES, CACHE_MAP.keys())
 q = QST()
 
 
 @app.callback(
     Output("run-data", "data"),
-    # Output("cachegrind-data", "data"),
+    Output("cachegrind-data", "data"),
     Output("info-data", "data"),
     Input("load-button", "n_clicks"),
     State("result-dropdown", "value"),
@@ -57,11 +58,11 @@ def load_result_callback(n_clicks, results_dir):
         raise dash.exceptions.PreventUpdate
 
     try:
-        df, info = load(Path(results_dir))
+        df, cachegrind_df, info = load(Path(results_dir))
     except FileNotFoundError as e:
         return dash.no_update, str(e)
 
-    return df.to_json(), json.dumps(info)
+    return df.to_json(), cachegrind_df.to_json(), json.dumps(info)
 
 
 update_info_callback = app.callback(
@@ -314,174 +315,171 @@ def update_cachegrind_callback(json_df, opts):
         opts = []
 
     df = df_from_json(json_df)
-    print(df)
+
+    groups = df.groupby(["method", "size"])
+    means = groups.aggregate(np.mean)
+    means = means.reset_index()
+    means = means.fillna(0)
+
+    MISS_COLS = ["I1mr", "ILmr", "D1mr", "DLmr", "D1mw", "DLmw", "Bcm", "Bim"]
+
+    # # TODO: Globalize this
+
+    # # Associate totals with subgroups
+    COL_MAP = {
+        "Ir": ("I1mr", "ILmr"),
+        "Dr": ("D1mr", "DLmr"),
+        "Dw": ("D1mw", "DLmw"),
+        "Bc": ("Bcm",),
+        "Bi": ("Bim",),
+    }
+
+    if "relative" in opts:
+        relative = means[["method"] + CACHEGRIND_COLS].copy()
+        for total, sub in COL_MAP.items():
+            for miss in sub:
+                relative[miss] /= relative[total]
+                relative[miss] *= 100
+        misses = relative[["method"] + MISS_COLS]
+        y_axis_title = "Percent"
+    else:
+        misses = means[["method"] + MISS_COLS]
+        y_axis_title = "Number of misses"
+
+    # TODO: Find a more pythonic way to do this.
+    bars = []
+    means = means.sort_values(["threshold", "method"])
+    for i in misses["method"].unique():
+        y = misses[misses["method"] == i].reset_index()
+        y = y.loc[0][MISS_COLS]
+        bars.append(go.Bar(name=i, x=MISS_COLS, y=y))
+    fig = go.Figure(bars)
+
+    fig.update_xaxes(
+        showticklabels=True,
+    )
+    fig.update_yaxes(
+        title=y_axis_title,
+    )
+    if "log" in opts:
+        fig.update_yaxes(
+            automargin=True,
+            autorange=True,
+            type="log",
+            dtick="D2",
+        )
+
+    fig.update_layout(
+        legend_title_text="Sorting Method",
+        title={
+            "text": "Mean Cache Performance Across All Types and Thresholds",
+            "xanchor": "left",
+        },
+        font=dict(
+            family="Courier New, monospace",
+            size=18,
+        ),
+        legend=dict(yanchor="top", xanchor="left"),
+        barmode="group",
+    )
+
+    # Fix facet titles
+    # TODO: Find a less gross way to do this...
+    fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
+
+    return fig
 
 
-# df = pd.read_json(json_df)
+@app.callback(
+    Output("threshold-vs-cache", "figure"),
+    [
+        Input("cachegrind-data", "data"),
+        Input("cachegrind-options", "value"),
+        Input("cachegrind-metric-dropdown", "value"),
+        Input("info-data", "data"),
+        Input("size-slider", "value"),
+    ],
+)
+def update_threshold_v_cache(json_df, opts, metric, run_info, size=None):
+    if json_df is None:
+        return px.line()
+    if opts is None:
+        opts = []
 
-# groups = df.groupby(["method", "size"])
-# means = groups.aggregate(np.mean)
-# means = means.reset_index()
-# means = means.fillna(0)
+    df = pd.read_json(json_df)
+    if size is None or not any(df["size"] == size):
+        size = df["size"].min()
 
-# MISS_COLS = ["I1mr", "ILmr", "D1mr", "DLmr", "D1mw", "DLmw", "Bcm", "Bim"]
+    run_info = json.loads(run_info)
+    threshold_methods = set(run_info["QST"]["Methods"]["Threshold"])
+    non_threshold_dfs = df[~df["method"].isin(threshold_methods)]
 
-# # TODO: Globalize this
+    df = df[df["size"] == size]
+    df = df[df["threshold"] != 0]
 
-# # Associate totals with subgroups
-# COL_MAP = {
-#     "Ir": ("I1mr", "ILmr"),
-#     "Dr": ("D1mr", "DLmr"),
-#     "Dw": ("D1mw", "DLmw"),
-#     "Bc": ("Bcm",),
-#     "Bi": ("Bim",),
-# }
+    if df.empty:
+        return px.line()
 
-# if "relative" in opts:
-#     relative = means[["method"] + CACHEGRIND_COLS].copy()
-#     for total, sub in COL_MAP.items():
-#         for miss in sub:
-#             relative[miss] /= relative[total]
-#             relative[miss] *= 100
-#     misses = relative[["method"] + MISS_COLS]
-#     y_axis_title = "Percent"
-# else:
-#     misses = means[["method"] + MISS_COLS]
-#     y_axis_title = "Number of misses"
+    for method in non_threshold_dfs["method"].unique():
+        for _, row in non_threshold_dfs[
+            non_threshold_dfs["method"] == method
+        ].iterrows():
+            row["threshold"] = df["threshold"].min()
+            df = df.append(row)
+            row["threshold"] = df["threshold"].max()
+            df = df.append(row)
 
-# # TODO: Find a more pythonic way to do this.
-# bars = []
-# means = means.sort_values(["threshold", "method"])
-# for i in misses["method"].unique():
-#     y = misses[misses["method"] == i].reset_index()
-#     y = y.loc[0][MISS_COLS]
-#     bars.append(go.Bar(name=i, x=MISS_COLS, y=y))
-# fig = go.Figure(bars)
+    # Associate totals with subgroups
+    if "relative" in opts:
+        df[metric] /= df[CACHE_MAP[metric]]
+        df[metric] *= 100
+        y_axis_title = f"Percent of {CACHE_MAP[metric]}"
+    else:
+        y_axis_title = f"Number of {CACHE_MAP[metric]} misses"
 
-# fig.update_xaxes(
-#     showticklabels=True,
-# )
-# fig.update_yaxes(
-#     title=y_axis_title,
-# )
-# if "log" in opts:
-#     fig.update_yaxes(
-#         automargin=True,
-#         autorange=True,
-#         type="log",
-#         dtick="D2",
-#     )
+    df = df.sort_values(["threshold", "method"])
+    fig = px.line(
+        df,
+        x=df["threshold"],
+        y=df[metric],
+        facet_col="description",
+        facet_col_wrap=1,
+        facet_row_spacing=0.04,
+        category_orders={
+            "description": ("random", "ascending", "descending", "single_num")
+        },
+        color=df["method"],
+        markers=True,
+        height=2000,
+    )
 
-# fig.update_layout(
-#     legend_title_text="Sorting Method",
-#     title={
-#         "text": "Mean Cache Performance Across All Types and Thresholds",
-#         "xanchor": "left",
-#     },
-#     font=dict(
-#         family="Courier New, monospace",
-#         size=18,
-#     ),
-#     legend=dict(yanchor="top", xanchor="left"),
-#     barmode="group",
-# )
+    fig.update_xaxes(
+        showticklabels=True,
+    )
+    fig.update_yaxes(
+        automargin=True,
+        matches=None,
+        title=y_axis_title,
+    )
+    fig.update_layout(
+        xaxis_title="Threshold",
+        legend_title_text="Sorting Method",
+        title={
+            "text": f"Threshold vs. {metric}, size = {size:,}",
+            "xanchor": "left",
+        },
+        font=dict(
+            family="Courier New, monospace",
+            size=18,
+        ),
+        legend=dict(yanchor="top", xanchor="left"),
+    )
 
-# # Fix facet titles
-# # TODO: Find a less gross way to do this...
-# fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
+    # Fix facet titles
+    # TODO: Find a less gross way to do this...
+    fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
 
-# return fig
-
-
-# @app.callback(
-#     Output("threshold-vs-cache", "figure"),
-#     [
-#         Input("cachegrind-data", "data"),
-#         Input("cachegrind-options", "value"),
-#         Input("cachegrind-metric-dropdown", "value"),
-#         Input("info-data", "data"),
-#         Input("size-slider", "value"),
-#     ],
-# )
-# def update_threshold_v_cache(json_df, opts, metric, run_info, size=None):
-#     pass
-# if json_df is None:
-#     return px.line()
-# if opts is None:
-#     opts = []
-
-# df = pd.read_json(json_df)
-# if size is None or not any(df["size"] == size):
-#     size = df["size"].min()
-
-# run_info = json.loads(run_info)
-# threshold_methods = set(run_info["QST"]["Methods"]["Threshold"])
-# non_threshold_dfs = df[~df["method"].isin(threshold_methods)]
-
-# df = df[df["size"] == size]
-# df = df[df["threshold"] != 0]
-
-# if df.empty:
-#     return px.line()
-
-# for method in non_threshold_dfs["method"].unique():
-#     for _, row in non_threshold_dfs[
-#         non_threshold_dfs["method"] == method
-#     ].iterrows():
-#         row["threshold"] = df["threshold"].min()
-#         df = df.append(row)
-#         row["threshold"] = df["threshold"].max()
-#         df = df.append(row)
-
-# # Associate totals with subgroups
-# if "relative" in opts:
-#     df[metric] /= df[CACHE_MAP[metric]]
-#     df[metric] *= 100
-#     y_axis_title = f"Percent of {CACHE_MAP[metric]}"
-# else:
-#     y_axis_title = f"Number of {CACHE_MAP[metric]} misses"
-
-# df = df.sort_values(["threshold", "method"])
-# fig = px.line(
-#     df,
-#     x=df["threshold"],
-#     y=df[metric],
-#     facet_col="description",
-#     facet_col_wrap=1,
-#     facet_row_spacing=0.04,
-#     category_orders={"description": GRAPH_ORDER},
-#     color=df["method"],
-#     markers=True,
-#     height=2000,
-# )
-
-# fig.update_xaxes(
-#     showticklabels=True,
-# )
-# fig.update_yaxes(
-#     automargin=True,
-#     matches=None,
-#     title=y_axis_title,
-# )
-# fig.update_layout(
-#     xaxis_title="Threshold",
-#     legend_title_text="Sorting Method",
-#     title={
-#         "text": f"Threshold vs. {metric}, size = {size:,}",
-#         "xanchor": "left",
-#     },
-#     font=dict(
-#         family="Courier New, monospace",
-#         size=18,
-#     ),
-#     legend=dict(yanchor="top", xanchor="left"),
-# )
-
-# # Fix facet titles
-# # TODO: Find a less gross way to do this...
-# fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
-
-# return fig
+    return fig
 
 
 if __name__ == "__main__":
