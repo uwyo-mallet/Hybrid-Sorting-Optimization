@@ -111,7 +111,7 @@ def load(
     else:
         cachegrind_df = df[df["run_type"] != "base"]
         cachegrind_df = load_cachegrind(cachegrind_df, valgrind_path)
-        # cachegrind_df.to_csv(cachegrind_cache_path)
+        cachegrind_df.to_csv(cachegrind_cache_path)
 
     # Load any misc metadata
     info_path = in_dir / job_details_file
