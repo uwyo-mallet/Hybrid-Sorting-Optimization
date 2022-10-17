@@ -1,12 +1,10 @@
 package qst.java;
 
 import java.io.*;
-import java.nio.Buffer;
 import java.util.ArrayList;
 import java.util.zip.GZIPInputStream;
 
 import com.google.common.io.Files;
-import org.apache.commons.io.FilenameUtils;
 
 public class Input {
 
@@ -38,7 +36,7 @@ public class Input {
     }
 
     Integer[] getData() {
-        Integer buffer[] = new Integer[data.size()];
+        Integer[] buffer = new Integer[data.size()];
         data.toArray(buffer);
         return buffer;
     }

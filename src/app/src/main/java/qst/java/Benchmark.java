@@ -1,10 +1,8 @@
 package qst.java;
 
 import picocli.CommandLine;
-import picocli.CommandLine.Command;
 
 import java.io.*;
-import java.nio.Buffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
@@ -82,11 +80,10 @@ public class Benchmark implements Callable<Integer> {
 
     private Long time(Integer[] input) {
         Stopwatch stopwatch = Stopwatch.createUnstarted();
-        switch (method) {
-            case DualPartitionQuicksort:
-                stopwatch.start();
-                Arrays.sort(input);
-                stopwatch.stop();
+        if (method == METHOD.DualPartitionQuicksort) {
+            stopwatch.start();
+            Arrays.sort(input);
+            stopwatch.stop();
         }
 
         return stopwatch.elapsed(TimeUnit.NANOSECONDS);
