@@ -6,9 +6,9 @@ package qst.java;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-class AppTest {
+class QSTTest {
     @Test void appHasAGreeting() {
-        App classUnderTest = new App();
+        QST classUnderTest = new QST();
         assertNotNull(classUnderTest.getGreeting(), "app should have a greeting");
     }
 }
