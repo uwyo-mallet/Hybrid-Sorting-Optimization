@@ -17,28 +17,40 @@ enum METHOD_TYPE {
 }
 
 enum METHOD {
-    DualPartitionQuicksort,
+    DualPivotQuicksort_Max_Insertion_Sort_Size, DualPivotQuicksort_Max_Mixed_Insertion_Sort_Size, DualPivotQuicksort_Lib,
 }
 
 public class Benchmark implements Callable<Integer> {
 
-    final static METHOD[] thresholdMethods = {METHOD.DualPartitionQuicksort};
-    final static METHOD[] nonthresholdMethods = {};
+    final static METHOD[] thresholdMethods = {METHOD.DualPivotQuicksort_Max_Insertion_Sort_Size,
+            METHOD.DualPivotQuicksort_Max_Mixed_Insertion_Sort_Size,};
+    final static METHOD[] nonthresholdMethods = {METHOD.DualPivotQuicksort_Lib};
     final static METHOD[] methods = ArrayUtils.addAll(thresholdMethods, nonthresholdMethods);
 
-    @CommandLine.Option(names = {"-V", "--version"}, description = "Print version and exit.", versionHelp = true)
-    boolean versionRequested;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    Exclusive exclusive;
 
-    @CommandLine.Option(names = {"-h", "--help"}, description = "Print help and exit.", usageHelp = true)
-    boolean helpRequested;
+    static class Exclusive {
+        @CommandLine.Option(names = {"-V", "--version"}, description = "Print version and exit.", versionHelp = true)
+        boolean versionRequested;
 
-    @CommandLine.Option(names = {"-c", "--col"}, description = "Column to pass through to the CSV.")
+        @CommandLine.Option(names = {"-h", "--help"}, description = "Print help and exit.", usageHelp = true)
+        boolean helpRequested;
+
+        @CommandLine.Option(names = {"--show-methods"}, paramLabel = "TYPE", description = "Print all supported methods, or of type 'TYPE'.")
+        METHOD_TYPE showType;
+
+        @CommandLine.Parameters(description = "Input datafile")
+        File inFile;
+    }
+
+    @CommandLine.Option(names = {"-c", "--cols"}, description = "Column to pass through to the CSV.")
     String[] cols = {};
 
-    @CommandLine.Option(names = {"-v", "--val"}, description = "Value to pass through to the CSV.")
+    @CommandLine.Option(names = {"-v", "--vals"}, description = "Value to pass through to the CSV.")
     String[] vals = {};
 
-    @CommandLine.Option(names = {"-m", "--method"}, description = "Sorting Method", defaultValue = "DualPartitionQuicksort", showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
+    @CommandLine.Option(names = {"-m", "--method"}, description = "Sorting Method", defaultValue = "DualPivotQuicksort_Lib", showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
     METHOD method;
 
     @CommandLine.Option(names = {"-o", "--output"}, paramLabel = "FILE", description = "Output to FILE instead of STDOUT.")
@@ -47,14 +59,8 @@ public class Benchmark implements Callable<Integer> {
     @CommandLine.Option(names = {"-r", "--runs"}, paramLabel = "N", description = "Number of times to sort the same data.", defaultValue = "1", showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
     int runs;
 
-    @CommandLine.Option(names = {"--show-methods"}, paramLabel = "TYPE", description = "Print all supported methods, or of type 'TYPE'.")
-    METHOD_TYPE showType;
-
     @CommandLine.Option(names = {"-t", "--threshold"}, paramLabel = "N", description = "Threshold to switch*", defaultValue = "4", showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
     int threshold;
-
-    @CommandLine.Parameters(description = "Input datafile")
-    File inFile;
 
     Integer size;
 
@@ -78,12 +84,34 @@ public class Benchmark implements Callable<Integer> {
         }
     }
 
-    private Long time(Integer[] input) {
+    private Long time(int[] input) {
         Stopwatch stopwatch = Stopwatch.createUnstarted();
-        if (method == METHOD.DualPartitionQuicksort) {
-            stopwatch.start();
-            Arrays.sort(input);
-            stopwatch.stop();
+
+        switch (method) {
+            /* Methods bundled with this application. */
+            case DualPivotQuicksort_Max_Insertion_Sort_Size:
+                stopwatch.start();
+                DualPivotQuicksort.MAX_INSERTION_SORT_SIZE = threshold;
+                DualPivotQuicksort.sort(input, 0, 0, input.length);
+                stopwatch.stop();
+                break;
+
+            case DualPivotQuicksort_Max_Mixed_Insertion_Sort_Size:
+                stopwatch.start();
+                DualPivotQuicksort.MAX_MIXED_INSERTION_SORT_SIZE = threshold;
+                DualPivotQuicksort.sort(input, 0, 0, input.length);
+                stopwatch.stop();
+                break;
+
+            /* Standard library methods. */
+            case DualPivotQuicksort_Lib:
+                stopwatch.start();
+                Arrays.sort(input);
+                stopwatch.stop();
+                break;
+
+            default:
+                break;
         }
 
         return stopwatch.elapsed(TimeUnit.NANOSECONDS);
@@ -115,8 +143,15 @@ public class Benchmark implements Callable<Integer> {
             }
         }
 
+        for (METHOD i : nonthresholdMethods) {
+            if (i == method) {
+                threshold = 0;
+                break;
+            }
+        }
+
         for (Long time : times) {
-            writer.write(String.format("%s,%s,%d,%d,%d,%d,%d", method.name(), inFile.getAbsolutePath(), size, threshold, time, 0, 0));
+            writer.write(String.format("%s,%s,%d,%d,%d,%d,%d", method.name(), exclusive.inFile.getAbsolutePath(), size, threshold, time, 0, 0));
             for (String v : vals) {
                 writer.write(String.format(",%s", v));
             }
@@ -132,14 +167,14 @@ public class Benchmark implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        if (showType != null) {
-            showMethods(showType);
+        if (exclusive.showType != null) {
+            showMethods(exclusive.showType);
             return 0;
         }
         if (cols.length != vals.length) {
             throw new RuntimeException("Number of columns and values do not match!");
         }
-        final Input data = new Input(inFile);
+        final Input data = new Input(exclusive.inFile);
         size = data.size();
 
         ArrayList<Long> times = new ArrayList<Long>();

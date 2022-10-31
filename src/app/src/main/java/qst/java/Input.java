@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.zip.GZIPInputStream;
 
 import com.google.common.io.Files;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class Input {
 
@@ -35,10 +36,10 @@ public class Input {
         fp.close();
     }
 
-    Integer[] getData() {
-        Integer[] buffer = new Integer[data.size()];
-        data.toArray(buffer);
-        return buffer;
+    int[] getData() {
+        Integer[] arr = new Integer[data.size()];
+        data.toArray(arr);
+        return ArrayUtils.toPrimitive(arr);
     }
 
     Integer size() {
