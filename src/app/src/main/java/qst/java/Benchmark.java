@@ -1,6 +1,7 @@
 package qst.java;
 
 import picocli.CommandLine;
+import picocli.CommandLine.Command;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ enum METHOD {
     DualPivotQuicksort_Max_Insertion_Sort_Size, DualPivotQuicksort_Max_Mixed_Insertion_Sort_Size, DualPivotQuicksort_Delta, DualPivotQuicksort, DualPivotQuicksort_Lib,
 }
 
+@Command(name = "QST-Java", description = "Java frontend for the quicksort-tuning project.", footer = "Report bugs to <jarulsam@uwyo.edu>")
 public class Benchmark implements Callable<Integer> {
 
     final static METHOD[] thresholdMethods = {METHOD.DualPivotQuicksort_Max_Insertion_Sort_Size, METHOD.DualPivotQuicksort_Max_Mixed_Insertion_Sort_Size, METHOD.DualPivotQuicksort_Delta};
