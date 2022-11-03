@@ -39,15 +39,14 @@ static char args_doc[] = "INPUT";
 
 // clang-format off
 static struct argp_option options[] = {
-    {"method", 'm', "METHOD", 0, "Sorting method."},
-    {"output", 'o', "FILE", 0, "Output to FILE instead of STDOUT."},
-    {"runs", 'r', "N", 0, "Number of times to sort the same data. Default: 1"},
-    {"threshold", 't', "THRESH", 0, "Threshold to switch to insertion sort."},
-    {"cols", COLS_OPT, "COLS", 0, "Columns to pass through to the CSV."},
-    {"vals", VALS_OPT, "VALS", 0, "Values to pass through to the oCSV."},
-    {"show-methods", METHODS_OPT, "TYPE", OPTION_ARG_OPTIONAL,
-     "Print all supported methods or of type 'TYPE' (threshold, nonthreshold)."},
-    {"version-json", VERSION_OPT, 0, 0, "Version in machine-readable json format."},
+    {"method"      , 'm'        , "METHOD", 0                  , "Sorting method."}                                       ,
+    {"output"      , 'o'        , "FILE"  , 0                  , "Output to FILE instead of STDOUT."}                     ,
+    {"runs"        , 'r'        , "N"     , 0                  , "Number of times to sort the same data. Default: 1"}     ,
+    {"threshold"   , 't'        , "THRESH", 0                  , "Threshold to switch to insertion sort."}                ,
+    {"cols"        , COLS_OPT   , "COLS"  , 0                  , "Columns to pass through to the CSV."}                   ,
+    {"vals"        , VALS_OPT   , "VALS"  , 0                  , "Values to pass through to the CSV."}                    ,
+    {"show-methods", METHODS_OPT, "TYPE"  , OPTION_ARG_OPTIONAL, "Print all supported methods or of type 'TYPE' (threshold, nonthreshold)."},
+    {"version-json", VERSION_OPT, 0       , 0                  , "Version in machine-readable json format."}              ,
     {0},
 };
 // clang-format on
@@ -102,14 +101,14 @@ int main(int argc, char** argv)
     {
       for (const std::string& i : METHODS)
       {
-        std::cout << i << "\n";
+        std::cout << i << '\n';
       }
     }
     if (arguments.print_threshold_methods)
     {
       for (const std::string& i : THRESHOLD_METHODS)
       {
-        std::cout << i << "\n";
+        std::cout << i << '\n';
       }
     }
 
