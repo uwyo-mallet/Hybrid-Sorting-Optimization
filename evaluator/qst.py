@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dash.dependencies import Input, Output, State
+
 from qstpy import QST
 
 from .generics import (CACHEGRIND_COLS, df_from_json, update_info,
@@ -52,8 +53,13 @@ q = QST()
     Input("load-button", "n_clicks"),
     State("result-dropdown", "value"),
 )
-def load_result_callback(n_clicks, results_dir):
-    """TODO."""
+def load_result_callback(n_clicks: int, results_dir: Path):
+    """
+    Populate the results dropdown with results subdirectories.
+
+    :param nclicks: Dummy parameter
+    :param results_dir: Directory containing all result subdirectories.
+    """
     if not n_clicks:
         raise dash.exceptions.PreventUpdate
 
@@ -104,7 +110,7 @@ def update_size_v_runtime_callback(
     threshold=None,
     error_bars=False,
 ):
-    """TODO."""
+    """Update the size vs. runtime plots."""
     if not json_df:
         raise dash.exceptions.PreventUpdate
 
@@ -476,7 +482,6 @@ def update_threshold_v_cache(json_df, opts, metric, run_info, size=None):
     )
 
     # Fix facet titles
-    # TODO: Find a less gross way to do this...
     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
 
     return fig

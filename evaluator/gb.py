@@ -151,7 +151,6 @@ def update_size_v_runtime(json_df, threshold=None, error_bars=False):
     )
 
     # Fix facet titles
-    # TODO: Find a less gross way to do this...
     fig.for_each_annotation(lambda x: x.update(text=x.text.split("=")[-1].capitalize()))
 
     return fig
