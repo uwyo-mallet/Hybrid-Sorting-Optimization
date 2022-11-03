@@ -17,14 +17,13 @@ enum METHOD_TYPE {
 }
 
 enum METHOD {
-    DualPivotQuicksort_Max_Insertion_Sort_Size, DualPivotQuicksort_Max_Mixed_Insertion_Sort_Size, DualPivotQuicksort_Lib,
+    DualPivotQuicksort_Max_Insertion_Sort_Size, DualPivotQuicksort_Max_Mixed_Insertion_Sort_Size, DualPivotQuicksort_Delta, DualPivotQuicksort, DualPivotQuicksort_Lib,
 }
 
 public class Benchmark implements Callable<Integer> {
 
-    final static METHOD[] thresholdMethods = {METHOD.DualPivotQuicksort_Max_Insertion_Sort_Size,
-            METHOD.DualPivotQuicksort_Max_Mixed_Insertion_Sort_Size,};
-    final static METHOD[] nonthresholdMethods = {METHOD.DualPivotQuicksort_Lib};
+    final static METHOD[] thresholdMethods = {METHOD.DualPivotQuicksort_Max_Insertion_Sort_Size, METHOD.DualPivotQuicksort_Max_Mixed_Insertion_Sort_Size, METHOD.DualPivotQuicksort_Delta};
+    final static METHOD[] nonthresholdMethods = {METHOD.DualPivotQuicksort, METHOD.DualPivotQuicksort_Lib};
     final static METHOD[] methods = ArrayUtils.addAll(thresholdMethods, nonthresholdMethods);
 
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
@@ -91,6 +90,7 @@ public class Benchmark implements Callable<Integer> {
             /* Methods bundled with this application. */
             case DualPivotQuicksort_Max_Insertion_Sort_Size:
                 stopwatch.start();
+                DualPivotQuicksort.MAX_MIXED_INSERTION_SORT_SIZE = input.length + 1;
                 DualPivotQuicksort.MAX_INSERTION_SORT_SIZE = threshold;
                 DualPivotQuicksort.sort(input, 0, 0, input.length);
                 stopwatch.stop();
@@ -103,7 +103,21 @@ public class Benchmark implements Callable<Integer> {
                 stopwatch.stop();
                 break;
 
+            case DualPivotQuicksort_Delta:
+                stopwatch.start();
+                DualPivotQuicksort.DELTA = threshold;
+                DualPivotQuicksort.MAX_RECURSION_DEPTH = DualPivotQuicksort.DELTA * 64;
+                DualPivotQuicksort.sort(input, 0, 0, input.length);
+                stopwatch.stop();
+                break;
+
             /* Standard library methods. */
+            case DualPivotQuicksort:
+                stopwatch.start();
+                DualPivotQuicksort.sort(input, 0, 0, input.length);
+                stopwatch.stop();
+                break;
+
             case DualPivotQuicksort_Lib:
                 stopwatch.start();
                 Arrays.sort(input);

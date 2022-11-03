@@ -119,7 +119,7 @@ final class DualPivotQuicksort {
     /**
      * Max recursive partitioning depth before using heap sort.
      */
-    private static int MAX_RECURSION_DEPTH = 64 * DELTA;
+    public static int MAX_RECURSION_DEPTH = 64 * DELTA;
 
     /**
      * Calculates the double depth of parallel merging.
