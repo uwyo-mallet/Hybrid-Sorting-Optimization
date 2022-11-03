@@ -93,7 +93,7 @@ class DataGen:
             data_str += str(i) + "\n"
 
         shutil.copy(prev, current)
-        with gzip.open(current, "a") as append_file:
+        with gzip.open(current, "ab") as append_file:
             append_file.write(data_str.encode())
 
     @staticmethod
