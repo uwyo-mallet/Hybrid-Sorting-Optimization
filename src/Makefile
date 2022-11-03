@@ -1,8 +1,11 @@
 
 all: exec
 
+JAVA = $(shell which java)
+
 exec: jar
-	echo '#!/usr/bin/env -S java -jar' > QST-Java
+	# echo '#!'-jar' > QST-Java
+	printf "#!%s -jar\n" $(JAVA) > QST-Java
 	cat app/build/libs/app-*-all.jar >> QST-Java
 	chmod +x QST-Java
 
