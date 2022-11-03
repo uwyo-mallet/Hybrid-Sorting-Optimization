@@ -44,7 +44,7 @@ def get_supported_methods(qst_path: Path):
     """Call the QST process and parse the currently supported methods."""
     valid_methods = (
         subprocess.run(
-            (str(qst_path), "dummy", "--show-methods=standard"),
+            (str(qst_path), "--show-methods=nonthreshold"),
             capture_output=True,
             check=True,
         )
@@ -54,7 +54,7 @@ def get_supported_methods(qst_path: Path):
 
     threshold_methods = (
         subprocess.run(
-            (str(qst_path), "dummy", "--show-methods=threshold"),
+            (str(qst_path), "--show-methods=threshold"),
             capture_output=True,
             check=True,
         )
