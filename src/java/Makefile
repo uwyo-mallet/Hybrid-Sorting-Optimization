@@ -4,10 +4,13 @@ all: exec
 JAVA = $(shell which java)
 
 exec: jar
-	# echo '#!'-jar' > QST-Java
-	printf "#!%s -jar\n" $(JAVA) > QST-Java
-	cat app/build/libs/app-*-all.jar >> QST-Java
-	chmod +x QST-Java
+	printf "#!%s -jar\n" $(JAVA) > QST-java
+	cat app/build/libs/QST-Java*.jar >> QST-java
+	chmod +x QST-java
 
 jar:
 	./gradlew shadowJar
+
+clean:
+	./gradlew clean
+	rm -f QST-java
