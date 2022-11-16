@@ -4,12 +4,7 @@
 #include <inttypes.h>
 #include <time.h>
 
-struct times
-{
-  double user;
-  double system;
-  long wall;
-};
+#include "platform.h"
 
 struct times measure_sort_time(int method, int64_t* data, const size_t n,
                                const int threshold);

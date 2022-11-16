@@ -13,10 +13,12 @@
 #define ARRAY_SIZE(x) ((sizeof x) / (sizeof *x))
 
 // zlib specific
-/* #define SET_BINARY_MODE(file) */
-#define CHUNK 16384
+#define SET_BINARY_MODE(file)
+#define CHUNK 32768
 #define WINDOW_BITS 15
 #define ENABLE_ZLIB_GZIP 32
+
+#define BILLION 1000000000
 
 // Argument Parsing
 const char* argp_program_version = "TODO";
@@ -128,7 +130,6 @@ int main(int argc, char** argv)
   bool is_txt = true;
   if (in_file_len >= 3)
   {
-    printf("%s\n", &arguments.in_file[in_file_len - 3]);
     if (strcmp(&arguments.in_file[in_file_len - 3], ".gz") == 0)
     {
       is_txt = false;
@@ -192,7 +193,6 @@ int main(int argc, char** argv)
   for (int64_t i = 0; i < arguments.runs; ++i)
   {
     memcpy(to_sort_buffer, data, n);
-
     results[i] = measure_sort_time(
         arguments.method, to_sort_buffer, n, arguments.threshold);
   }
@@ -390,11 +390,12 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
   stream.avail_in = 0;
   stream.next_in = Z_NULL;
 
+  size_t avail;
   size_t inflated_n = 0;
-  size_t inflated_alloc = CHUNK * 8;
+  size_t inflated_alloc = CHUNK;
   unsigned char* inflated_contents;
 
-  inflated_contents = malloc(sizeof(unsigned char) * inflated_alloc);
+  inflated_contents = malloc(inflated_alloc);
   if (inflated_contents == NULL)
   {
     perror("malloc");
@@ -413,25 +414,25 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
     stream.avail_in = fread(in, 1, CHUNK, fp);
     if (ferror(fp))
     {
-      free(*dst);
+      free(inflated_contents);
       *dst = NULL;
       inflateEnd(&stream);
       return Z_ERRNO;
     }
-
     if (stream.avail_in == 0)
     {
       break;
     }
+
     stream.next_in = in;
 
     do
     {
-      stream.avail_out = inflated_alloc - inflated_n;
+      avail = inflated_alloc - inflated_n;
+      stream.avail_out = avail;
       stream.next_out = &inflated_contents[inflated_n];
       ret = inflate(&stream, Z_NO_FLUSH);
 
-      /* Handle Errors */
       switch (ret)
       {
         case Z_NEED_DICT:
@@ -439,24 +440,22 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
           /* Fallthrough */
         case Z_DATA_ERROR:
         case Z_MEM_ERROR:
-          free(*dst);
-          fprintf(stderr, "[ERROR]: %d: %s\n", ret, stream.msg);
           inflateEnd(&stream);
           return ret;
       }
-      if (stream.avail_out < CHUNK)
+
+      inflated_n += avail - stream.avail_out;
+
+      if (inflated_n >= inflated_alloc)
       {
-        /* TODO: Check how often this runs... */
         inflated_alloc *= 2;
         inflated_contents = realloc(inflated_contents, inflated_alloc);
         if (inflated_contents == NULL)
         {
-          perror("realloc");
-          exit(ENOMEM);
+          inflateEnd(&stream);
+          return Z_ERRNO;
         }
       }
-      inflated_n += CHUNK;
-
     } while (stream.avail_out == 0);
 
   } while (ret != Z_STREAM_END);
@@ -467,6 +466,8 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
     printf("EROR\n");
     return Z_DATA_ERROR;
   }
+
+  /* Done reading zip into memory, parse all the ints */
 
   unsigned char* endptr = NULL;
   unsigned char* start = inflated_contents;
@@ -561,13 +562,14 @@ int write_results(const struct arguments* args, const struct times* results,
   for (size_t i = 0; i < num_results; ++i)
   {
     const struct times r = results[i];
+    const intmax_t wall = (r.wall_secs * BILLION) + r.wall_nsecs;
     fprintf(out_file,
-            "%s,%s,%lu,%lu,%lu,%f,%f",
+            "%s,%s,%lu,%lu,%li,%lu,%lu",
             METHODS[args->method],
             args->in_file,
             args->in_file_len,
             args->threshold,
-            r.wall,
+            wall,
             r.user,
             r.system);
 

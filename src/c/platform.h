@@ -7,10 +7,19 @@
 
 #ifdef __unix__
 #include <argp.h>
+#include <inttypes.h>
 #include <sys/times.h>
+#include <time.h>
 #include <unistd.h>
 
-#include "benchmark.h"
+struct times
+{
+  clock_t user;
+  clock_t system;
+  time_t wall_secs;
+  intmax_t wall_nsecs;
+};
+
 struct times get_times();
 struct times elapsed(struct times* start, struct times* end);
 #else
