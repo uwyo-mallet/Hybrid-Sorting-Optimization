@@ -1,60 +1,288 @@
 #include <assert.h>
 #include <errno.h>
-#include <inttypes.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
 
-#define SET_BINARY_MODE(file)
+#include "benchmark.h"
+#include "platform.h"
 
+#define ARRAY_SIZE(x) ((sizeof x) / (sizeof *x))
+
+// zlib specific
+/* #define SET_BINARY_MODE(file) */
 #define CHUNK 16384
+#define WINDOW_BITS 15
+#define ENABLE_ZLIB_GZIP 32
 
+// Argument Parsing
+const char* argp_program_version = "TODO";
+const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
+static const char doc[] = "TODO";
+static const char args_doc[] = "INFILE";
+
+#define COLS_OPT 0x80
+#define VALS_OPT 0x81
+#define METH_OPT 0x82
+
+// clang-format off
+static struct argp_option options[] = {
+    {"output",       'o',      "FILE",   0, "Output to FILE instead of STDOUT"                 },
+    {"method",       'm',      "METHOD", 0, "Sorting method to use."                           },
+    {"runs",         'r',      "N",      0, "Number of times to repeatedly sort the same data."},
+    {"threshold",    't',      "THRESH", 0, "Threshold to switch sorting methods."             },
+    {"cols",         COLS_OPT, "COLS",   0, "Columns to pass through to CSV."                  },
+    {"vals",         VALS_OPT, "VALS",   0, "Values to pass through to CSV."                   },
+    {"show-methods", METH_OPT, "TYPE",   OPTION_ARG_OPTIONAL, "Print supported methods"        },
+    {0},
+};
+// clang-format on
+
+struct arguments
+{
+  char* in_file;
+  char* out_file;
+  ssize_t method;
+  int64_t runs;
+  int64_t threshold;
+  char* cols;
+  char* vals;
+
+  size_t in_file_len;
+  bool is_threshold_method;
+  bool print_standard_methods;
+  bool print_threshold_methods;
+};
+
+static error_t parse_opt(int key, char* arg, struct argp_state* state);
+static struct argp argp = {options, parse_opt, args_doc, doc};
+
+ssize_t is_method(char* m, bool* is_threshold_method);
 int read_txt(FILE* fp, int64_t** dst, size_t* n);
 int read_zip(FILE* fp, int64_t** dst, size_t* n);
-
-/* #define SUCCESS 1 */
-/* #define FAILURE 0 */
+int write_results(const struct arguments* args, const struct times* results,
+                  const size_t num_results);
 
 typedef enum
 {
-  SUCCESS,
-  PARSE_ERROR,
-  UNKNOWN_ERROR,
+  SUCCESS,       /* OK */
+  FAIL,          /* An error occured, and was already reported with perror(). */
+  PARSE_ERROR,   /* strtoll() parse error. */
+  UNKNOWN_ERROR, /* Take a guess... */
 } QST_RET;
+
+// Not being able to keep this with METHODS[]
+// is a little unfortunate...
+const char* METHODS[] = {
+    "qsort",
+    NULL, /* Methods from this point support a threshold value. */
+    "msort_hybrid",
+};
 
 int main(int argc, char** argv)
 {
-  (void)argc;
-  (void)argv;
+  // Default arguments
+  struct arguments arguments = {0};
+  arguments.runs = 1;
+  arguments.threshold = 4;
 
-  /* const char* fname = "../data_test/ascending/0.gz"; */
-  const char* fname = "foo.txt.gz";
-  FILE* fp = fopen(fname, "rb");
-  if (fp == NULL)
+  if (argp_parse(&argp, argc, argv, 0, 0, &arguments) != 0)
   {
-    perror(fname);
     return EXIT_FAILURE;
   }
 
+  // Detect if txt or gz input.
+  const size_t in_file_len = strlen(arguments.in_file);
+  bool is_txt = true;
+  if (in_file_len >= 3)
+  {
+    printf("%s\n", &arguments.in_file[in_file_len - 3]);
+    if (strcmp(&arguments.in_file[in_file_len - 3], ".gz") == 0)
+    {
+      is_txt = false;
+    }
+  }
+
+  // Read the input data into a buffer
   size_t n = 0;
   int64_t* data = NULL;
-
-  if (read_zip(fp, &data, &n) != Z_OK)
+  FILE* in_file;
+  if (is_txt)
   {
-    fclose(fp);
+    in_file = fopen(arguments.in_file, "r");
+    if (in_file == NULL)
+    {
+      perror(arguments.in_file);
+      return EXIT_FAILURE;
+    }
+    if (read_txt(in_file, &data, &n) != SUCCESS)
+    {
+      fprintf(stderr, "Error reading input file '%s'\n", arguments.in_file);
+      fclose(in_file);
+      return EXIT_FAILURE;
+    }
+  }
+  else
+  {
+    in_file = fopen(arguments.in_file, "rb");
+    if (in_file == NULL)
+    {
+      perror(arguments.in_file);
+      return EXIT_FAILURE;
+    }
+    if (read_zip(in_file, &data, &n) != Z_OK)
+    {
+      fprintf(stderr, "Error reading input file '%s'\n", arguments.in_file);
+      fclose(in_file);
+      return EXIT_FAILURE;
+    }
+  }
+  fclose(in_file);
+
+  arguments.in_file_len = n;
+  int64_t* to_sort_buffer = malloc(sizeof(int64_t) * n);
+  if (to_sort_buffer == NULL)
+  {
+    free(data);
+    perror("malloc");
     return EXIT_FAILURE;
   }
 
-  for (size_t i = 0; i < n; ++i)
+  struct times* results = calloc(sizeof(struct times), arguments.runs);
+  if (results == NULL)
   {
-    printf("%li\n", data[i]);
+    free(data);
+    free(to_sort_buffer);
+    perror("calloc");
+    return EXIT_FAILURE;
   }
 
+  for (int64_t i = 0; i < arguments.runs; ++i)
+  {
+    memcpy(to_sort_buffer, data, n);
+
+    results[i] = measure_sort_time(
+        arguments.method, to_sort_buffer, n, arguments.threshold);
+  }
+
+  if (write_results(&arguments, results, arguments.runs) != SUCCESS)
+  {
+    // Cleanup after thy self.
+    free(data);
+    free(to_sort_buffer);
+    free(results);
+    return EXIT_FAILURE;
+  }
+
+  // Cleanup after thy self.
   free(data);
-  fclose(fp);
+  free(to_sort_buffer);
+  free(results);
   return EXIT_SUCCESS;
+}
+
+static error_t parse_opt(int key, char* arg, struct argp_state* state)
+{
+  struct arguments* args = (struct arguments*)state->input;
+
+  switch (key)
+  {
+    case 'o':
+      args->out_file = arg;
+      break;
+    case 'm':
+      if ((args->method = is_method(arg, &args->is_threshold_method)) < 0)
+      {
+        printf("Invalid method selected: '%s\n'", arg);
+        return ARGP_ERR_UNKNOWN;
+      }
+      break;
+    case 'r':
+      args->runs = strtoll(arg, NULL, 10);
+      // TODO: Error check here;
+      fprintf(stderr, "[WARN]: No error checking for args->runs\n");
+      break;
+    case 't':
+      args->threshold = strtoll(arg, NULL, 10);
+      // TODO: Error check here;
+      fprintf(stderr, "[WARN]: No error checking for args->threshold\n");
+      break;
+    case COLS_OPT:
+      args->cols = arg;
+      break;
+    case VALS_OPT:
+      args->vals = arg;
+      break;
+    case METH_OPT:
+      if (arg != NULL)
+      {
+        if (strcmp(arg, "standard") == 0 || strcmp(arg, "nonthreshold") == 0)
+        {
+          args->print_standard_methods = true;
+        }
+        else if (strcmp(arg, "threshold") == 0)
+        {
+          args->print_threshold_methods = true;
+        }
+        else
+        {
+          args->print_standard_methods = true;
+          args->print_threshold_methods = true;
+        }
+        break;
+      }
+      args->print_standard_methods = true;
+      args->print_threshold_methods = true;
+      break;
+    case ARGP_KEY_ARG:
+      if (state->arg_num >= 1)
+      {
+        // Too many arguments
+        argp_usage(state);
+      }
+      args->in_file = arg;
+      break;
+    case ARGP_KEY_END:
+      if (state->arg_num < 1 && !args->print_standard_methods &&
+          !args->print_threshold_methods)
+      {
+        // Not enough arguments
+        argp_usage(state);
+      }
+      break;
+    default:
+      return ARGP_ERR_UNKNOWN;
+  }
+
+  return 0;
+}
+
+ssize_t is_method(char* m, bool* is_threshold_method)
+{
+  // Lowercase the method name
+  for (size_t i = 0; m[i]; ++i)
+  {
+    m[i] = tolower(m[i]);
+  }
+
+  for (size_t i = 0; i < ARRAY_SIZE(METHODS); ++i)
+  {
+    if (METHODS[i] == NULL)
+    {
+      *is_threshold_method = true;
+      continue;
+    }
+
+    if (strcmp(m, METHODS[i]) == 0)
+    {
+      return i;
+    }
+  }
+
+  return -1;
 }
 
 /*
@@ -122,21 +350,8 @@ int read_txt(FILE* fp, int64_t** dst, size_t* n)
 
 int read_zip(FILE* fp, int64_t** dst, size_t* n)
 {
-  size_t alloc = CHUNK;
-  *n = 0;
-  *dst = malloc(sizeof(int64_t) * alloc);
-  if (dst == NULL)
-  {
-    perror("memory");
-    exit(ENOMEM);
-  }
-
-  size_t to_copy = 0;
   int ret;
-
-  char* endptr = NULL;
   unsigned char in[CHUNK];
-  unsigned char out[CHUNK];
 
   z_stream stream;
 
@@ -146,15 +361,24 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
   stream.avail_in = 0;
   stream.next_in = Z_NULL;
 
-#define WINDOW_BITS 15
-#define ENABLE_ZLIB_GZIP 32
+  size_t inflated_n = 0;
+  size_t inflated_alloc = CHUNK * 8;
+  unsigned char* inflated_contents;
+
+  inflated_contents = malloc(sizeof(unsigned char) * inflated_alloc);
+  if (inflated_contents == NULL)
+  {
+    perror("malloc");
+    exit(ENOMEM);
+  }
+
   ret = inflateInit2(&stream, WINDOW_BITS | ENABLE_ZLIB_GZIP);
   if (ret != Z_OK)
   {
-    free(*dst);
     return ret;
   }
 
+  // Decompress the file into memory
   do
   {
     stream.avail_in = fread(in, 1, CHUNK, fp);
@@ -174,8 +398,8 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
 
     do
     {
-      stream.avail_out = CHUNK;
-      stream.next_out = out;
+      stream.avail_out = inflated_alloc - inflated_n;
+      stream.next_out = &inflated_contents[inflated_n];
       ret = inflate(&stream, Z_NO_FLUSH);
 
       /* Handle Errors */
@@ -183,7 +407,7 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
       {
         case Z_NEED_DICT:
           ret = Z_DATA_ERROR;
-          /* fallthrough */
+          /* Fallthrough */
         case Z_DATA_ERROR:
         case Z_MEM_ERROR:
           free(*dst);
@@ -191,31 +415,144 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
           inflateEnd(&stream);
           return ret;
       }
-      to_copy = CHUNK - stream.avail_out;
-
-      // Expand the size of the output buffer if need be.
-      if (alloc < *n)
+      if (stream.avail_out < CHUNK)
       {
-        // Double space allocated on each realloc.
-        alloc *= 2;
-        *dst = realloc(*dst, alloc);
-        if (*dst == NULL)
+        /* TODO: Check how often this runs... */
+        inflated_alloc *= 2;
+        inflated_contents = realloc(inflated_contents, inflated_alloc);
+        if (inflated_contents == NULL)
         {
           perror("realloc");
           exit(ENOMEM);
         }
       }
-
-      /* memcpy(&*dst[*n], in, CHUNK); */
-      fwrite(out, 1, to_copy, stdout);
-      int64_t val = strtoll((char*)out, &endptr, 10);
-      printf("%li\n", val);
+      inflated_n += CHUNK;
 
     } while (stream.avail_out == 0);
 
   } while (ret != Z_STREAM_END);
 
   inflateEnd(&stream);
+  if (ret != Z_STREAM_END)
+  {
+    printf("EROR\n");
+    return Z_DATA_ERROR;
+  }
 
-  return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
+  unsigned char* endptr = NULL;
+  unsigned char* start = inflated_contents;
+  unsigned char* i = inflated_contents;
+  unsigned char const* inflated_end = &inflated_contents[inflated_n];
+  int64_t val = 0;
+
+  *n = 0;
+  size_t alloc = inflated_alloc / 4;
+  *dst = malloc(sizeof(int64_t) * alloc);
+  if (dst == NULL)
+  {
+    free(inflated_contents);
+    perror("malloc");
+    exit(ENOMEM);
+  }
+
+  errno = 0;
+  while (i != inflated_end)
+  {
+    if (*i == '\n')
+    {
+      *i = '\0';
+      val = strtoll((char*)start, NULL, 10);
+      if (errno == ERANGE || errno == EINVAL || endptr == start)
+      {
+        // Some error occurred in parsing
+        free(inflated_contents);
+        free(*dst);
+        *dst = NULL;
+
+        if (errno == 0)
+        {
+          errno = EINVAL;
+        }
+        return PARSE_ERROR;
+      }
+      (*dst)[*n] = val;
+      ++(*n);
+      start = i + 1;
+    }
+    if (*n > alloc)
+    {
+      alloc *= 2;
+      *dst = realloc(*dst, alloc);
+      if (dst == NULL)
+      {
+        free(inflated_contents);
+        perror("malloc");
+        exit(ENOMEM);
+      }
+    }
+    ++i;
+  }
+
+  free(inflated_contents);
+  return Z_OK;
+}
+
+int write_results(const struct arguments* args, const struct times* results,
+                  const size_t num_results)
+{
+  FILE* out_file;
+  bool write_header = true;
+
+  if (args->out_file == NULL)
+  {
+    out_file = stdout;
+  }
+  else
+  {
+    write_header = access(args->out_file, F_OK) != 0;
+    out_file = fopen(args->out_file, "a");
+    if (out_file == NULL)
+    {
+      perror(args->out_file);
+      return FAIL;
+    }
+  }
+
+  if (write_header)
+  {
+    fprintf(out_file,
+            "method,input,size,threshold,wall_nsecs,user_nsecs,system_nsecs");
+    if (args->vals != NULL)
+    {
+      fprintf(out_file, ",%s", args->vals);
+    }
+    fputc('\n', out_file);
+  }
+
+  for (size_t i = 0; i < num_results; ++i)
+  {
+    const struct times r = results[i];
+    fprintf(out_file,
+            "%s,%s,%lu,%lu,%lu,%f,%f",
+            METHODS[args->method],
+            args->in_file,
+            args->in_file_len,
+            args->threshold,
+            r.wall,
+            r.user,
+            r.system);
+
+    if (args->vals != NULL)
+    {
+      fprintf(out_file, ",%s", args->vals);
+    }
+
+    fputc('\n', out_file);
+  }
+
+  if (out_file != stdout)
+  {
+    fclose(out_file);
+  }
+  return SUCCESS;
 }
