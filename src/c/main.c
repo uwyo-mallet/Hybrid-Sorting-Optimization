@@ -67,6 +67,7 @@ int read_txt(FILE* fp, int64_t** dst, size_t* n);
 int read_zip(FILE* fp, int64_t** dst, size_t* n);
 int write_results(const struct arguments* args, const struct times* results,
                   const size_t num_results);
+bool is_sorted(int64_t* data, const size_t n);
 
 typedef enum
 {
@@ -82,6 +83,7 @@ const char* METHODS[] = {
     "msort_heap",
     NULL, /* Methods from this point support a threshold value. */
     "msort_heap_hybrid_ins",
+    "msort_heap_hybrid_ins_iter",
     NULL,
 };
 
@@ -190,11 +192,28 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
+  bool checked = false;
   for (int64_t i = 0; i < arguments.runs; ++i)
   {
-    memcpy(to_sort_buffer, data, n);
+    memcpy(to_sort_buffer, data, n * sizeof(int64_t));
     results[i] = measure_sort_time(
         arguments.method, to_sort_buffer, n, arguments.threshold);
+    if (!checked)
+    {
+      checked = true;
+      if (!is_sorted(to_sort_buffer, n))
+      {
+        fprintf(stderr, "Array was not sorted correctly!\n");
+        for (size_t j = 0; j < n; ++j)
+        {
+          fprintf(stderr, "%li\n", to_sort_buffer[i]);
+        }
+        free(data);
+        free(to_sort_buffer);
+        free(results);
+        return EXIT_FAILURE;
+      }
+    }
   }
 
   if (write_results(&arguments, results, arguments.runs) != SUCCESS)
@@ -586,4 +605,17 @@ int write_results(const struct arguments* args, const struct times* results,
     fclose(out_file);
   }
   return SUCCESS;
+}
+
+bool is_sorted(int64_t* data, const size_t n)
+{
+  for (size_t i = 0; i < n - 1; ++i)
+  {
+    if (data[i + 1] < data[i])
+    {
+      return false;
+    }
+  }
+
+  return true;
 }
