@@ -568,7 +568,7 @@ int write_results(const struct arguments* args, const struct times* results,
             METHODS[args->method],
             args->in_file,
             args->in_file_len,
-            args->threshold,
+            args->is_threshold_method ? args->threshold : 0,
             wall,
             r.user,
             r.system);
