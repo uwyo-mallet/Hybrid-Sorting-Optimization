@@ -553,7 +553,7 @@ int write_results(const struct arguments* args, const struct times* results,
             "method,input,size,threshold,wall_nsecs,user_nsecs,system_nsecs");
     if (args->vals != NULL)
     {
-      fprintf(out_file, ",%s", args->vals);
+      fprintf(out_file, ",%s", args->cols);
     }
     fputc('\n', out_file);
   }
