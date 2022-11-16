@@ -74,12 +74,13 @@ typedef enum
   UNKNOWN_ERROR, /* Take a guess... */
 } QST_RET;
 
-// Not being able to keep this with METHODS[]
-// is a little unfortunate...
+// Not being able to keep this with the methods enum is a little unfortunate...
 const char* METHODS[] = {
     "qsort",
+    "msort_heap",
     NULL, /* Methods from this point support a threshold value. */
-    "msort_hybrid",
+    "msort_heap_hybrid_ins",
+    NULL,
 };
 
 int main(int argc, char** argv)
@@ -92,6 +93,34 @@ int main(int argc, char** argv)
   if (argp_parse(&argp, argc, argv, 0, 0, &arguments) != 0)
   {
     return EXIT_FAILURE;
+  }
+
+  if (arguments.print_standard_methods || arguments.print_threshold_methods)
+  {
+    const char** std_ptr = METHODS;
+    if (arguments.print_standard_methods)
+    {
+      while (*std_ptr)
+      {
+        printf("%s\n", *std_ptr);
+        std_ptr++;
+      }
+    }
+
+    if (arguments.print_threshold_methods)
+    {
+      const char** threshold_ptr = METHODS;
+      // Increment past all the nonthreshold methods.
+      while (*threshold_ptr++)
+        ;
+      while (*threshold_ptr)
+      {
+        printf("%s\n", *threshold_ptr);
+        threshold_ptr++;
+      }
+    }
+
+    return EXIT_SUCCESS;
   }
 
   // Detect if txt or gz input.

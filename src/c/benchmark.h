@@ -4,14 +4,6 @@
 #include <inttypes.h>
 #include <time.h>
 
-extern const char* METHODS[];
-enum METHOD_TOK
-{
-  QSORT = 0,
-  EMPTY,
-  MSORT_HYBRID,
-};
-
 struct times
 {
   double user;
