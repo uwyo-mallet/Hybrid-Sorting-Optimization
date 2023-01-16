@@ -151,9 +151,24 @@ class Result:
             index += 1
         plt.tight_layout()
 
+    def _prompt_for_size(self, sizes):
+        pprint(sizes)
+        while picked := input("Please select a size: ") not in sizes:
+            print("Invalid size, please pick from the list printed above.")
+
+        return picked
+
     def plot(self):
         standard_data = self.df.query("method in @self._standard_methods")
         threshold_data = self.df.query("method in @self._threshold_methods")
+
+        sizes = threshold_data["size"].unique()
+        if len(sizes) > 1:
+            size = self._prompt_for_size(list(sizes))
+        else:
+            size = sizes[0]
+
+        threshold_data = threshold_data[threshold_data["size"] == size]
         dfs = self._gen_sub_dfs(threshold_data)
         self._plot(dfs)
         plt.show()
@@ -179,7 +194,7 @@ def main():
     last_result_path = get_latest_subdir(base_results_dir)
     result = Result(last_result_path)
 
-    output_path = result.plot()
+    result.plot()
 
 
 if __name__ == "__main__":
