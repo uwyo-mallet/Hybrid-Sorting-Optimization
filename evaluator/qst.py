@@ -9,12 +9,14 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
-from bokeh.io import output_file
+from bokeh.io import output_file, save
 from bokeh.layouts import column, gridplot
-from bokeh.models import ColumnDataSource, Div, RangeSlider, Spinner
+from bokeh.models import (ColumnDataSource, CustomJSTickFormatter, Div,
+                          NumeralTickFormatter, RangeSlider, Spinner)
 from bokeh.palettes import Spectral4
 from bokeh.plotting import figure, show
 from bokeh.transform import factor_cmap
+from bokeh.util.browser import view
 
 # TODO: Add cachegrind / callgrind / massif support.
 
@@ -75,8 +77,15 @@ class Result:
             raise FileNotFoundError(f"No CSV files found in '{self.path}'")
         in_csv = Path(csvs[0])
         self.df = pd.read_csv(in_csv)
+
         # Drop unnecessary columns
         self.df = self.df.drop(["input", "id"], axis=1)
+
+        # Convert from nanoseconds to seconds
+        time_columns = [i for i in list(self.df.columns) if i.endswith("_nsecs")]
+        for i in time_columns:
+            new_name = i.split("_nsecs")[0] + "_secs"
+            self.df[new_name] = self.df[i] / 1_000_000_000
 
         # Load job details
         job_details_path = self.path / "job_details.json"
@@ -106,16 +115,17 @@ class Result:
         num_lines,
         x,
         y,
-        title=None,
+        x_axis_label,
+        y_axis_label,
+        single_row=False,
+        title_template=None,
         height=400,
         width=1000,
     ):
         tools = "pan,wheel_zoom,box_zoom,reset,hover,save"
         tooltips = [
-            ("method", "@method"),
-            ("(x,y)", "($x, $y)"),
-            ("radius", "@radius"),
-            ("fill color", "$color[hex, swatch]:colors"),
+            (x.rstrip("_"), f"@{x}"),
+            (y.rstrip("_"), f"@{y}"),
         ]
 
         plots = []
@@ -124,15 +134,32 @@ class Result:
             type_df = df[df["description"] == i]
             type_df = get_avg_df(type_df)
 
-            fig = figure(
-                height=height,
-                # width=width,
-                sizing_mode="stretch_width",
-                background_fill_color="#fafafa",
-                title=i,
-                tools=tools,
-                tooltips=tooltips,
+            # x_range="methods" if single_row else None,
+            pretty_method = i.capitalize()
+            title = (
+                pretty_method
+                if title_template is None
+                else title_template.format(pretty_method)
             )
+            if single_row:
+                fig = figure(
+                    x_range=df["method"].unique(),
+                    height=height,
+                    width=width,
+                    background_fill_color="#fafafa",
+                    title=title,
+                    tools=tools,
+                    tooltips=tooltips,
+                )
+            else:
+                fig = figure(
+                    height=height,
+                    width=width,
+                    background_fill_color="#fafafa",
+                    title=title,
+                    tools=tools,
+                    tooltips=tooltips,
+                )
 
             colors = itertools.cycle(Spectral4)
             for m, c in zip(methods, colors):
@@ -141,15 +168,29 @@ class Result:
                 # consequence of how bokeh handles pandas multiindex.
                 method_df = method_df.sort_values(by=x.rstrip("_"))
 
-                fig.circle(
-                    x,
-                    y,
-                    legend_label=m,
-                    color=c,
-                    source=method_df,
-                )
-                fig.line(x, y, legend_label=m, line_color=c, source=method_df)
-                # fig.hover.renderers = [circle]
+                if single_row:
+                    fig.vbar(
+                        x,
+                        top=y,
+                        legend_label=m,
+                        color=c,
+                        width=0.9,
+                        source=method_df,
+                    )
+                else:
+                    fig.circle(
+                        x,
+                        y,
+                        legend_label=m,
+                        color=c,
+                        source=method_df,
+                    )
+                    fig.line(x, y, legend_label=m, line_color=c, source=method_df)
+
+            # Adjust axis formatting
+            fig.yaxis[0].formatter = NumeralTickFormatter(format="0.000000a")
+            fig.xaxis.axis_label = x_axis_label
+            fig.yaxis.axis_label = y_axis_label
 
             fig.legend.click_policy = "hide"
             plots.append([fig])
@@ -164,8 +205,20 @@ class Result:
     def plot(self, title=None):
         """TODO."""
         result_path = self.path / "plot.html"
+        template = """
+        {% block postamble %}
+        <style>
+        .bk-root .bk {
+            margin: 0 auto !important;
+            align : center;
+        }
+        </style>
+        {% endblock %}
+        """.lstrip()
+
         if title is None:
             title = "Sorting Optimization Results"
+
         output_file(result_path, title=title)
 
         # Prep the data
@@ -174,23 +227,44 @@ class Result:
         threshold_data = self.df.query("method in @self._threshold_methods")
         # TODO: Filter threshold data by desired size
 
+        sizes = standard_data["size"].unique()
+        single_row = len(sizes) == 1
+        if single_row:
+            title_template = f"Mean Wall Time (size = {sizes[0]}): " + "{0}"
+            x_axis_label = "Method"
+        else:
+            x_axis_label = "Size"
+
         standard_plots = self._create_grid_plots(
             standard_data,
             sorted(standard_data["description"].unique()),
             num_lines=len(standard_data["method"].unique()),
-            x="size_",
-            y="mean_wall_nsecs",
+            x="size_" if not single_row else "method_",
+            y="mean_wall_secs",
+            x_axis_label=x_axis_label,
+            y_axis_label="Runtime",
+            single_row=single_row,
+            title_template=title_template,
+        )
+
+        title_template = (
+            f"Threshold vs. Mean Wall Time (size = {threshold_data['size'].unique()[0]}): "
+            + "{0}"
         )
         threshold_plots = self._create_grid_plots(
             threshold_data,
             sorted(threshold_data["description"].unique()),
             num_lines=len(threshold_data["method"].unique()),
             x="threshold_",
-            y="mean_wall_nsecs",
+            y="mean_wall_secs",
+            x_axis_label="Threshold",
+            y_axis_label="Runtime",
+            title_template=title_template,
         )
 
-        show(gridplot(standard_plots + threshold_plots))
-        return (standard_plots, threshold_plots)
+        # show(gridplot(standard_plots + threshold_plots), center=True)
+        save(gridplot(standard_plots + threshold_plots), template=template)
+        return result_path
 
 
 def get_latest_subdir(path: Path) -> Path:
@@ -222,4 +296,5 @@ def main():
     last_result_path = get_latest_subdir(base_results_dir)
     result = Result(last_result_path)
 
-    result.plot()
+    output_path = result.plot()
+    view(str(output_path))
