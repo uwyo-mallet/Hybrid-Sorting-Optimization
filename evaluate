@@ -12,9 +12,13 @@ from evaluator import __version__
 
 if __name__ == "__main__":
     args = docopt(__doc__, version=__version__)
-    if args["gb"]:
-        from evaluator.gb import app
-    else:
-        from evaluator.qst import app
+    # if args["gb"]:
+    #     from evaluator.gb import app
+    # else:
+    #     from evaluator.qst import app
 
-    app.run_server(debug=True)
+    # app.run_server(debug=True)
+
+    from evaluator.qst import main
+
+    main()
