@@ -140,6 +140,7 @@ class Result:
                     yerr=yerr,
                     title=type_.capitalize(),
                     ax=axes[index],
+                    label=method,
                 )
 
             for method, df in baseline_dfs[type_].items():
@@ -150,12 +151,9 @@ class Result:
                     logging.error(msg)
                     continue
                 y = df.iloc[0][("mean", "wall_secs")]
-                axes[index].plot([0, max_threshold], [y, y], "--")
+                axes[index].plot([0, max_threshold], [y, y], "--", label=method)
 
-            axes[index].legend(
-                list(sub_df.keys()) + list(baseline_dfs[type_].keys()),
-                loc="upper right",
-            )
+            axes[index].legend(loc="upper right")
             axes[index].set_ylabel("Wall secs")
             index += 1
         plt.tight_layout()
@@ -172,6 +170,7 @@ class Result:
         """TODO."""
         standard_data = self.df.query("method in @self._standard_methods")
         threshold_data = self.df.query("method in @self._threshold_methods")
+
         min_threshold = threshold_data["threshold"].min()
         max_threshold = threshold_data["threshold"].max()
 
