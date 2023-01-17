@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import logging
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,6 +10,7 @@ from typing import Optional
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 
@@ -155,6 +157,7 @@ class Result:
 
             axes[index].legend(loc="upper right")
             axes[index].set_ylabel("Wall secs")
+            axes[index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
             index += 1
         plt.tight_layout()
         return fig, axes
@@ -202,6 +205,7 @@ class Result:
 
 def main():
     """TODO."""
+
     # Setup the logger
     logger = logging.getLogger(__name__)
 
@@ -213,12 +217,15 @@ def main():
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
-    base_results_dir = Path("./results")
-    if not base_results_dir.is_dir():
-        raise NotADirectoryError(f"'{base_results_dir}' is not a directory")
+    if len(sys.argv) > 1:
+        result = Result(Path(sys.argv[1]))
+    else:
+        base_results_dir = Path("./results")
+        if not base_results_dir.is_dir():
+            raise NotADirectoryError(f"'{base_results_dir}' is not a directory")
 
-    last_result_path = get_latest_subdir(base_results_dir)
-    result = Result(last_result_path)
+        last_result_path = get_latest_subdir(base_results_dir)
+        result = Result(last_result_path)
 
     result.plot()
 
