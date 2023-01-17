@@ -62,7 +62,6 @@ class Result:
         """TODO."""
         self.path = p
         self.df = pd.DataFrame()
-        self.cds: Dict
         self.job_details = {}
         self.partition = None
 
@@ -125,19 +124,15 @@ class Result:
                 method_df = type_df[type_df["method"] == m]
                 dfs[i][m] = method_df
 
+        # Follow the following order for types
         return dfs
 
-    def _plot(self, dfs):
-        nrows = len(dfs)
+    def _plot(self, dfs, baseline_dfs, min_threshold=0, max_threshold=0):
         fig, axes = plt.subplots(nrows=len(dfs), figsize=(16, 12))
-        # fig.title()
-
-        # fig.tight_layout()
         index = 0
         for type_, sub_df in dfs.items():
             for method, df in sub_df.items():
                 yerr = list(df[("std", "wall_secs")])
-                print(yerr)
                 df.plot.line(
                     x="threshold",
                     y=("mean", "wall_secs"),
@@ -146,10 +141,25 @@ class Result:
                     title=type_.capitalize(),
                     ax=axes[index],
                 )
-            axes[index].legend(sub_df.keys(), loc="upper right")
+
+            for method, df in baseline_dfs[type_].items():
+                if len(df) > 1:
+                    logging.warning("Baseline df has more than one entry, using first")
+                elif len(df) < 1:
+                    msg = "Baseline df has no entries"
+                    logging.error(msg)
+                    continue
+                y = df.iloc[0][("mean", "wall_secs")]
+                axes[index].plot([0, max_threshold], [y, y], "--")
+
+            axes[index].legend(
+                list(sub_df.keys()) + list(baseline_dfs[type_].keys()),
+                loc="upper right",
+            )
             axes[index].set_ylabel("Wall secs")
             index += 1
         plt.tight_layout()
+        return fig, axes
 
     def _prompt_for_size(self, sizes):
         pprint(sizes)
@@ -158,19 +168,36 @@ class Result:
 
         return picked
 
-    def plot(self):
+    def plot(self, interactive=False):
+        """TODO."""
         standard_data = self.df.query("method in @self._standard_methods")
         threshold_data = self.df.query("method in @self._threshold_methods")
+        min_threshold = threshold_data["threshold"].min()
+        max_threshold = threshold_data["threshold"].max()
 
         sizes = threshold_data["size"].unique()
         if len(sizes) > 1:
-            size = self._prompt_for_size(list(sizes))
+            if interactive:
+                size = self._prompt_for_size(list(sizes))
+            else:
+                size = sizes[-1]
         else:
             size = sizes[0]
 
+        standard_data = standard_data[standard_data["size"] == size]
         threshold_data = threshold_data[threshold_data["size"] == size]
-        dfs = self._gen_sub_dfs(threshold_data)
-        self._plot(dfs)
+        standard_dfs = self._gen_sub_dfs(standard_data)
+        threshold_dfs = self._gen_sub_dfs(threshold_data)
+
+        fig, axes = self._plot(
+            threshold_dfs,
+            standard_dfs,
+            min_threshold=min_threshold,
+            max_threshold=max_threshold,
+        )
+        fig.suptitle(f"Threshold vs. Runtime (size = {size:,})", fontsize=16)
+        fig.tight_layout()
+
         plt.show()
 
 
