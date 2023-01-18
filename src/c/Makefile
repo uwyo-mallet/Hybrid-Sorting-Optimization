@@ -7,9 +7,9 @@
 all: QST-c
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -pedantic -O2
-DEBUGFLAGS = -fsanitize=address,undefined,leak -ggdb
-# DEBUGFLAGS = -ggdb
+CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -pedantic -O3 -DNDEBUG -march=native
+# DEBUGFLAGS = -ggdb -fsanitize=address,undefined,leak -Og
+# DEBUGFLAGS = -ggdb -O0
 
 OBJS = main.o benchmark.o platform.o sort.o
 

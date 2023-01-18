@@ -29,6 +29,7 @@ static const char args_doc[] = "INFILE";
 #define COLS_OPT 0x80
 #define VALS_OPT 0x81
 #define METH_OPT 0x82
+#define DUMP_OPT 0x83
 
 // clang-format off
 static struct argp_option options[] = {
@@ -39,6 +40,7 @@ static struct argp_option options[] = {
     {"cols",         COLS_OPT, "COLS",   0, "Columns to pass through to CSV."                  },
     {"vals",         VALS_OPT, "VALS",   0, "Values to pass through to CSV."                   },
     {"show-methods", METH_OPT, "TYPE",   OPTION_ARG_OPTIONAL, "Print supported methods"        },
+    {"dump-sorted",  DUMP_OPT, "TYPE",   OPTION_ARG_OPTIONAL, "Dump the resulting sorted data" },
     {0},
 };
 // clang-format on
@@ -57,6 +59,7 @@ struct arguments
   bool is_threshold_method;
   bool print_standard_methods;
   bool print_threshold_methods;
+  bool dump_sorted;
 };
 
 static error_t parse_opt(int key, char* arg, struct argp_state* state);
@@ -83,7 +86,7 @@ const char* METHODS[] = {
     "msort_heap",
     NULL, /* Methods from this point support a threshold value. */
     "msort_heap_hybrid_ins",
-    "msort_heap_hybrid_ins_iter",
+    "msort_heap_with_basic_ins",
     NULL,
 };
 
@@ -216,6 +219,22 @@ int main(int argc, char** argv)
     }
   }
 
+  if (arguments.dump_sorted)
+  {
+#define DEBUG_DUMP_FILENAME "./debug_dump.txt"
+    FILE* dump_fp = fopen(DEBUG_DUMP_FILENAME, "w");
+    if (dump_fp == NULL)
+    {
+      perror(DEBUG_DUMP_FILENAME);
+      return EXIT_FAILURE;
+    }
+    for (size_t i = 0; i < n; ++i)
+    {
+      fprintf(dump_fp, "%li\n", to_sort_buffer[i]);
+    }
+    fclose(dump_fp);
+  }
+
   if (write_results(&arguments, results, arguments.runs) != SUCCESS)
   {
     // Cleanup after thy self.
@@ -284,6 +303,9 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
       }
       args->print_standard_methods = true;
       args->print_threshold_methods = true;
+      break;
+    case DUMP_OPT:
+      args->dump_sorted = true;
       break;
     case ARGP_KEY_ARG:
       if (state->arg_num >= 1)

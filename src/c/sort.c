@@ -28,6 +28,24 @@ int int64_t_compare(const void *a, const void *b)
     } while (--__size > 0);      \
   } while (0)
 
+/* The next 4 #defines implement a very fast in-line stack abstraction. */
+/* The stack needs log(total_elements) entries (we could even subtract
+   log(THRESHOLD)). Since total_elements has type size_t, we get as
+   upper bound for log(total_elements): bits per byte (CHAR_BIT) *
+   sizeof(size_t).
+ */
+#define STACK_SIZE (CHAR_BIT * sizeof(size_t))
+#define PUSH(low, high) (((top->lo = (low)), (top->hi = (high)), ++top))
+#define POP(low, high) ((--top, (low = top->lo), (high = top->hi)))
+#define STACK_NOT_EMPTY (stack < top)
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+
+typedef struct
+{
+  size_t *lo;
+  size_t *hi;
+} stack_node;
+
 struct msort_param
 {
   size_t s;          /* Size of an individual element. */
@@ -47,8 +65,6 @@ static void msort_with_tmp(const struct msort_param *p, void *b, size_t n)
   n2 = n - n1;
   b1 = b;
   b2 = (char *)b + (n1 * p->s);
-
-  printf("==== (%lu, %lu)\n", n1, n2);
 
   msort_with_tmp(p, b1, n1);
   msort_with_tmp(p, b2, n2);
@@ -157,8 +173,75 @@ static void msort_with_tmp(const struct msort_param *p, void *b, size_t n)
   mempcpy(b, p->t, (n - n2) * s);
 }
 
-static void msort_with_tmp_hybrid_ins(const struct msort_param *p, void *b,
-                                      size_t n, const size_t threshold)
+void msort_heap(void *b, size_t n, size_t s, compar_d_fn_t cmp)
+{
+  // Assume the array is of sufficient size to require a heap allocation, and
+  // that we are sorting primitives.
+  const size_t size = n * s;
+  char *tmp = NULL;
+
+  tmp = malloc(size);
+  if (tmp == NULL)
+  {
+    // Kill the program with an error
+    perror("malloc");
+    exit(1);
+  }
+
+  struct msort_param p;
+  p.s = s;
+  p.var = 4;
+  p.cmp = cmp;
+  p.t = tmp;
+
+  // TODO: Guess the type?
+  if ((s & (sizeof(uint32_t) - 1)) == 0 &&
+      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+  {
+    if (s == sizeof(uint32_t))
+      p.var = 0;
+    else if (s == sizeof(uint64_t) &&
+             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+      p.var = 1;
+    else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
+             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+      p.var = 2;
+  }
+
+  msort_with_tmp(&p, b, n);
+
+  free(tmp);
+}
+
+static void basic_ins_sort(void *b, size_t n, const size_t s, compar_d_fn_t cmp)
+{
+  short c = 1;
+  char *base = (char *)b;
+  for (size_t i = 1; i < n; ++i)
+  {
+    size_t j = i - 1;
+    char v[s];
+    memcpy(&v, base + (i * s), s);
+    while ((*cmp)(base + (j * s), &v) > 0)
+    {
+      /* base[j + 1] = base[j]; */
+      memcpy(base + ((j + 1) * s), base + (j * s), s);
+      if (j == 0)
+      {
+        c = 0;
+        goto outer;
+      }
+      j--;
+    }
+
+  outer:
+    /* base[j + c] = v; */
+    memcpy(base + ((j + c) * s), &v, s);
+  }
+}
+
+static void msort_with_basic_ins_recur(const struct msort_param *p, void *b,
+                                       size_t n, const size_t threshold)
 {
   char *b1, *b2;
   size_t n1, n2;
@@ -167,63 +250,7 @@ static void msort_with_tmp_hybrid_ins(const struct msort_param *p, void *b,
 
   if (n < threshold)
   {
-#define min(x, y) ((x) < (y) ? (x) : (y))
-    const compar_d_fn_t cmp = p->cmp;
-    const size_t size = p->s;
-    char *const base_ptr = (char *)b;
-    char *const end_ptr = &base_ptr[size * (n - 1)];
-    char *tmp_ptr = b;
-    const size_t max_thresh = threshold * size;
-    char *thresh = min(end_ptr, base_ptr + max_thresh);
-    char *run_ptr;
-
-    /*
-      Find smallest element in first threshold and place it at the
-      array's beginning.  This is the smallest array element,
-      and the operation speeds up insertion sort's inner loop.
-    */
-
-    for (run_ptr = tmp_ptr + size; run_ptr <= thresh; run_ptr += size)
-      if ((*cmp)((void *)run_ptr, (void *)tmp_ptr) < 0)
-      {
-        tmp_ptr = run_ptr;
-      }
-
-    if (tmp_ptr != base_ptr)
-    {
-      SWAP(tmp_ptr, base_ptr, size);
-    }
-
-    /* Insertion sort, running from left-hand-side up to right-hand-side.  */
-    run_ptr = base_ptr + size;
-    while ((run_ptr += size) <= end_ptr)
-    {
-      tmp_ptr = run_ptr - size;
-      while ((*cmp)((void *)run_ptr, (void *)tmp_ptr) < 0)
-      {
-        tmp_ptr -= size;
-      }
-
-      tmp_ptr += size;
-      if (tmp_ptr != run_ptr)
-      {
-        char *trav;
-
-        trav = run_ptr + size;
-        while (--trav >= run_ptr)
-        {
-          char c = *trav;
-          char *hi, *lo;
-
-          for (hi = lo = trav; (lo -= size) >= tmp_ptr; hi = lo)
-          {
-            *hi = *lo;
-          }
-          *hi = c;
-        }
-      }
-    }
-
+    basic_ins_sort(b, n, p->s, p->cmp);
     return;
   }
 
@@ -232,8 +259,8 @@ static void msort_with_tmp_hybrid_ins(const struct msort_param *p, void *b,
   b1 = b;
   b2 = (char *)b + (n1 * p->s);
 
-  msort_with_tmp_hybrid_ins(p, b1, n1, threshold);
-  msort_with_tmp_hybrid_ins(p, b2, n2, threshold);
+  msort_with_basic_ins_recur(p, b1, n1, threshold);
+  msort_with_basic_ins_recur(p, b2, n2, threshold);
 
   char *tmp = p->t;
   const size_t s = p->s;
@@ -339,103 +366,190 @@ static void msort_with_tmp_hybrid_ins(const struct msort_param *p, void *b,
   mempcpy(b, p->t, (n - n2) * s);
 }
 
-typedef struct
+static void msort_with_old_ins_recur(const struct msort_param *p, void *b,
+                                     size_t n, const size_t threshold)
 {
-  size_t *lo;
-  size_t *hi;
-} stack_node;
+  char *b1, *b2;
+  size_t n1, n2;
 
-/* The next 4 #defines implement a very fast in-line stack abstraction. */
-/* The stack needs log(total_elements) entries (we could even subtract
-   log(THRESHOLD)). Since total_elements has type size_t, we get as
-   upper bound for log(total_elements): bits per byte (CHAR_BIT) *
-   sizeof(size_t).
- */
-#define STACK_SIZE (CHAR_BIT * sizeof(size_t))
-#define PUSH(low, high) (((top->lo = (low)), (top->hi = (high)), ++top))
-#define POP(low, high) ((--top, (low = top->lo), (high = top->hi)))
-#define STACK_NOT_EMPTY (stack < top)
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
+  if (n <= 1) return;
 
-static void msort_with_tmp_hybrid_ins_iter(const struct msort_param *p, void *b,
-                                           size_t n, const size_t threshold)
-{
-}
-
-#define MAX_MERGE_PENDING (sizeof(size_t) * 8)
-#define MIN_GALLOP 7
-
-struct s_slice
-{
-  int *base;
-  size_t len;
-  int power;
-};
-
-typedef struct s_MergeState MergeState;
-struct s_MergeState
-{
-  size_t min_gallop;
-  size_t len;        /* Length of input array */
-  int *tmp;          /* Temporary storage */
-  size_t alloced;    /* Length of temporary storage */
-  compar_d_fn_t cmp; /* Comparator function */
-
-  int n;
-  struct s_slice pending[MAX_MERGE_PENDING];
-};
-
-static size_t count_run(MergeState *ms, int *lo, int *hi, int *descending)
-{
-  size_t n;
-
-  *descending = 0;
-  ++lo;
-  if (lo == hi)
+  if (n < threshold)
   {
-    return 1;
-  }
+#define min(x, y) ((x) < (y) ? (x) : (y))
+    const compar_d_fn_t cmp = p->cmp;
+    const size_t size = p->s;
+    char *const base_ptr = (char *)b;
+    char *const end_ptr = &base_ptr[size * (n - 1)];
+    char *tmp_ptr = b;
+    const size_t max_thresh = threshold * size;
+    char *thresh = min(end_ptr, base_ptr + max_thresh);
+    char *run_ptr;
 
-  // TODO: this seems odd...
-  n = 2;
-  if (*lo < *(lo - 1))
-  {
-    *descending = 1;
-    for (lo = lo + 1; lo < hi; ++lo, ++n)
-    {
-      if (*lo > *(lo - 1))
+    /*
+      Find smallest element in first threshold and place it at the
+      array's beginning.  This is the smallest array element,
+      and the operation speeds up insertion sort's inner loop.
+    */
+
+    for (run_ptr = tmp_ptr + size; run_ptr <= thresh; run_ptr += size)
+      if ((*cmp)((void *)run_ptr, (void *)tmp_ptr) < 0)
       {
-        break;
+        tmp_ptr = run_ptr;
+      }
+
+    if (tmp_ptr != base_ptr)
+    {
+      SWAP(tmp_ptr, base_ptr, size);
+    }
+
+    /* Insertion sort, running from left-hand-side up to right-hand-side.  */
+    run_ptr = base_ptr + size;
+    while ((run_ptr += size) <= end_ptr)
+    {
+      tmp_ptr = run_ptr - size;
+      while ((*cmp)((void *)run_ptr, (void *)tmp_ptr) < 0)
+      {
+        tmp_ptr -= size;
+      }
+
+      tmp_ptr += size;
+      if (tmp_ptr != run_ptr)
+      {
+        char *trav;
+
+        trav = run_ptr + size;
+        while (--trav >= run_ptr)
+        {
+          char c = *trav;
+          char *hi, *lo;
+
+          for (hi = lo = trav; (lo -= size) >= tmp_ptr; hi = lo)
+          {
+            *hi = *lo;
+          }
+          *hi = c;
+        }
       }
     }
+
+    return;
   }
-  else
+
+  n1 = n / 2;
+  n2 = n - n1;
+  b1 = b;
+  b2 = (char *)b + (n1 * p->s);
+
+  msort_with_old_ins_recur(p, b1, n1, threshold);
+  msort_with_old_ins_recur(p, b2, n2, threshold);
+
+  char *tmp = p->t;
+  const size_t s = p->s;
+  compar_d_fn_t cmp = p->cmp;
+  switch (p->var)
   {
-    for (lo = lo + 1; lo < hi; ++lo, ++n)
-    {
-      if (*lo < *(lo - 1))
+    case 0:
+      while (n1 > 0 && n2 > 0)
       {
-        break;
+        if ((*cmp)(b1, b2) <= 0)
+        {
+          *(uint32_t *)tmp = *(uint32_t *)b1;
+          b1 += sizeof(uint32_t);
+          --n1;
+        }
+        else
+        {
+          *(uint32_t *)tmp = *(uint32_t *)b2;
+          b2 += sizeof(uint32_t);
+          --n2;
+        }
+        tmp += sizeof(uint32_t);
       }
-    }
+      break;
+    case 1:
+      while (n1 > 0 && n2 > 0)
+      {
+        if ((*cmp)(b1, b2) <= 0)
+        {
+          *(uint64_t *)tmp = *(uint64_t *)b1;
+          b1 += sizeof(uint64_t);
+          --n1;
+        }
+        else
+        {
+          *(uint64_t *)tmp = *(uint64_t *)b2;
+          b2 += sizeof(uint64_t);
+          --n2;
+        }
+        tmp += sizeof(uint64_t);
+      }
+      break;
+    case 2:
+      while (n1 > 0 && n2 > 0)
+      {
+        unsigned long *tmpl = (unsigned long *)tmp;
+        unsigned long *bl;
+
+        tmp += s;
+        if ((*cmp)(b1, b2) <= 0)
+        {
+          bl = (unsigned long *)b1;
+          b1 += s;
+          --n1;
+        }
+        else
+        {
+          bl = (unsigned long *)b2;
+          b2 += s;
+          --n2;
+        }
+        while (tmpl < (unsigned long *)tmp) *tmpl++ = *bl++;
+      }
+      break;
+    case 3:
+      while (n1 > 0 && n2 > 0)
+      {
+        if ((*cmp)(*(const void **)b1, *(const void **)b2) <= 0)
+        {
+          *(void **)tmp = *(void **)b1;
+          b1 += sizeof(void *);
+          --n1;
+        }
+        else
+        {
+          *(void **)tmp = *(void **)b2;
+          b2 += sizeof(void *);
+          --n2;
+        }
+        tmp += sizeof(void *);
+      }
+      break;
+    default:
+      while (n1 > 0 && n2 > 0)
+      {
+        if ((*cmp)(b1, b2) <= 0)
+        {
+          tmp = (char *)mempcpy(tmp, b1, s);
+          b1 += s;
+          --n1;
+        }
+        else
+        {
+          tmp = (char *)mempcpy(tmp, b2, s);
+          b2 += s;
+          --n2;
+        }
+      }
+      break;
   }
 
-  return n;
+  if (n1 > 0) mempcpy(tmp, b1, n1 * s);
+  mempcpy(b, p->t, (n - n2) * s);
 }
 
-static size_t gallop_left(MergeState *ms, size_t n, size_t hint)
-{
-  size_t ofs;
-  size_t lastofs;
-
-  // TODO
-
-  return -1;
-}
-
-/* static void timsort() */
-
-void msort_heap(void *b, size_t n, size_t s, compar_d_fn_t cmp)
+void msort_heap_with_old_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
+                             const size_t threshold)
 {
   // Assume the array is of sufficient size to require a heap allocation, and
   // that we are sorting primitives.
@@ -470,13 +584,12 @@ void msort_heap(void *b, size_t n, size_t s, compar_d_fn_t cmp)
       p.var = 2;
   }
 
-  msort_with_tmp(&p, b, n);
-
+  msort_with_old_ins_recur(&p, b, n, threshold);
   free(tmp);
 }
 
-void msort_heap_hybrid_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
-                           const size_t threshold)
+void msort_heap_with_basic_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
+                               const size_t threshold)
 {
   // Assume the array is of sufficient size to require a heap allocation, and
   // that we are sorting primitives.
@@ -511,48 +624,7 @@ void msort_heap_hybrid_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
       p.var = 2;
   }
 
-  msort_with_tmp_hybrid_ins(&p, b, n, threshold);
-
-  free(tmp);
-}
-
-void msort_heap_hybrid_ins_iter(void *b, size_t n, size_t s, compar_d_fn_t cmp,
-                                const size_t threshold)
-{
-  // Assume the array is of sufficient size to require a heap allocation, and
-  // that we are sorting primitives.
-  const size_t size = n * s;
-  char *tmp = NULL;
-
-  tmp = malloc(size);
-  if (tmp == NULL)
-  {
-    // Kill the program with an error
-    perror("malloc");
-    exit(1);
-  }
-
-  struct msort_param p;
-  p.s = s;
-  p.var = 4;
-  p.cmp = cmp;
-  p.t = tmp;
-
-  // TODO: Guess the type?
-  if ((s & (sizeof(uint32_t) - 1)) == 0 &&
-      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
-  {
-    if (s == sizeof(uint32_t))
-      p.var = 0;
-    else if (s == sizeof(uint64_t) &&
-             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
-      p.var = 1;
-    else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
-             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
-      p.var = 2;
-  }
-
-  msort_with_tmp_hybrid_ins_iter(&p, b, n, threshold);
+  msort_with_basic_ins_recur(&p, b, n, threshold);
 
   free(tmp);
 }

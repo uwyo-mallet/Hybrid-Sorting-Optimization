@@ -23,14 +23,14 @@ struct times measure_sort_time(int method, int64_t* data, const size_t n,
       msort_heap(data, n, sizeof(int64_t), int64_t_compare);
       break;
     /* Hybrid Methods ------------------------------------------------------- */
-    case MSORT_HEAP_HYBRID_INS:
+    case MSORT_HEAP_WITH_OLD_INS:
       start = get_times();
-      msort_heap_hybrid_ins(
+      msort_heap_with_old_ins(
           data, n, sizeof(int64_t), int64_t_compare, threshold);
       break;
-    case MSORT_HEAP_HYBRID_INS_ITER:
+    case MSORT_HEAP_WITH_BASIC_INS:
       start = get_times();
-      msort_heap_hybrid_ins_iter(
+      msort_heap_with_basic_ins(
           data, n, sizeof(int64_t), int64_t_compare, threshold);
       break;
     default:

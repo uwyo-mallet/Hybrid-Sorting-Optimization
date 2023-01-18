@@ -10,17 +10,16 @@ enum METHOD_TOK
   QSORT = 0,
   MSORT_HEAP,
   EMPTY,
-  MSORT_HEAP_HYBRID_INS,
-  MSORT_HEAP_HYBRID_INS_ITER,
+  MSORT_HEAP_WITH_OLD_INS,
+  MSORT_HEAP_WITH_BASIC_INS,
 };
 
 typedef int (*compar_d_fn_t)(const void*, const void*);
 int int64_t_compare(const void* a, const void* b);
 
 void msort_heap(void* b, size_t n, size_t s, compar_d_fn_t cmp);
-void msort_heap_hybrid_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
-                           const size_t threshold);
-void msort_heap_hybrid_ins_iter(void* b, size_t n, size_t s, compar_d_fn_t cmp,
-                                const size_t threshold);
-
+void msort_heap_with_old_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
+                             const size_t threshold);
+void msort_heap_with_basic_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
+                               const size_t threshold);
 #endif  // SORT_H_
