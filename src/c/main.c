@@ -21,9 +21,10 @@
 #define BILLION 1000000000
 
 // Argument Parsing
-const char* argp_program_version = "TODO";
+const char* argp_program_version = "1.0.0";
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
-static const char doc[] = "TODO";
+static const char doc[] =
+    "Evaluating sorting algorithms with homebrew methods.";
 static const char args_doc[] = "INFILE";
 
 #define COLS_OPT 0x80
