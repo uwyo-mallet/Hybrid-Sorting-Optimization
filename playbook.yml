@@ -1,0 +1,94 @@
+---
+- name: Quicksort Tuning
+  hosts: all
+
+  vars:
+    base_path: /QST
+    virtualenv_path: "{{ base_path }}/env"
+    virtualenv_py_path: "{{ virtualenv_path }}/bin/python"
+    frontends_path: "{{ base_path }}/QST-Frontends"
+    qst_path: "{{ base_path }}/quicksort-tuning"
+
+    data_path: "{{ qst_path }}/data"
+    data_size: "50_000"
+
+    job_parameters_list:
+      - "--methods qsort,msort_heap,msort_heap_with_old_ins,msort_heap_with_basic_ins"
+      - "--threshold 1,20,1"
+      - "--runs 100"
+      - "--exec {{ frontends_path }}/c/QST-c"
+    job_parameters: "{{ job_parameters_list | join(' ') }}"
+
+  tasks:
+    - name: Install build dependencies
+      apt:
+        autoclean: yes
+        name:
+          - clang
+          - git
+          - python3-venv
+          - tmux
+          - zlib1g
+          - zlib1g-dev
+        update_cache: yes
+      become: true
+
+    - name: Query FS
+      ansible.builtin.stat:
+        path: "{{ base_path }}"
+      register: base_path_stat
+
+    - name: Setup FS
+      ansible.builtin.file:
+        path: "{{ base_path }}"
+        state: directory
+        mode: 0755
+        owner: "{{ ansible_user_id }}"
+      when: base_path_stat.isdir is not defined or base_path_stat.stat.isdir == False
+      become: true
+
+    - name: Clone frontends
+      git:
+        repo: git@github.com:uwyo-mallet/QST-Frontends
+        dest: "{{ frontends_path }}"
+        clone: yes
+
+    - name: Build C frontend
+      make:
+        chdir: "{{ frontends_path }}/c"
+        params: CC=clang
+        target: all
+
+    - name: Clone QST
+      git:
+        repo: git@github.com:uwyo-mallet/quicksort-tuning
+        dest: "{{ qst_path }}"
+        clone: yes
+
+    - name: Query virtual env
+      ansible.builtin.stat:
+        path: "{{ virtualenv_path }}"
+      register: virtualenv_path_stat
+
+    - name: Create QST virtual env
+      ansible.builtin.pip:
+        virtualenv: "{{ virtualenv_path }}"
+        requirements: "{{ qst_path }}/requirements.txt"
+      when: virtualenv_path_stat.isdir is not defined or virtualenv_path_stat.stat.isdir == False
+
+    - name: Create data directory
+      ansible.builtin.shell: "{{ virtualenv_py_path }} src/data.py generate -o {{ data_path }} -t {{ data_size }}"
+      args:
+        chdir: "{{ qst_path }}"
+        creates: "{{ data_path }}"
+
+    - name: Create results directory
+      ansible.builtin.shell: "mkdir {{ qst_path }}/results"
+      args:
+        chdir: "{{ qst_path }}"
+        creates: "{{ qst_path }}/results"
+
+    - name: Run job in tmux session
+      ansible.builtin.shell:
+        chdir: "{{ qst_path }}"
+        cmd: "tmux new-session -d -s qst-session '{{ virtualenv_py_path }} src/jobs.py {{ job_parameters }} {{ data_path }} 2>&1 | tee log'"
