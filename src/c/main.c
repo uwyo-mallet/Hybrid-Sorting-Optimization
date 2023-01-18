@@ -86,7 +86,7 @@ const char* METHODS[] = {
     "qsort",
     "msort_heap",
     NULL, /* Methods from this point support a threshold value. */
-    "msort_heap_hybrid_ins",
+    "msort_heap_with_old_ins",
     "msort_heap_with_basic_ins",
     NULL,
 };
