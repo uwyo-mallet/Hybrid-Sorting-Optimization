@@ -21,7 +21,7 @@
 #define BILLION 1000000000
 
 // Argument Parsing
-const char* argp_program_version = "1.0.0";
+const char* argp_program_version = "1.1.0";
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 static const char doc[] =
     "Evaluating sorting algorithms with homebrew methods.";
