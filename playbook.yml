@@ -26,6 +26,7 @@
         name:
           - clang
           - git
+          - python3.9
           - python3-venv
           - tmux
           - zlib1g
@@ -43,7 +44,8 @@
         path: "{{ base_path }}"
         state: directory
         mode: 0755
-        owner: "{{ ansible_user_id }}"
+        owner: "{{ ansible_real_user_id }}"
+        group: "{{ ansible_real_group_id }}"
       when: base_path_stat.isdir is not defined or base_path_stat.stat.isdir == False
       become: true
 
@@ -73,6 +75,7 @@
     - name: Create QST virtual env
       ansible.builtin.pip:
         virtualenv: "{{ virtualenv_path }}"
+        virtualenv_python: "python3.9"
         requirements: "{{ qst_path }}/requirements.txt"
       when: virtualenv_path_stat.isdir is not defined or virtualenv_path_stat.stat.isdir == False
 
