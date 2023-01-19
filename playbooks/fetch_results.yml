@@ -1,0 +1,24 @@
+---
+- name: Quicksort Tuning Fetch Results
+  hosts: all
+
+  vars:
+    base_path: /QST
+    qst_path: "{{ base_path }}/quicksort-tuning"
+    results_path: "{{ qst_path }}/results"
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        autoclean: yes
+        name:
+          - rsync
+        update_cache: yes
+      become: true
+
+    - name: Fetch results
+      ansible.posix.synchronize:
+        archive: true
+        mode: "pull"
+        src: "{{ results_path }}"
+        dest: "../../"
