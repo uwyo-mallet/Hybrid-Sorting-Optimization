@@ -1,9 +1,108 @@
 #!/usr/bin/env python3
 """
 TODO
+
+Mostly just for example
 """
 
 import argparse
+import functools
+import gzip
+import sys
+import time
+from copy import deepcopy
+from pathlib import Path
+from typing import Optional
+
+import numpy as np
+
+METHODS = {}
+
+
+class OutputStream:
+    def __init__(self, path: Optional[Path] = None):
+        self.path = path
+
+    def __enter__(self):
+        if self.path is None:
+            return sys.stdout
+
+        self._file_obj = open(self.path, "w")
+        return self._file_obj
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.path is not None:
+            self._file_obj.close()
+
+
+def benchmark(func):
+    @functools.wraps(func)
+    def time_exec(*args, **kwargs):
+        start = time.time()
+        func(*args, **kwargs)
+        end = time.time()
+        return end - start
+
+    METHODS[func.__name__] = time_exec
+
+    return time_exec
+
+
+@benchmark
+def builtin_sort(l: list[int]):
+    """TODO."""
+    l.sort()
+    return l
+
+
+@benchmark
+def np_sort(l: list[int]):
+    """TODO."""
+    arr = np.asarray(l)
+    arr = arr.sort()
+    return arr
+
+
+def load(infile: Path):
+    """TODO."""
+    if not infile.is_file():
+        raise FileNotFoundError(infile)
+
+    data = []
+    if infile.suffix == ".gz":
+        with gzip.open(infile, "r") as f:
+            data = [int(i) for i in f.readlines()]
+    else:
+        with open(infile, "r") as f:
+            data = [int(i) for i in f.readlines()]
+
+    return data
+
+
+def write_output(f, method, input, size, threshold, times, cols, vals):
+    if cols is None or vals is None:
+        cols = ""
+        vals = ""
+    else:
+        cols = f",{cols.lstrip(',')}"
+        vals = f",{vals.lstrip(',')}"
+
+    default = {
+        "method": method,
+        "input": str(input),
+        "size": str(size),
+        "threshold": str(threshold),
+    }
+    time_header = ["wall_nsecs", "user_nsecs", "system_nsecs"]
+    default_row = ",".join(default.values())
+
+    header = list(default.keys()) + time_header + [cols]
+    header = ",".join(header)
+    f.write(header + "\n")
+
+    for i in times:
+        line = f"{default_row},{i},0,0{vals}\n"
+        f.write(line)
 
 
 def nat_int(s: str) -> int:
@@ -23,15 +122,20 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="COLS",
         help="Columns to pass through to the CSV",
     )
-
+    parser.add_argument(
+        "--vals",
+        action="store",
+        metavar="COLS",
+        help="Values to pass through to the CSV",
+    )
     parser.add_argument(
         "-m",
         "--method",
         action="store",
         metavar="METHOD",
+        default=list(METHODS.keys())[0],
         help="Sorting method for this test run",
     )
-
     parser.add_argument(
         "-o",
         "--output",
@@ -39,14 +143,76 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="FILE",
         help="Output to FILE instead of STDOUT",
     )
-
     parser.add_argument(
         "-r",
         "--runs",
         action="store",
         metavar="n",
+        type=nat_int,
         default=1,
         help="Number of times to sort the same data.",
     )
+    parser.add_argument(
+        "-t",
+        "--threshold",
+        action="store",
+        metavar="n",
+        default=0,
+        help="Number of times to sort the same data.",
+    )
+
+    # Groups for 'modes'
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--show-methods",
+        action="store",
+        metavar="TYPE",
+        default="all",
+        nargs="?",
+        help="Number of times to sort the same data.",
+    )
+
+    group.add_argument(
+        "infile",
+        metavar="FILE",
+        type=Path,
+        nargs="?",
+        help="Input data to sort.",
+    )
 
     return parser
+
+
+if __name__ == "__main__":
+    parser = build_parser()
+    args = parser.parse_args()
+    args = vars(args)
+
+    if not args["infile"]:
+        print("Missing positional argument FILE")
+        parser.print_usage()
+        exit(1)
+
+    method = args["method"]
+    if method not in METHODS.keys():
+        print(f"Invaild method: '{method}'")
+
+    data = load(args["infile"])
+
+    times = []
+    for i in range(args["runs"]):
+        to_sort = deepcopy(data)
+        wall_nsecs = METHODS[method](data)
+        times.append(wall_nsecs)
+
+    with OutputStream(args["output"]) as f:
+        write_output(
+            f,
+            args["method"],
+            args["infile"].absolute(),
+            len(data),
+            args["threshold"],
+            times,
+            args["cols"],
+            args["vals"],
+        )
