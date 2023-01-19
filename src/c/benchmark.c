@@ -33,6 +33,11 @@ struct times measure_sort_time(int method, int64_t* data, const size_t n,
       msort_heap_with_basic_ins(
           data, n, sizeof(int64_t), int64_t_compare, threshold);
       break;
+    case MSORT_HEAP_WITH_SHELL:
+      start = get_times();
+      msort_heap_with_shell(
+          data, n, sizeof(int64_t), int64_t_compare, threshold);
+      break;
     default:
       // How tf did you end up here?
       break;

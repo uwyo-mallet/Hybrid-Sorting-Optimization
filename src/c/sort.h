@@ -12,6 +12,7 @@ enum METHOD_TOK
   EMPTY,
   MSORT_HEAP_WITH_OLD_INS,
   MSORT_HEAP_WITH_BASIC_INS,
+  MSORT_HEAP_WITH_SHELL,
 };
 
 typedef int (*compar_d_fn_t)(const void*, const void*);
@@ -22,4 +23,6 @@ void msort_heap_with_old_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                              const size_t threshold);
 void msort_heap_with_basic_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                                const size_t threshold);
+void msort_heap_with_shell(void* b, size_t n, size_t s, compar_d_fn_t cmp,
+                           const size_t threshold);
 #endif  // SORT_H_

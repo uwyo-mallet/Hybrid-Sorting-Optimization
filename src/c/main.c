@@ -88,6 +88,7 @@ const char* METHODS[] = {
     NULL, /* Methods from this point support a threshold value. */
     "msort_heap_with_old_ins",
     "msort_heap_with_basic_ins",
+    "msort_heap_with_shell",
     NULL,
 };
 
