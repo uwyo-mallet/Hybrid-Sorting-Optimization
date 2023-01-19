@@ -194,3 +194,11 @@ cython_debug/
 # Docs
 docs/doxygen/
 docs/Doxyfile
+
+# Ansible
+inventory.yml
+
+# Misc
+debug_dump.txt
+perf.data
+perf.data.*
