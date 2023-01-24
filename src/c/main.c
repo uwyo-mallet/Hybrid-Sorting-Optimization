@@ -13,7 +13,6 @@
 #define ARRAY_SIZE(x) ((sizeof x) / (sizeof *x))
 
 // zlib specific
-#define SET_BINARY_MODE(file)
 #define CHUNK 32768
 #define WINDOW_BITS 15
 #define ENABLE_ZLIB_GZIP 32
@@ -454,20 +453,23 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
   // Decompress the file into memory
   do
   {
-    stream.avail_in = fread(in, 1, CHUNK, fp);
-    if (ferror(fp))
-    {
-      free(inflated_contents);
-      *dst = NULL;
-      inflateEnd(&stream);
-      return Z_ERRNO;
-    }
     if (stream.avail_in == 0)
     {
-      break;
+      size_t read = fread(in, 1, CHUNK, fp);
+      stream.avail_in = read;
+      if (ferror(fp))
+      {
+        free(inflated_contents);
+        *dst = NULL;
+        inflateEnd(&stream);
+        return Z_ERRNO;
+      }
+      if (stream.avail_in == 0)
+      {
+        break;
+      }
+      stream.next_in = &in[read - stream.avail_in];
     }
-
-    stream.next_in = in;
 
     do
     {
@@ -489,24 +491,33 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
 
       inflated_n += avail - stream.avail_out;
 
-      if (inflated_n >= inflated_alloc)
+      if (inflated_n == inflated_alloc)
       {
         inflated_alloc *= 2;
-        inflated_contents = realloc(inflated_contents, inflated_alloc);
-        if (inflated_contents == NULL)
+        unsigned char* const tmp = realloc(inflated_contents, inflated_alloc);
+        if (tmp == NULL)
         {
+          free(inflated_contents);
           inflateEnd(&stream);
           return Z_ERRNO;
         }
+        inflated_contents = tmp;
       }
     } while (stream.avail_out == 0);
 
-  } while (ret != Z_STREAM_END);
+    if (ret == Z_STREAM_END)
+    {
+      if (inflateReset(&stream) != Z_OK)
+      {
+        return Z_DATA_ERROR;
+      }
+    }
+
+  } while (stream.avail_in > 0 || ret != Z_STREAM_END);
 
   inflateEnd(&stream);
-  if (ret != Z_STREAM_END)
+  if (ret != Z_STREAM_END && ret != Z_OK)
   {
-    printf("EROR\n");
     return Z_DATA_ERROR;
   }
 
