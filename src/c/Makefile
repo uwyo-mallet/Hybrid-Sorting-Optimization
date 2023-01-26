@@ -9,9 +9,9 @@ all: QST-c
 CC = gcc
 CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -pedantic -O3 -DNDEBUG
 # DEBUGFLAGS = -ggdb -fsanitize=address,undefined,leak -Og
-# DEBUGFLAGS = -ggdb -O0
+# DEBUGFLAGS = -ggdb -O3
 
-OBJS = main.o benchmark.o platform.o sort.o
+OBJS = main.o benchmark.o platform.o sort.o msort_opt.o
 
 QST-c: $(OBJS)
 	$(CC) $(CFLAGS) $(DEBUGFLAGS) -o QST-c -lz $(OBJS)
@@ -27,6 +27,9 @@ benchmark.o: benchmark.c benchmark.h
 
 sort.o: sort.c sort.h
 	$(CC) $(CFLAGS) $(DEBUGFLAGS) sort.c -c
+
+msort_opt.o: msort_opt.c sort.h
+	$(CC) $(CFLAGS) $(DEBUGFLAGS) msort_opt.c -c
 
 clean:
 	rm -f QST-c $(OBJS)

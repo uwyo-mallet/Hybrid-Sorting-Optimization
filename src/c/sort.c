@@ -7,7 +7,7 @@
 #include <limits.h>
 #include <string.h>
 
-int int64_t_compare(const void *a, const void *b)
+__inline__ int int64_t_compare(const void *a, const void *b)
 {
   int64_t *A = (int64_t *)a;
   int64_t *B = (int64_t *)b;
@@ -29,31 +29,11 @@ int int64_t_compare(const void *a, const void *b)
     } while (--__size > 0);      \
   } while (0)
 
-/* The next 4 #defines implement a very fast in-line stack abstraction. */
-/* The stack needs log(total_elements) entries (we could even subtract
-   log(THRESHOLD)). Since total_elements has type size_t, we get as
-   upper bound for log(total_elements): bits per byte (CHAR_BIT) *
-   sizeof(size_t).
- */
-#define STACK_SIZE (CHAR_BIT * sizeof(size_t))
-#define PUSH(low, high) (((top->lo = (low)), (top->hi = (high)), ++top))
-#define POP(low, high) ((--top, (low = top->lo), (high = top->hi)))
-#define STACK_NOT_EMPTY (stack < top)
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-
 typedef struct
 {
   size_t *lo;
   size_t *hi;
 } stack_node;
-
-struct msort_param
-{
-  size_t s;          /* Size of an individual element. */
-  size_t var;        /* Variance */
-  compar_d_fn_t cmp; /* Comparator function. */
-  char *t;           /* Temporary storage space. */
-};
 
 static void msort_with_tmp(const struct msort_param *p, void *b, size_t n)
 {
@@ -214,14 +194,14 @@ void msort_heap(void *b, size_t n, size_t s, compar_d_fn_t cmp)
   free(tmp);
 }
 
-static void basic_ins_sort(void *b, size_t n, const size_t s, compar_d_fn_t cmp)
+void basic_ins_sort(void *b, size_t n, const size_t s, compar_d_fn_t cmp)
 {
   short c = 1;
   char *base = (char *)b;
+  char *v = alloca(s);
   for (size_t i = 1; i < n; ++i)
   {
     size_t j = i - 1;
-    char v[s];
     memcpy(&v, base + (i * s), s);
     while ((*cmp)(base + (j * s), &v) > 0)
     {
@@ -630,27 +610,30 @@ void msort_heap_with_basic_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
   free(tmp);
 }
 
-static void shell_sort(void *b, size_t n, size_t s, compar_d_fn_t cmp)
+void shell_sort(void *b, size_t n, size_t s, compar_d_fn_t cmp)
 {
   char *base = (char *)b;
+  char *tmp = alloca(s);
   for (size_t i = n / 2; i > 0; i /= 2)
   {
     for (size_t j = i; j < n; ++j)
     {
-      char *tmp = alloca(s);
-      // tmp = base[j];
-      memcpy(tmp, base + (j * s), s);
-
       size_t k = j;
-      while (k >= i && (*cmp)(base + ((k - i) * s), (void *)tmp) > 0)
+      if (k >= i && (*cmp)(base + ((k - i) * s), base + (j * s)) > 0)
       {
-        // base[k] = base[k - i];
-        memcpy(base + (k * s), base + ((k - i) * s), s);
-        k -= i;
-      }
+        // tmp = base[j];
+        memcpy(tmp, base + (j * s), s);
 
-      // base[k] = tmp;
-      memcpy(base + (k * s), tmp, s);
+        do
+        {
+          // base[k] = base[k - i];
+          memcpy(base + (k * s), base + ((k - i) * s), s);
+          k -= i;
+        } while (k >= i && (*cmp)(base + ((k - i) * s), (void *)tmp) > 0);
+
+        // base[k] = tmp;
+        memcpy(base + (k * s), tmp, s);
+      }
     }
   }
 }
@@ -818,6 +801,173 @@ void msort_heap_with_shell(void *b, size_t n, size_t s, compar_d_fn_t cmp,
   }
 
   msort_with_shell_recur(&p, b, n, threshold);
+
+  free(tmp);
+}
+
+static void msort_with_fast_ins_recur(const struct msort_param *p, void *b,
+                                      size_t n, const size_t threshold)
+{
+  char *b1, *b2;
+  size_t n1, n2;
+
+  if (n <= 1) return;
+
+  if (n < threshold)
+  {
+    fast_ins_sort(b, n, p->s, p->cmp);
+    return;
+  }
+
+  n1 = n / 2;
+  n2 = n - n1;
+  b1 = b;
+  b2 = (char *)b + (n1 * p->s);
+
+  msort_with_fast_ins_recur(p, b1, n1, threshold);
+  msort_with_fast_ins_recur(p, b2, n2, threshold);
+
+  char *tmp = p->t;
+  const size_t s = p->s;
+  compar_d_fn_t cmp = p->cmp;
+  switch (p->var)
+  {
+    case 0:
+      while (n1 > 0 && n2 > 0)
+      {
+        if ((*cmp)(b1, b2) <= 0)
+        {
+          *(uint32_t *)tmp = *(uint32_t *)b1;
+          b1 += sizeof(uint32_t);
+          --n1;
+        }
+        else
+        {
+          *(uint32_t *)tmp = *(uint32_t *)b2;
+          b2 += sizeof(uint32_t);
+          --n2;
+        }
+        tmp += sizeof(uint32_t);
+      }
+      break;
+    case 1:
+      while (n1 > 0 && n2 > 0)
+      {
+        if ((*cmp)(b1, b2) <= 0)
+        {
+          *(uint64_t *)tmp = *(uint64_t *)b1;
+          b1 += sizeof(uint64_t);
+          --n1;
+        }
+        else
+        {
+          *(uint64_t *)tmp = *(uint64_t *)b2;
+          b2 += sizeof(uint64_t);
+          --n2;
+        }
+        tmp += sizeof(uint64_t);
+      }
+      break;
+    case 2:
+      while (n1 > 0 && n2 > 0)
+      {
+        unsigned long *tmpl = (unsigned long *)tmp;
+        unsigned long *bl;
+
+        tmp += s;
+        if ((*cmp)(b1, b2) <= 0)
+        {
+          bl = (unsigned long *)b1;
+          b1 += s;
+          --n1;
+        }
+        else
+        {
+          bl = (unsigned long *)b2;
+          b2 += s;
+          --n2;
+        }
+        while (tmpl < (unsigned long *)tmp) *tmpl++ = *bl++;
+      }
+      break;
+    case 3:
+      while (n1 > 0 && n2 > 0)
+      {
+        if ((*cmp)(*(const void **)b1, *(const void **)b2) <= 0)
+        {
+          *(void **)tmp = *(void **)b1;
+          b1 += sizeof(void *);
+          --n1;
+        }
+        else
+        {
+          *(void **)tmp = *(void **)b2;
+          b2 += sizeof(void *);
+          --n2;
+        }
+        tmp += sizeof(void *);
+      }
+      break;
+    default:
+      while (n1 > 0 && n2 > 0)
+      {
+        if ((*cmp)(b1, b2) <= 0)
+        {
+          tmp = (char *)mempcpy(tmp, b1, s);
+          b1 += s;
+          --n1;
+        }
+        else
+        {
+          tmp = (char *)mempcpy(tmp, b2, s);
+          b2 += s;
+          --n2;
+        }
+      }
+      break;
+  }
+
+  if (n1 > 0) mempcpy(tmp, b1, n1 * s);
+  mempcpy(b, p->t, (n - n2) * s);
+}
+
+void msort_heap_with_fast_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
+                              const size_t threshold)
+{
+  // Assume the array is of sufficient size to require a heap allocation, and
+  // that we are sorting primitives.
+  const size_t size = n * s;
+  char *tmp = NULL;
+
+  tmp = malloc(size);
+  if (tmp == NULL)
+  {
+    // Kill the program with an error
+    perror("malloc");
+    exit(1);
+  }
+
+  struct msort_param p;
+  p.s = s;
+  p.var = 4;
+  p.cmp = cmp;
+  p.t = tmp;
+
+  // TODO: Guess the type?
+  if ((s & (sizeof(uint32_t) - 1)) == 0 &&
+      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+  {
+    if (s == sizeof(uint32_t))
+      p.var = 0;
+    else if (s == sizeof(uint64_t) &&
+             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+      p.var = 1;
+    else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
+             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+      p.var = 2;
+  }
+
+  msort_with_fast_ins_recur(&p, b, n, threshold);
 
   free(tmp);
 }

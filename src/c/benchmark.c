@@ -22,6 +22,18 @@ struct times measure_sort_time(int method, int64_t* data, const size_t n,
       start = get_times();
       msort_heap(data, n, sizeof(int64_t), int64_t_compare);
       break;
+    case BASIC_INS:
+      start = get_times();
+      basic_ins_sort(data, n, sizeof(int64_t), int64_t_compare);
+      break;
+    case FAST_INS:
+      start = get_times();
+      fast_ins_sort(data, n, sizeof(int64_t), int64_t_compare);
+      break;
+    case SHELL:
+      start = get_times();
+      shell_sort(data, n, sizeof(int64_t), int64_t_compare);
+      break;
     /* Hybrid Methods ------------------------------------------------------- */
     case MSORT_HEAP_WITH_OLD_INS:
       start = get_times();
@@ -36,6 +48,16 @@ struct times measure_sort_time(int method, int64_t* data, const size_t n,
     case MSORT_HEAP_WITH_SHELL:
       start = get_times();
       msort_heap_with_shell(
+          data, n, sizeof(int64_t), int64_t_compare, threshold);
+      break;
+    case MSORT_HEAP_WITH_FAST_INS:
+      start = get_times();
+      msort_heap_with_fast_ins(
+          data, n, sizeof(int64_t), int64_t_compare, threshold);
+      break;
+    case MSORT_HEAP_WITH_NETWORK:
+      start = get_times();
+      msort_heap_with_network(
           data, n, sizeof(int64_t), int64_t_compare, threshold);
       break;
     default:

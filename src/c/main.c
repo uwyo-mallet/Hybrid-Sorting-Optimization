@@ -84,10 +84,15 @@ typedef enum
 const char* METHODS[] = {
     "qsort",
     "msort_heap",
+    "basic_ins",
+    "fast_ins",
+    "shell",
     NULL, /* Methods from this point support a threshold value. */
     "msort_heap_with_old_ins",
     "msort_heap_with_basic_ins",
     "msort_heap_with_shell",
+    "msort_heap_with_fast_ins",
+    "msort_heap_with_network",
     NULL,
 };
 
@@ -210,7 +215,7 @@ int main(int argc, char** argv)
         fprintf(stderr, "Array was not sorted correctly!\n");
         for (size_t j = 0; j < n; ++j)
         {
-          fprintf(stderr, "%li\n", to_sort_buffer[i]);
+          fprintf(stderr, "%li\n", to_sort_buffer[j]);
         }
         free(data);
         free(to_sort_buffer);
