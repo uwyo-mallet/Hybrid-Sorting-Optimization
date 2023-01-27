@@ -202,8 +202,8 @@ void basic_ins_sort(void *b, size_t n, const size_t s, compar_d_fn_t cmp)
   for (size_t i = 1; i < n; ++i)
   {
     size_t j = i - 1;
-    memcpy(&v, base + (i * s), s);
-    while ((*cmp)(base + (j * s), &v) > 0)
+    memcpy(v, base + (i * s), s);
+    while ((*cmp)(base + (j * s), v) > 0)
     {
       /* base[j + 1] = base[j]; */
       memcpy(base + ((j + 1) * s), base + (j * s), s);
@@ -212,12 +212,12 @@ void basic_ins_sort(void *b, size_t n, const size_t s, compar_d_fn_t cmp)
         c = 0;
         goto outer;
       }
-      j--;
+      --j;
     }
 
   outer:
     /* base[j + c] = v; */
-    memcpy(base + ((j + c) * s), &v, s);
+    memcpy(base + ((j + c) * s), v, s);
   }
 }
 

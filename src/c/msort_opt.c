@@ -87,7 +87,7 @@ void fast_ins_sort(void *b, size_t n, const size_t s, compar_d_fn_t cmp)
     size_t j = i - 1;
     if ((*cmp)(base + (j * s), base + (i * s)) > 0)
     {
-      memcpy(&v, base + (i * s), s);
+      memcpy(v, base + (i * s), s);
 
       do
       {
@@ -99,11 +99,11 @@ void fast_ins_sort(void *b, size_t n, const size_t s, compar_d_fn_t cmp)
           goto outer;
         }
         j--;
-      } while ((*cmp)(base + (j * s), &v) > 0);
+      } while ((*cmp)(base + (j * s), v) > 0);
 
     outer:
       /* base[j + c] = v; */
-      memcpy(base + ((j + c) * s), &v, s);
+      memcpy(base + ((j + c) * s), v, s);
     }
   }
 }
@@ -211,7 +211,7 @@ inline static void even_faster_ins_sort(void *b, size_t n, const size_t s,
         size_t j = i - 1;
         if ((*cmp)(base + (j * s), base + (i * s)) > 0)
         {
-          memcpy(&v, base + (i * s), s);
+          memcpy(v, base + (i * s), s);
 
           do
           {
@@ -223,11 +223,11 @@ inline static void even_faster_ins_sort(void *b, size_t n, const size_t s,
               goto outer4;
             }
             j--;
-          } while ((*cmp)(base + (j * s), &v) > 0);
+          } while ((*cmp)(base + (j * s), v) > 0);
 
         outer4:
           /* base[j + c] = v; */
-          memcpy(base + ((j + c) * s), &v, s);
+          memcpy(base + ((j + c) * s), v, s);
         }
       }
       return;
