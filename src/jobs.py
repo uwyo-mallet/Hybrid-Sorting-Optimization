@@ -298,7 +298,16 @@ class Job:
             elif pbar is not None:
                 pbar.update()
 
-            subprocess.run(i, capture_output=True, check=True)
+            try:
+                subprocess.run(i, capture_output=True, check=True)
+            except subprocess.CalledProcessError as e:
+                print("".join(["-"] * 80), end="\n\n")
+                print("stdout:")
+                print(e.stdout.decode())
+                print("".join(["-"] * 80), end="\n\n")
+                print("stderr:")
+                print(e.stderr.decode())
+                raise e
 
     def __len__(self) -> int:
         """Return the number of required subcommand calls."""
