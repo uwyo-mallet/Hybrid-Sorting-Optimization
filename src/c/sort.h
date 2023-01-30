@@ -45,7 +45,7 @@ int sort_t_compare(const void* a, const void* b);
 
 void msort_heap(void* b, size_t n, size_t s, compar_d_fn_t cmp);
 void basic_ins_sort(void* b, size_t n, size_t s, compar_d_fn_t cmp);
-/* void fast_ins_sort(void* b, size_t n, size_t s, compar_d_fn_t cmp); */
+void fast_ins_sort(void* b, size_t n, size_t s, compar_d_fn_t cmp);
 void msort_heap_with_old_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                              const size_t threshold);
 void msort_heap_with_basic_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,

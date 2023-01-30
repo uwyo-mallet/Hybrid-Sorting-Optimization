@@ -28,8 +28,7 @@ struct times measure_sort_time(int method, sort_t* data, const size_t n,
       break;
     case FAST_INS:
       start = get_times();
-      /* fast_ins_sort(data, n, sizeof(sort_t), sort_t_compare); */
-      abort();
+      fast_ins_sort(data, n, sizeof(sort_t), sort_t_compare);
       break;
     case SHELL:
       start = get_times();

@@ -4,25 +4,28 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <stdatomic.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "sort.h"
 
-enum dtype
-{
-  UINT32,
-  UINT64,
-  ULONG,
-  DEFAULT
-};
+#define UINT32 0
+#define UINT64 1
+#define ULONG 2
+#define PTR 3
+#define DEFAULT 4
 
 #define min_cmp(a, b, cmp) (((*cmp))((a), (b)) < 0 ? (a) : (b))
 #define max_cmp(a, b, cmp) (((*cmp))((a), (b)) > 0 ? (a) : (b))
 
-inline static void sort2(void *a, void *b, const size_t s, void *tmp,
-                         const unsigned short var, compar_d_fn_t cmp)
+inline static void sort2(struct msort_param *p, void *a, void *b)
 {
-  switch (var)
+  void *tmp = p->t;
+  const compar_d_fn_t cmp = p->cmp;
+  const size_t s = p->s;
+
+  switch (p->var)
   {
     case UINT32:
       // 32-bit
@@ -35,10 +38,12 @@ inline static void sort2(void *a, void *b, const size_t s, void *tmp,
       *(uint64_t *)b = *(uint64_t *)max_cmp(a, b, cmp);
       *(uint64_t *)a = *(uint64_t *)tmp;
       break;
-    case ULONG:
-      *(unsigned long *)tmp = *(unsigned long *)min_cmp(a, b, cmp);
-      *(unsigned long *)b = *(unsigned long *)max_cmp(a, b, cmp);
-      *(unsigned long *)a = *(unsigned long *)tmp;
+    case PTR:
+      // clang-format off
+      *(void **)tmp = (void **)min_cmp(*(const void **)a, *(const void **)b, cmp);
+      *(void **)b = (void **)max_cmp(*(const void **)a, *(const void **)b, cmp);
+      *(void **)a = *(void **)tmp;
+      // clang-format on
       break;
     default:
       memcpy(tmp, min_cmp(a, b, cmp), s);
@@ -48,89 +53,53 @@ inline static void sort2(void *a, void *b, const size_t s, void *tmp,
   }
 }
 
-inline static void sort3(void *p0, void *p1, void *p2, const size_t s,
-                         void *tmp, const enum dtype var, compar_d_fn_t cmp)
+inline static void sort3(struct msort_param *p, void *p0, void *p1, void *p2)
 {
-  sort2(p0, p1, s, tmp, var, cmp);
-  sort2(p1, p2, s, tmp, var, cmp);
-  sort2(p0, p1, s, tmp, var, cmp);
+  sort2(p, p0, p1);
+  sort2(p, p1, p2);
+  sort2(p, p0, p1);
 }
 
-inline static void sort4(void *p0, void *p1, void *p2, void *p3, const size_t s,
-                         void *tmp, const enum dtype var, compar_d_fn_t cmp)
+inline static void sort4(struct msort_param *p, void *p0, void *p1, void *p2,
+                         void *p3)
 {
-  sort2(p0, p1, s, tmp, var, cmp);
-  sort2(p2, p3, s, tmp, var, cmp);
-  sort2(p0, p2, s, tmp, var, cmp);
-  sort2(p1, p3, s, tmp, var, cmp);
-  sort2(p1, p2, s, tmp, var, cmp);
+  sort2(p, p0, p1);
+  sort2(p, p2, p3);
+  sort2(p, p0, p2);
+  sort2(p, p1, p3);
+  sort2(p, p1, p2);
 }
 
-inline static void sort6(void *p0, void *p1, void *p2, void *p3, void *p4,
-                         void *p5, const size_t s, void *tmp,
-                         const enum dtype var, compar_d_fn_t cmp)
+inline static void ins_sort(const struct msort_param *const p, void *b,
+                            size_t n)
 {
-  sort3(p0, p1, p2, s, tmp, var, cmp);
-  sort3(p3, p4, p5, s, tmp, var, cmp);
-  sort2(p0, p3, s, tmp, var, cmp);
-  sort2(p2, p5, s, tmp, var, cmp);
-  sort4(p1, p2, p3, p4, s, tmp, var, cmp);
-}
+  const compar_d_fn_t cmp = p->cmp;
+  const size_t s = p->s;
+  const unsigned var = p->var;
 
-void fast_ins_sort(void *b, size_t n, const size_t s, compar_d_fn_t cmp)
-{
-  char *base = (char *)b;
-  unsigned short c = 1;
-  char *v = alloca(s);
-  for (size_t i = 1; i < n; ++i)
-  {
-    size_t j = i - 1;
-    if ((*cmp)(base + (j * s), base + (i * s)) > 0)
-    {
-      memcpy(v, base + (i * s), s);
+  fprintf(stderr, "SIZE: %lu\n", s);
+  fprintf(stderr, "VAR: %u\n", var);
+  fprintf(stderr, "N: %lu\n", n);
 
-      do
-      {
-        /* base[j + 1] = base[j]; */
-        memcpy(base + ((j + 1) * s), base + (j * s), s);
-        if (j == 0)
-        {
-          c = 0;
-          goto outer;
-        }
-        j--;
-      } while ((*cmp)(base + (j * s), v) > 0);
-
-    outer:
-      /* base[j + c] = v; */
-      memcpy(base + ((j + c) * s), v, s);
-    }
-  }
-}
-
-inline static void even_faster_ins_sort(void *b, size_t n, const size_t s,
-                                        const enum dtype var, compar_d_fn_t cmp)
-{
-  char *v = alloca(s);
-  uint32_t u32v;
-  uint64_t u64v;
-  unsigned long ulv;
+  // Space for any of the possible types
+  char *tmp = alloca(s);
 
   char *base = (char *)b;
+  struct msort_param sort_param = {s, var, cmp, tmp};
   switch (n)
   {
     case 2:
-      sort2(base, base + s, s, v, var, cmp);
+      sort2(&sort_param, base, base + s);
       return;
     case 3:
-      sort3(base, base + s, base + (2 * s), s, v, var, cmp);
+      sort3(&sort_param, base, base + s, base + (2 * s));
       return;
     case 4:
-      sort4(base, base + s, base + (2 * s), base + (3 * s), s, v, var, cmp);
+      sort4(&sort_param, base, base + s, base + (2 * s), base + (3 * s));
       return;
   }
 
-  unsigned short c = 1;
+  unsigned c = 1;
   switch (var)
   {
     case UINT32:
@@ -139,7 +108,7 @@ inline static void even_faster_ins_sort(void *b, size_t n, const size_t s,
         size_t j = i - 1;
         if ((*cmp)(base + (j * s), base + (i * s)) > 0)
         {
-          u32v = ((uint32_t *)base)[i];
+          *(uint32_t *)tmp = ((uint32_t *)base)[i];
 
           do
           {
@@ -147,13 +116,13 @@ inline static void even_faster_ins_sort(void *b, size_t n, const size_t s,
             if (j == 0)
             {
               c = 0;
-              goto outer1;
+              goto outer0;
             }
             j--;
-          } while ((*cmp)(base + (j * s), &u32v) > 0);
+          } while ((*cmp)(base + (j * s), &tmp) > 0);
 
-        outer1:
-          ((uint32_t *)base)[j + c] = u32v;
+        outer0:
+          ((uint32_t *)base)[j + c] = *(uint32_t *)tmp;
         }
       }
       return;
@@ -163,7 +132,7 @@ inline static void even_faster_ins_sort(void *b, size_t n, const size_t s,
         size_t j = i - 1;
         if ((*cmp)(base + (j * s), base + (i * s)) > 0)
         {
-          u64v = ((uint64_t *)base)[i];
+          *(uint64_t *)tmp = ((uint64_t *)base)[i];
 
           do
           {
@@ -171,37 +140,37 @@ inline static void even_faster_ins_sort(void *b, size_t n, const size_t s,
             if (j == 0)
             {
               c = 0;
-              goto outer2;
+              goto outer1;
             }
             j--;
-          } while ((*cmp)(base + (j * s), &u64v) > 0);
+          } while ((*cmp)(base + (j * s), &tmp) > 0);
 
-        outer2:
-          ((uint64_t *)base)[j + c] = u64v;
+        outer1:
+          ((uint64_t *)base)[j + c] = *(uint64_t *)tmp;
         }
       }
       return;
-    case ULONG:
+    case PTR:
       for (size_t i = 1; i < n; ++i)
       {
         size_t j = i - 1;
         if ((*cmp)(base + (j * s), base + (i * s)) > 0)
         {
-          ulv = ((unsigned long *)base)[i];
+          *(void **)tmp = ((void **)base)[i];
 
           do
           {
-            ((unsigned long *)base)[j + 1] = ((unsigned long *)base)[j];
+            ((void **)base)[j + 1] = ((void **)base)[j];
             if (j == 0)
             {
               c = 0;
               goto outer3;
             }
             j--;
-          } while ((*cmp)(base + (j * s), &ulv) > 0);
+          } while ((*cmp)(base + (j * s), *(const void **)tmp) > 0);
 
         outer3:
-          ((unsigned long *)base)[j + c] = ulv;
+          ((void **)base)[j + c] = *(void **)tmp;
         }
       }
       return;
@@ -211,7 +180,7 @@ inline static void even_faster_ins_sort(void *b, size_t n, const size_t s,
         size_t j = i - 1;
         if ((*cmp)(base + (j * s), base + (i * s)) > 0)
         {
-          memcpy(v, base + (i * s), s);
+          memcpy(tmp, base + (i * s), s);
 
           do
           {
@@ -223,19 +192,39 @@ inline static void even_faster_ins_sort(void *b, size_t n, const size_t s,
               goto outer4;
             }
             j--;
-          } while ((*cmp)(base + (j * s), v) > 0);
+          } while ((*cmp)(base + (j * s), tmp) > 0);
 
         outer4:
           /* base[j + c] = v; */
-          memcpy(base + ((j + c) * s), v, s);
+          memcpy(base + ((j + c) * s), tmp, s);
         }
       }
       return;
   }
 }
 
-static void msort_with_network_recur(const struct msort_param *p, void *b,
-                                     size_t n, const size_t threshold)
+void fast_ins_sort(void *b, size_t n, size_t s, compar_d_fn_t cmp)
+{
+  unsigned var = DEFAULT;
+  if ((s & (sizeof(uint32_t) - 1)) == 0 &&
+      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+  {
+    if (s == sizeof(uint32_t))
+      var = UINT32;
+    else if (s == sizeof(uint64_t) &&
+             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+      var = UINT64;
+    else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
+             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+      var = ULONG;
+  }
+
+  const struct msort_param p = {s, var, cmp, NULL};
+  ins_sort(&p, b, n);
+}
+
+static void msort_with_network_recur(const struct msort_param *const p, void *b,
+                                     const size_t n, const size_t threshold)
 {
   char *b1, *b2;
   size_t n1, n2;
@@ -248,7 +237,7 @@ static void msort_with_network_recur(const struct msort_param *p, void *b,
 
   if (n < threshold)
   {
-    even_faster_ins_sort(b, n, s, p->var, cmp);
+    ins_sort(p, b, n);
     return;
   }
 
@@ -320,6 +309,24 @@ static void msort_with_network_recur(const struct msort_param *p, void *b,
         while (tmpl < (unsigned long *)tmp) *tmpl++ = *bl++;
       }
       break;
+    case PTR:
+      while (n1 > 0 && n2 > 0)
+      {
+        if ((*cmp)(*(const void **)b1, *(const void **)b2) <= 0)
+        {
+          *(void **)tmp = *(void **)b1;
+          b1 += sizeof(void *);
+          --n1;
+        }
+        else
+        {
+          *(void **)tmp = *(void **)b2;
+          b2 += sizeof(void *);
+          --n2;
+        }
+        tmp += sizeof(void *);
+      }
+      break;
     default:
       while (n1 > 0 && n2 > 0)
       {
@@ -367,7 +374,7 @@ void msort_heap_with_network(void *b, size_t n, size_t s, compar_d_fn_t cmp,
   p.cmp = cmp;
   p.t = tmp;
 
-  // TODO: Guess the type?
+  // Use alignment to avoid some syscalls later down the line.
   if ((s & (sizeof(uint32_t) - 1)) == 0 &&
       ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
   {
@@ -382,6 +389,151 @@ void msort_heap_with_network(void *b, size_t n, size_t s, compar_d_fn_t cmp,
   }
 
   msort_with_network_recur(&p, b, n, threshold);
+
+  free(tmp);
+}
+
+void msort_with_network(void *b, size_t n, size_t s, compar_d_fn_t cmp,
+                        const size_t threshold)
+{
+  if (n <= 1) return;
+
+  size_t size = n * s;
+  char *tmp = NULL;
+
+  struct msort_param p;
+  p.s = s;
+  p.var = DEFAULT;
+  p.cmp = cmp;
+  /* p.arg = arg; */
+
+  if (s > 32)
+  {
+    size = 2 * n * sizeof(void *) + s;
+  }
+
+  if (size < 1024)
+  {
+    // Size is small, so stack allocate it.
+    p.t = alloca(size);
+  }
+  else
+  {
+    // Avoid allocating too much memory
+
+    static long int phys_pages;
+    static int pagesize;
+
+    if (pagesize == 0)
+    {
+      phys_pages = __sysconf(_SC_PHYS_PAGES);
+
+      if (phys_pages == -1)
+        /* Error while determining the memory size.  So let's
+           assume there is enough memory.  Otherwise the
+           implementer should provide a complete implementation of
+           the `sysconf' function.  */
+        phys_pages = (long int)(~0ul >> 1);
+
+      /* The following determines that we will never use more than
+         a quarter of the physical memory.  */
+      phys_pages /= 4;
+
+      /* Make sure phys_pages is written to memory.  */
+      /* atomic_write_barrier(); */
+
+      pagesize = __sysconf(_SC_PAGESIZE);
+    }
+
+    /* Just a comment here.  We cannot compute
+         phys_pages * pagesize
+         and compare the needed amount of memory against this value.
+         The problem is that some systems might have more physical
+         memory then can be represented with a `size_t' value (when
+         measured in bytes.  */
+
+    /* If the memory requirements are too high don't allocate memory.  */
+    if (size / pagesize > (size_t)phys_pages)
+    {
+      fprintf(stderr, "Page memory error\n");
+      abort();
+    }
+
+    /* It's somewhat large, so malloc it.  */
+    int save = errno;
+    tmp = malloc(size);
+    errno = save;
+    /* __set_errno(save); */
+    if (tmp == NULL)
+    {
+      /* Couldn't get space, so use the slower algorithm
+         that doesn't need a temporary array.  */
+      fprintf(stderr, "Page memory error 2\n");
+      abort();
+    }
+    p.t = tmp;
+  }
+
+  if (s > 32)
+  {
+    /* Indirect sorting */
+    char *ip = (char *)b;
+    void **tp = (void **)(p.t + n * sizeof(void *));
+    void **t = tp;
+    void *tmp_storage = (void *)(tp + n);
+
+    while ((void *)t < tmp_storage)
+    {
+      *t++ = ip;
+      ip += s;
+    }
+    p.s = sizeof(void *);
+    p.var = PTR;
+    msort_with_network_recur(&p, p.t + n * sizeof(void *), n, threshold);
+
+    /* tp[0] .. tp[n - 1] is now sorted, copy around entries of
+       the original array.  Knuth vol. 3 (2nd ed.) exercise 5.2-10.  */
+    char *kp;
+    size_t i;
+    for (i = 0, ip = (char *)b; i < n; i++, ip += s)
+      if ((kp = tp[i]) != ip)
+      {
+        size_t j = i;
+        char *jp = ip;
+        memcpy(tmp_storage, ip, s);
+
+        do
+        {
+          size_t k = (kp - (char *)b) / s;
+          tp[j] = jp;
+          memcpy(jp, kp, s);
+          j = k;
+          jp = kp;
+          kp = tp[k];
+        } while (kp != ip);
+
+        tp[j] = jp;
+        memcpy(jp, tmp_storage, s);
+      }
+  }
+  else
+  {
+    // Use alignment to avoid some syscalls later down the line.
+    if ((s & (sizeof(uint32_t) - 1)) == 0 &&
+        ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+    {
+      if (s == sizeof(uint32_t))
+        p.var = UINT32;
+      else if (s == sizeof(uint64_t) &&
+               ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+        p.var = UINT64;
+      else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
+               ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+        p.var = ULONG;
+    }
+
+    msort_with_network_recur(&p, b, n, threshold);
+  }
 
   free(tmp);
 }
