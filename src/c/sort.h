@@ -4,6 +4,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef SORT_LARGE_STRUCTS
+typedef struct
+{
+  // Volatile to prevent optimizer from removing this altogether.
+  volatile char c[4 * 1024];
+  int64_t val;
+} sort_t;
+#else
+typedef int64_t sort_t;
+#endif  // SORT_LARGE_STRUCTS
+
 extern const char* METHODS[];
 enum METHOD_TOK
 {
@@ -18,22 +29,23 @@ enum METHOD_TOK
   MSORT_HEAP_WITH_SHELL,
   MSORT_HEAP_WITH_FAST_INS,
   MSORT_HEAP_WITH_NETWORK,
+  MSORT_WITH_NETWORK,
 };
 
 typedef int (*compar_d_fn_t)(const void*, const void*);
 struct msort_param
 {
   size_t s;          /* Size of an individual element. */
-  size_t var;        /* Variance */
+  unsigned var;      /* Variance */
   compar_d_fn_t cmp; /* Comparator function. */
   char* t;           /* Temporary storage space. */
 };
 
-int int64_t_compare(const void* a, const void* b);
+int sort_t_compare(const void* a, const void* b);
 
 void msort_heap(void* b, size_t n, size_t s, compar_d_fn_t cmp);
 void basic_ins_sort(void* b, size_t n, size_t s, compar_d_fn_t cmp);
-void fast_ins_sort(void* b, size_t n, size_t s, compar_d_fn_t cmp);
+/* void fast_ins_sort(void* b, size_t n, size_t s, compar_d_fn_t cmp); */
 void msort_heap_with_old_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                              const size_t threshold);
 void msort_heap_with_basic_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
@@ -45,4 +57,6 @@ void msort_heap_with_fast_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                               const size_t threshold);
 void msort_heap_with_network(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                              const size_t threshold);
+void msort_with_network(void* b, size_t n, size_t s, compar_d_fn_t cmp,
+                        const size_t threshold);
 #endif  // SORT_H_

@@ -9,6 +9,7 @@
 
 #include "benchmark.h"
 #include "platform.h"
+#include "sort.h"
 
 #define ARRAY_SIZE(x) ((sizeof x) / (sizeof *x))
 
@@ -66,11 +67,11 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state);
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
 ssize_t is_method(char* m, bool* is_threshold_method);
-int read_txt(FILE* fp, int64_t** dst, size_t* n);
-int read_zip(FILE* fp, int64_t** dst, size_t* n);
+int read_txt(FILE* fp, sort_t** dst, size_t* n);
+int read_zip(FILE* fp, sort_t** dst, size_t* n);
 int write_results(const struct arguments* args, const struct times* results,
                   const size_t num_results);
-bool is_sorted(int64_t* data, const size_t n);
+bool is_sorted(sort_t* data, const size_t n);
 
 typedef enum
 {
@@ -93,6 +94,7 @@ const char* METHODS[] = {
     "msort_heap_with_shell",
     "msort_heap_with_fast_ins",
     "msort_heap_with_network",
+    "msort_with_network",
     NULL,
 };
 
@@ -149,7 +151,7 @@ int main(int argc, char** argv)
 
   // Read the input data into a buffer
   size_t n = 0;
-  int64_t* data = NULL;
+  sort_t* data = NULL;
   FILE* in_file;
   if (is_txt)
   {
@@ -184,7 +186,7 @@ int main(int argc, char** argv)
   fclose(in_file);
 
   arguments.in_file_len = n;
-  int64_t* to_sort_buffer = malloc(sizeof(int64_t) * n);
+  sort_t* to_sort_buffer = malloc(sizeof(sort_t) * n);
   if (to_sort_buffer == NULL)
   {
     free(data);
@@ -204,7 +206,8 @@ int main(int argc, char** argv)
   bool checked = false;
   for (int64_t i = 0; i < arguments.runs; ++i)
   {
-    memcpy(to_sort_buffer, data, n * sizeof(int64_t));
+    memcpy(to_sort_buffer, data, n * sizeof(sort_t));
+
     results[i] = measure_sort_time(
         arguments.method, to_sort_buffer, n, arguments.threshold);
     if (!checked)
@@ -215,7 +218,11 @@ int main(int argc, char** argv)
         fprintf(stderr, "Array was not sorted correctly!\n");
         for (size_t j = 0; j < n; ++j)
         {
+#ifdef SORT_LARGE_STRUCTS
+          fprintf(stderr, "%li\n", to_sort_buffer[j].val);
+#else
           fprintf(stderr, "%li\n", to_sort_buffer[j]);
+#endif  // SORT_LARGE_STRUCTS
         }
         free(data);
         free(to_sort_buffer);
@@ -236,7 +243,11 @@ int main(int argc, char** argv)
     }
     for (size_t i = 0; i < n; ++i)
     {
+#ifdef SORT_LARGE_STRUCTS
+      fprintf(dump_fp, "%li\n", to_sort_buffer[i].val);
+#else
       fprintf(dump_fp, "%li\n", to_sort_buffer[i]);
+#endif  // SORT_LARGE_STRUCTS
     }
     fclose(dump_fp);
   }
@@ -269,7 +280,7 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
     case 'm':
       if ((args->method = is_method(arg, &args->is_threshold_method)) < 0)
       {
-        printf("Invalid method selected: '%s\n'", arg);
+        printf("Invalid method selected: '%s'\n", arg);
         return ARGP_ERR_UNKNOWN;
       }
       break;
@@ -364,14 +375,14 @@ ssize_t is_method(char* m, bool* is_threshold_method)
 /*
  * TODO
  */
-int read_txt(FILE* fp, int64_t** dst, size_t* n)
+int read_txt(FILE* fp, sort_t** dst, size_t* n)
 {
   char* endptr = NULL;
 
   // Allocate a buffer for data from text file.
   size_t alloc = CHUNK;
   *n = 0;
-  *dst = malloc(sizeof(int64_t) * alloc);
+  *dst = malloc(sizeof(sort_t) * alloc);
   if (dst == NULL)
   {
     perror("memory");
@@ -410,8 +421,12 @@ int read_txt(FILE* fp, int64_t** dst, size_t* n)
         exit(ENOMEM);
       }
     }
-
+#ifdef SORT_LARGE_STRUCTS
+    (*dst)[*n].val = val;
+#else
     (*dst)[*n] = val;
+#endif  // SORT_LARGE_STRUCTS
+
     ++(*n);
   }
   if (ferror(fp))
@@ -424,7 +439,7 @@ int read_txt(FILE* fp, int64_t** dst, size_t* n)
   return SUCCESS;
 }
 
-int read_zip(FILE* fp, int64_t** dst, size_t* n)
+int read_zip(FILE* fp, sort_t** dst, size_t* n)
 {
   int ret;
   unsigned char in[CHUNK];
@@ -536,7 +551,7 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
 
   *n = 0;
   size_t alloc = inflated_alloc / 4;
-  *dst = malloc(sizeof(int64_t) * alloc);
+  *dst = malloc(sizeof(sort_t) * alloc);
   if (dst == NULL)
   {
     free(inflated_contents);
@@ -564,7 +579,13 @@ int read_zip(FILE* fp, int64_t** dst, size_t* n)
         }
         return PARSE_ERROR;
       }
+
+#ifdef SORT_LARGE_STRUCTS
+      (*dst)[*n].val = val;
+#else
       (*dst)[*n] = val;
+#endif  // SORT_LARGE_STRUCTS
+
       ++(*n);
       start = i + 1;
     }
@@ -647,14 +668,21 @@ int write_results(const struct arguments* args, const struct times* results,
   return SUCCESS;
 }
 
-bool is_sorted(int64_t* data, const size_t n)
+bool is_sorted(sort_t* data, const size_t n)
 {
   for (size_t i = 0; i < n - 1; ++i)
   {
+#ifdef SORT_LARGE_STRUCTS
+    if (data[i + 1].val < data[i].val)
+    {
+      return false;
+    }
+#else
     if (data[i + 1] < data[i])
     {
       return false;
     }
+#endif
   }
 
   return true;

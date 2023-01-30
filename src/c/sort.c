@@ -7,7 +7,17 @@
 #include <limits.h>
 #include <string.h>
 
-__inline__ int int64_t_compare(const void *a, const void *b)
+#ifdef SORT_LARGE_STRUCTS
+__inline__ int sort_t_compare(const void *a, const void *b)
+{
+  sort_t *A = (sort_t *)a;
+  sort_t *B = (sort_t *)b;
+  if (A->val < B->val) return -1;
+  if (A->val > B->val) return 1;
+  return 0;
+}
+#else
+__inline__ int sort_t_compare(const void *a, const void *b)
 {
   int64_t *A = (int64_t *)a;
   int64_t *B = (int64_t *)b;
@@ -15,6 +25,7 @@ __inline__ int int64_t_compare(const void *a, const void *b)
   if (*A > *B) return 1;
   return 0;
 }
+#endif  // SORT_LARGE_STRUCTS
 
 #define SWAP(a, b, size)         \
   do                             \
@@ -815,7 +826,8 @@ static void msort_with_fast_ins_recur(const struct msort_param *p, void *b,
 
   if (n < threshold)
   {
-    fast_ins_sort(b, n, p->s, p->cmp);
+    /* fast_ins_sort(b, n, p->s, p->cmp); */
+    abort();
     return;
   }
 
