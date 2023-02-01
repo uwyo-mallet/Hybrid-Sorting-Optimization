@@ -40,14 +40,14 @@ inline static void sort2(struct msort_param *p, void *a, void *b)
       return;
     case PTR:
       // clang-format off
-    {
-      void* a1 = *(void**)a;
-      sort_t* A = (sort_t*)a1;
+    /* { */
+    /*   void* a1 = *(void**)a; */
+    /*   sort_t* A = (sort_t*)a1; */
 
-      void* b1 = *(void**)b;
-      sort_t* B = (sort_t*)b1;
-      fprintf(stderr, "A: %li B: %li\n", A->val, B->val);
-    }
+    /*   void* b1 = *(void**)b; */
+    /*   sort_t* B = (sort_t*)b1; */
+    /*   fprintf(stderr, "A: %li B: %li\n", A->val, B->val); */
+    /* } */
       /* fprintf(stderr, "A: %li", (sort_t*)((void**)a)->val) */
 
       *(const void **)tmp = (void*)min_cmp((*(const void **)a), (*(const void **)b), cmp);

@@ -10,10 +10,16 @@
 #include "sort.h"
 
 typedef unsigned long ul_t;
+typedef struct
+{
+  volatile char c[4 * 1024];
+  int64_t val;
+} large_struct;
 
 #define N 512U
 #define MIN_THRESH 0U
-#define MAX_THRESH 32U
+#define MAX_THRESH 256U
+#define ARRAY_SIZE(x) (sizeof(x)) / (sizeof(*x))
 static const int random_data_int[N] = {
     -182, -229, -86,  243,  -125, -230, -154, 167,  163,  98,   -4,   201,
     122,  8,    85,   236,  67,   -13,  161,  -204, 252,  139,  199,  -196,
@@ -149,7 +155,14 @@ static const int64_t random_data_int64_t[N] = {
     225,  228,  -210, 158,  -39,  -199, 73,   -193, 41,   -220, 229,  51,
     36,   4,    -82,  58,   200,  233,  -214, -250};
 
-#define ARRAY_SIZE(x) (sizeof(x)) / (sizeof(*x))
+static int compare_large_struct(const void* a, const void* b)
+{
+  large_struct* A = (large_struct*)a;
+  large_struct* B = (large_struct*)b;
+  if (A->val < B->val) return -1;
+  if (A->val > B->val) return 1;
+  return 0;
+}
 
 #define COMPARE(TYPE)                                     \
   static int compare_##TYPE(const void* a, const void* b) \
@@ -302,6 +315,126 @@ COMPARE(double)
     }                                                                   \
   }
 
+#define TEST_LARGE_STRUCT_ASCENDING(FUNC)                                  \
+  static void test_large_struct_ascending_##FUNC(void** state)             \
+  {                                                                        \
+    (void)state;                                                           \
+    large_struct expected_mem[N];                                          \
+    large_struct test_mem[N];                                              \
+    for (int i = -255; i < 256; ++i)                                       \
+    {                                                                      \
+      const size_t index = i + 255;                                        \
+      test_mem[index].val = i;                                             \
+    }                                                                      \
+    memcpy(expected_mem, test_mem, N * sizeof(large_struct));              \
+    qsort(expected_mem, N, sizeof(large_struct), compare_large_struct);    \
+    FUNC(test_mem, N, sizeof(large_struct), compare_large_struct);         \
+    assert_memory_equal(test_mem, expected_mem, N * sizeof(large_struct)); \
+  }
+
+#define TEST_LARGE_STRUCT_DESCENDING(FUNC)                                 \
+  static void test_large_struct_descending_##FUNC(void** state)            \
+  {                                                                        \
+    (void)state;                                                           \
+    large_struct expected_mem[N];                                          \
+    large_struct test_mem[N];                                              \
+    for (int i = 256; i > -255; --i)                                       \
+    {                                                                      \
+      const size_t index = (-i) + 256;                                     \
+      test_mem[index].val = i;                                             \
+    }                                                                      \
+    memcpy(expected_mem, test_mem, N * sizeof(large_struct));              \
+    qsort(expected_mem, N, sizeof(large_struct), compare_large_struct);    \
+    FUNC(test_mem, N, sizeof(large_struct), compare_large_struct);         \
+    assert_memory_equal(test_mem, expected_mem, N * sizeof(large_struct)); \
+  }
+
+#define TEST_LARGE_STRUCT_RANDOM(FUNC)                                     \
+  static void test_large_struct_random_##FUNC(void** state)                \
+  {                                                                        \
+    (void)state;                                                           \
+    const int64_t* data = random_data_int64_t;                             \
+    large_struct expected_mem[N];                                          \
+    large_struct test_mem[N];                                              \
+    for (size_t i = 0; i < N; ++i)                                         \
+    {                                                                      \
+      test_mem[i].val = data[i];                                           \
+    }                                                                      \
+    memcpy(expected_mem, test_mem, N * sizeof(large_struct));              \
+    qsort(expected_mem, N, sizeof(large_struct), compare_large_struct);    \
+    FUNC(test_mem, N, sizeof(large_struct), compare_large_struct);         \
+    assert_memory_equal(test_mem, expected_mem, N * sizeof(large_struct)); \
+  }
+
+#define TEST_THRESH_LARGE_STRUCT_ASCENDING(FUNC)                           \
+  static void test_thresh_large_struct_ascending_##FUNC(void** state)      \
+  {                                                                        \
+    (void)state;                                                           \
+    large_struct expected_mem[N];                                          \
+    large_struct test_mem[N];                                              \
+    large_struct working_mem[N];                                           \
+    for (int i = -255; i < 256; ++i)                                       \
+    {                                                                      \
+      const size_t index = i + 255;                                        \
+      test_mem[index].val = i;                                             \
+    }                                                                      \
+    memcpy(expected_mem, test_mem, N * sizeof(large_struct));              \
+    qsort(expected_mem, N, sizeof(large_struct), compare_large_struct);    \
+    for (size_t i = MIN_THRESH; i < MAX_THRESH; ++i)                       \
+    {                                                                      \
+      memcpy(working_mem, test_mem, N * sizeof(large_struct));             \
+      FUNC(working_mem, N, sizeof(large_struct), compare_large_struct, i); \
+      assert_memory_equal(                                                 \
+          working_mem, expected_mem, N * sizeof(large_struct));            \
+    }                                                                      \
+  }
+
+#define TEST_THRESH_LARGE_STRUCT_DESCENDING(FUNC)                          \
+  static void test_thresh_large_struct_descending_##FUNC(void** state)     \
+  {                                                                        \
+    (void)state;                                                           \
+    large_struct expected_mem[N];                                          \
+    large_struct test_mem[N];                                              \
+    large_struct working_mem[N];                                           \
+    for (int i = 256; i > -255; --i)                                       \
+    {                                                                      \
+      const size_t index = (-i) + 256;                                     \
+      test_mem[index].val = i;                                             \
+    }                                                                      \
+    memcpy(expected_mem, test_mem, N * sizeof(large_struct));              \
+    qsort(expected_mem, N, sizeof(large_struct), compare_large_struct);    \
+    for (size_t i = MIN_THRESH; i < MAX_THRESH; ++i)                       \
+    {                                                                      \
+      memcpy(working_mem, test_mem, N * sizeof(large_struct));             \
+      FUNC(working_mem, N, sizeof(large_struct), compare_large_struct, i); \
+      assert_memory_equal(                                                 \
+          working_mem, expected_mem, N * sizeof(large_struct));            \
+    }                                                                      \
+  }
+
+#define TEST_THRESH_LARGE_STRUCT_RANDOM(FUNC)                              \
+  static void test_thresh_large_struct_random_##FUNC(void** state)         \
+  {                                                                        \
+    (void)state;                                                           \
+    large_struct expected_mem[N];                                          \
+    large_struct test_mem[N];                                              \
+    large_struct working_mem[N];                                           \
+    const int64_t* data = random_data_int64_t;                             \
+    for (size_t i = 0; i < N; ++i)                                         \
+    {                                                                      \
+      test_mem[i].val = data[i];                                           \
+    }                                                                      \
+    memcpy(expected_mem, test_mem, N * sizeof(large_struct));              \
+    qsort(expected_mem, N, sizeof(large_struct), compare_large_struct);    \
+    for (size_t i = MIN_THRESH; i < MAX_THRESH; ++i)                       \
+    {                                                                      \
+      memcpy(working_mem, test_mem, N * sizeof(large_struct));             \
+      FUNC(working_mem, N, sizeof(large_struct), compare_large_struct, i); \
+      assert_memory_equal(                                                 \
+          working_mem, expected_mem, N * sizeof(large_struct));            \
+    }                                                                      \
+  }
+
 /* Empty (n <= 1) */
 TEST_EMPTY(qsort)
 TEST_EMPTY(msort_heap)
@@ -341,6 +474,7 @@ TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_fast_ins, int)
 TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_network, int)
 TEST_THRESH_SIGNED_DESCENDING(msort_with_network, int)
 
+/* int random */
 TEST_SIGNED_RANDOM(qsort, int)
 TEST_SIGNED_RANDOM(msort_heap, int)
 TEST_SIGNED_RANDOM(basic_ins_sort, int)
@@ -379,6 +513,7 @@ TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_fast_ins, int32_t)
 TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_network, int32_t)
 TEST_THRESH_SIGNED_DESCENDING(msort_with_network, int32_t)
 
+/* int32_t random */
 TEST_SIGNED_RANDOM(qsort, int32_t)
 TEST_SIGNED_RANDOM(msort_heap, int32_t)
 TEST_SIGNED_RANDOM(basic_ins_sort, int32_t)
@@ -417,6 +552,7 @@ TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_fast_ins, int64_t)
 TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_network, int64_t)
 TEST_THRESH_SIGNED_DESCENDING(msort_with_network, int64_t)
 
+/* int64_t random */
 TEST_SIGNED_RANDOM(qsort, int64_t)
 TEST_SIGNED_RANDOM(msort_heap, int64_t)
 TEST_SIGNED_RANDOM(basic_ins_sort, int64_t)
@@ -428,6 +564,44 @@ TEST_THRESH_SIGNED_RANDOM(msort_heap_with_shell, int64_t)
 TEST_THRESH_SIGNED_RANDOM(msort_heap_with_fast_ins, int64_t)
 TEST_THRESH_SIGNED_RANDOM(msort_heap_with_network, int64_t)
 TEST_THRESH_SIGNED_RANDOM(msort_with_network, int64_t)
+
+/* large_struct ascending */
+TEST_LARGE_STRUCT_ASCENDING(qsort)
+TEST_LARGE_STRUCT_ASCENDING(msort_heap)
+TEST_LARGE_STRUCT_ASCENDING(basic_ins_sort)
+TEST_LARGE_STRUCT_ASCENDING(fast_ins_sort)
+TEST_LARGE_STRUCT_ASCENDING(shell_sort)
+TEST_THRESH_LARGE_STRUCT_ASCENDING(msort_heap_with_old_ins)
+TEST_THRESH_LARGE_STRUCT_ASCENDING(msort_heap_with_basic_ins)
+TEST_THRESH_LARGE_STRUCT_ASCENDING(msort_heap_with_shell)
+TEST_THRESH_LARGE_STRUCT_ASCENDING(msort_heap_with_fast_ins)
+TEST_THRESH_LARGE_STRUCT_ASCENDING(msort_heap_with_network)
+TEST_THRESH_LARGE_STRUCT_ASCENDING(msort_with_network)
+
+/* large_struct descending */
+TEST_LARGE_STRUCT_DESCENDING(qsort)
+TEST_LARGE_STRUCT_DESCENDING(msort_heap)
+TEST_LARGE_STRUCT_DESCENDING(basic_ins_sort)
+TEST_LARGE_STRUCT_DESCENDING(fast_ins_sort)
+TEST_LARGE_STRUCT_DESCENDING(shell_sort)
+TEST_THRESH_LARGE_STRUCT_DESCENDING(msort_heap_with_old_ins)
+TEST_THRESH_LARGE_STRUCT_DESCENDING(msort_heap_with_basic_ins)
+TEST_THRESH_LARGE_STRUCT_DESCENDING(msort_heap_with_shell)
+TEST_THRESH_LARGE_STRUCT_DESCENDING(msort_heap_with_fast_ins)
+TEST_THRESH_LARGE_STRUCT_DESCENDING(msort_heap_with_network)
+TEST_THRESH_LARGE_STRUCT_DESCENDING(msort_with_network)
+/* large_struct random */
+TEST_LARGE_STRUCT_RANDOM(qsort)
+TEST_LARGE_STRUCT_RANDOM(msort_heap)
+TEST_LARGE_STRUCT_RANDOM(basic_ins_sort)
+TEST_LARGE_STRUCT_RANDOM(fast_ins_sort)
+TEST_LARGE_STRUCT_RANDOM(shell_sort)
+TEST_THRESH_LARGE_STRUCT_RANDOM(msort_heap_with_old_ins)
+TEST_THRESH_LARGE_STRUCT_RANDOM(msort_heap_with_basic_ins)
+TEST_THRESH_LARGE_STRUCT_RANDOM(msort_heap_with_shell)
+TEST_THRESH_LARGE_STRUCT_RANDOM(msort_heap_with_fast_ins)
+TEST_THRESH_LARGE_STRUCT_RANDOM(msort_heap_with_network)
+TEST_THRESH_LARGE_STRUCT_RANDOM(msort_with_network)
 
 int main()
 {
@@ -455,7 +629,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_ascending_int_msort_heap_with_old_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int_msort_heap_with_basic_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int_msort_heap_with_shell),
-      /* cmocka_unit_test(test_thresh_signed_ascending_int_msort_heap_with_fast_ins), */
+      cmocka_unit_test(test_thresh_signed_ascending_int_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_ascending_int_msort_with_network),
       /* int descending */
@@ -467,7 +641,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_descending_int_msort_heap_with_old_ins),
       cmocka_unit_test(test_thresh_signed_descending_int_msort_heap_with_basic_ins),
       cmocka_unit_test(test_thresh_signed_descending_int_msort_heap_with_shell),
-      /* cmocka_unit_test(test_thresh_signed_descending_int_msort_heap_with_fast_ins), */
+      cmocka_unit_test(test_thresh_signed_descending_int_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_descending_int_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_descending_int_msort_with_network),
       /* int random */
@@ -479,7 +653,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_random_int_msort_heap_with_old_ins),
       cmocka_unit_test(test_thresh_signed_random_int_msort_heap_with_basic_ins),
       cmocka_unit_test(test_thresh_signed_random_int_msort_heap_with_shell),
-      /* cmocka_unit_test(test_thresh_signed_random_int_msort_heap_with_fast_ins), */
+      cmocka_unit_test(test_thresh_signed_random_int_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_random_int_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_random_int_msort_with_network),
 
@@ -492,7 +666,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_ascending_int32_t_msort_heap_with_old_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int32_t_msort_heap_with_basic_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int32_t_msort_heap_with_shell),
-      /* cmocka_unit_test(test_thresh_signed_ascending_int32_t_msort_heap_with_fast_ins), */
+      cmocka_unit_test(test_thresh_signed_ascending_int32_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int32_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_ascending_int32_t_msort_with_network),
       /* int32_t descending */
@@ -504,7 +678,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_descending_int32_t_msort_heap_with_old_ins),
       cmocka_unit_test(test_thresh_signed_descending_int32_t_msort_heap_with_basic_ins),
       cmocka_unit_test(test_thresh_signed_descending_int32_t_msort_heap_with_shell),
-      /* cmocka_unit_test(test_thresh_signed_descending_int32_t_msort_heap_with_fast_ins), */
+      cmocka_unit_test(test_thresh_signed_descending_int32_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_descending_int32_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_descending_int32_t_msort_with_network),
       /* int32_t random */
@@ -516,7 +690,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_random_int32_t_msort_heap_with_old_ins),
       cmocka_unit_test(test_thresh_signed_random_int32_t_msort_heap_with_basic_ins),
       cmocka_unit_test(test_thresh_signed_random_int32_t_msort_heap_with_shell),
-      /* cmocka_unit_test(test_thresh_signed_random_int32_t_msort_heap_with_fast_ins), */
+      cmocka_unit_test(test_thresh_signed_random_int32_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_random_int32_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_random_int32_t_msort_with_network),
 
@@ -529,7 +703,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_ascending_int64_t_msort_heap_with_old_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int64_t_msort_heap_with_basic_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int64_t_msort_heap_with_shell),
-      /* cmocka_unit_test(test_thresh_signed_ascending_int64_t_msort_heap_with_fast_ins), */
+      cmocka_unit_test(test_thresh_signed_ascending_int64_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int64_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_ascending_int64_t_msort_with_network),
       /* int64_t descending */
@@ -541,7 +715,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_descending_int64_t_msort_heap_with_old_ins),
       cmocka_unit_test(test_thresh_signed_descending_int64_t_msort_heap_with_basic_ins),
       cmocka_unit_test(test_thresh_signed_descending_int64_t_msort_heap_with_shell),
-      /* cmocka_unit_test(test_thresh_signed_descending_int64_t_msort_heap_with_fast_ins), */
+      cmocka_unit_test(test_thresh_signed_descending_int64_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_descending_int64_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_descending_int64_t_msort_with_network),
       /* int64_t random */
@@ -553,9 +727,46 @@ int main()
       cmocka_unit_test(test_thresh_signed_random_int64_t_msort_heap_with_old_ins),
       cmocka_unit_test(test_thresh_signed_random_int64_t_msort_heap_with_basic_ins),
       cmocka_unit_test(test_thresh_signed_random_int64_t_msort_heap_with_shell),
-      /* cmocka_unit_test(test_thresh_signed_random_int64_t_msort_heap_with_fast_ins), */
+      cmocka_unit_test(test_thresh_signed_random_int64_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_random_int64_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_random_int64_t_msort_with_network),
+
+      /* large_struct ascending */
+      cmocka_unit_test(test_large_struct_ascending_qsort),
+      cmocka_unit_test(test_large_struct_ascending_msort_heap),
+      cmocka_unit_test(test_large_struct_ascending_basic_ins_sort),
+      cmocka_unit_test(test_large_struct_ascending_fast_ins_sort),
+      cmocka_unit_test(test_large_struct_ascending_shell_sort),
+      cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_old_ins),
+      cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_basic_ins),
+      cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_shell),
+      cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_fast_ins),
+      cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_network),
+      cmocka_unit_test(test_thresh_large_struct_ascending_msort_with_network),
+      /* large_struct descending */
+      cmocka_unit_test(test_large_struct_descending_qsort),
+      cmocka_unit_test(test_large_struct_descending_msort_heap),
+      cmocka_unit_test(test_large_struct_descending_basic_ins_sort),
+      cmocka_unit_test(test_large_struct_descending_fast_ins_sort),
+      cmocka_unit_test(test_large_struct_descending_shell_sort),
+      /* cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_old_ins), */
+      /* cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_basic_ins), */
+      /* cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_shell), */
+      /* cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_fast_ins), */
+      /* cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_network), */
+      cmocka_unit_test(test_thresh_large_struct_descending_msort_with_network),
+      /* large_struct random */
+      cmocka_unit_test(test_large_struct_random_qsort),
+      cmocka_unit_test(test_large_struct_random_msort_heap),
+      cmocka_unit_test(test_large_struct_random_basic_ins_sort),
+      cmocka_unit_test(test_large_struct_random_fast_ins_sort),
+      /* cmocka_unit_test(test_large_struct_random_shell_sort), */
+      /* cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_old_ins), */
+      /* cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_basic_ins), */
+      /* cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_shell), */
+      /* cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_fast_ins), */
+      /* cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_network), */
+      cmocka_unit_test(test_thresh_large_struct_random_msort_with_network),
   };
   // clang-format on
 
