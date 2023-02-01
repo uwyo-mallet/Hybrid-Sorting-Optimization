@@ -737,7 +737,7 @@ int main()
       cmocka_unit_test(test_large_struct_ascending_basic_ins_sort),
       cmocka_unit_test(test_large_struct_ascending_fast_ins_sort),
       cmocka_unit_test(test_large_struct_ascending_shell_sort),
-      cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_old_ins),
+      /* cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_old_ins), */
       cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_basic_ins),
       cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_shell),
       cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_fast_ins),
@@ -750,10 +750,10 @@ int main()
       cmocka_unit_test(test_large_struct_descending_fast_ins_sort),
       cmocka_unit_test(test_large_struct_descending_shell_sort),
       /* cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_old_ins), */
-      /* cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_basic_ins), */
-      /* cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_shell), */
-      /* cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_fast_ins), */
-      /* cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_network), */
+      cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_basic_ins),
+      cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_shell),
+      cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_fast_ins),
+      cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_network),
       cmocka_unit_test(test_thresh_large_struct_descending_msort_with_network),
       /* large_struct random */
       cmocka_unit_test(test_large_struct_random_qsort),
@@ -762,10 +762,10 @@ int main()
       cmocka_unit_test(test_large_struct_random_fast_ins_sort),
       /* cmocka_unit_test(test_large_struct_random_shell_sort), */
       /* cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_old_ins), */
-      /* cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_basic_ins), */
+      cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_basic_ins),
       /* cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_shell), */
-      /* cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_fast_ins), */
-      /* cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_network), */
+      cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_fast_ins),
+      cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_network),
       cmocka_unit_test(test_thresh_large_struct_random_msort_with_network),
   };
   // clang-format on
