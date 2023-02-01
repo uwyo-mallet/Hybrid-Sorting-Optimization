@@ -828,8 +828,7 @@ static void msort_with_fast_ins_recur(const struct msort_param *p, void *b,
 
   if (n < threshold)
   {
-    /* fast_ins_sort(b, n, p->s, p->cmp); */
-    abort();
+    fast_ins_sort(b, n, p->s, p->cmp);
     return;
   }
 
