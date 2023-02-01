@@ -7,9 +7,9 @@
 all: QST-c
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -pedantic # -O3 -DNDEBUG
-CFLAGS += -DSORT_LARGE_STRUCTS
-DEBUGFLAGS = -ggdb -fsanitize=address,undefined,leak -Og
+CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -pedantic -O3 -DNDEBUG
+# CFLAGS += -DSORT_LARGE_STRUCTS
+# DEBUGFLAGS = -ggdb -fsanitize=address,undefined,leak -Og
 TESTFLAGS = -Wno-unused-function -Wno-unused-const-variable
 # DEBUGFLAGS = -ggdb -O3
 # DEBUGFLAGS = -ggdb -Og

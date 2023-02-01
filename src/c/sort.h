@@ -5,10 +5,11 @@
 #include <stdlib.h>
 
 #ifdef SORT_LARGE_STRUCTS
+#define PAD_SIZE 4 * 1024
 typedef struct
 {
   // Volatile to prevent optimizer from removing this altogether.
-  volatile char c[4 * 1024];
+  volatile char c[PAD_SIZE];
   int64_t val;
 } sort_t;
 #else
