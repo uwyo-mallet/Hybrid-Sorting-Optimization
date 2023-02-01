@@ -32,24 +32,35 @@ inline static void sort2(struct msort_param *p, void *a, void *b)
       *(uint32_t *)tmp = *(uint32_t *)min_cmp(a, b, cmp);
       *(uint32_t *)b = *(uint32_t *)max_cmp(a, b, cmp);
       *(uint32_t *)a = *(uint32_t *)tmp;
-      break;
+      return;
     case UINT64:
       *(uint64_t *)tmp = *(uint64_t *)min_cmp(a, b, cmp);
       *(uint64_t *)b = *(uint64_t *)max_cmp(a, b, cmp);
       *(uint64_t *)a = *(uint64_t *)tmp;
-      break;
+      return;
     case PTR:
       // clang-format off
-      *(void **)tmp = (void **)min_cmp(*(const void **)a, *(const void **)b, cmp);
-      *(void **)b = (void **)max_cmp(*(const void **)a, *(const void **)b, cmp);
-      *(void **)a = *(void **)tmp;
+    {
+      void* a1 = *(void**)a;
+      sort_t* A = (sort_t*)a1;
+
+      void* b1 = *(void**)b;
+      sort_t* B = (sort_t*)b1;
+      fprintf(stderr, "A: %li B: %li\n", A->val, B->val);
+    }
+      /* fprintf(stderr, "A: %li", (sort_t*)((void**)a)->val) */
+
+      *(const void **)tmp = (void*)min_cmp((*(const void **)a), (*(const void **)b), cmp);
+      *(const void **)b = (void*)max_cmp((*(const void **)a), (*(const void **)b), cmp);
+      *(const void **)a = *(void **)tmp;
+
+      return;
       // clang-format on
-      break;
     default:
       memcpy(tmp, min_cmp(a, b, cmp), s);
       memcpy(b, max_cmp(a, b, cmp), s);
       memcpy(a, tmp, s);
-      break;
+      return;
   }
 }
 
@@ -76,13 +87,7 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
   const compar_d_fn_t cmp = p->cmp;
   const size_t s = p->s;
   const unsigned var = p->var;
-
-  fprintf(stderr, "SIZE: %lu\n", s);
-  fprintf(stderr, "VAR: %u\n", var);
-  fprintf(stderr, "N: %lu\n", n);
-
-  // Space for any of the possible types
-  char *tmp = alloca(s);
+  char *tmp = p->t;
 
   char *base = (char *)b;
   struct msort_param sort_param = {s, var, cmp, tmp};
@@ -99,12 +104,13 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
       return;
   }
 
-  unsigned c = 1;
+  unsigned c;
   switch (var)
   {
     case UINT32:
       for (size_t i = 1; i < n; ++i)
       {
+        c = 1;
         size_t j = i - 1;
         if ((*cmp)(base + (j * s), base + (i * s)) > 0)
         {
@@ -119,7 +125,7 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
               goto outer0;
             }
             j--;
-          } while ((*cmp)(base + (j * s), &tmp) > 0);
+          } while ((*cmp)(base + (j * s), tmp) > 0);
 
         outer0:
           ((uint32_t *)base)[j + c] = *(uint32_t *)tmp;
@@ -129,6 +135,7 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
     case UINT64:
       for (size_t i = 1; i < n; ++i)
       {
+        c = 1;
         size_t j = i - 1;
         if ((*cmp)(base + (j * s), base + (i * s)) > 0)
         {
@@ -143,7 +150,7 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
               goto outer1;
             }
             j--;
-          } while ((*cmp)(base + (j * s), &tmp) > 0);
+          } while ((*cmp)(base + (j * s), tmp) > 0);
 
         outer1:
           ((uint64_t *)base)[j + c] = *(uint64_t *)tmp;
@@ -153,11 +160,11 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
     case PTR:
       for (size_t i = 1; i < n; ++i)
       {
+        c = 1;
         size_t j = i - 1;
-        if ((*cmp)(base + (j * s), base + (i * s)) > 0)
+        if ((*cmp)(((const void **)base)[j], ((const void **)base)[i]) > 0)
         {
           *(void **)tmp = ((void **)base)[i];
-
           do
           {
             ((void **)base)[j + 1] = ((void **)base)[j];
@@ -166,17 +173,19 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
               c = 0;
               goto outer3;
             }
-            j--;
-          } while ((*cmp)(base + (j * s), *(const void **)tmp) > 0);
+            --j;
+          } while ((*cmp)(((const void **)base)[j], *(const void **)tmp) > 0);
 
         outer3:
           ((void **)base)[j + c] = *(void **)tmp;
         }
       }
+
       return;
     default:
       for (size_t i = 1; i < n; ++i)
       {
+        c = 1;
         size_t j = i - 1;
         if ((*cmp)(base + (j * s), base + (i * s)) > 0)
         {
@@ -219,7 +228,8 @@ void fast_ins_sort(void *b, size_t n, size_t s, compar_d_fn_t cmp)
       var = ULONG;
   }
 
-  const struct msort_param p = {s, var, cmp, NULL};
+  char *tmp = alloca(s);
+  const struct msort_param p = {s, var, cmp, tmp};
   ins_sort(&p, b, n);
 }
 
@@ -476,7 +486,7 @@ void msort_with_network(void *b, size_t n, size_t s, compar_d_fn_t cmp,
 
   if (s > 32)
   {
-    /* Indirect sorting */
+    /* Indirect sorting.  */
     char *ip = (char *)b;
     void **tp = (void **)(p.t + n * sizeof(void *));
     void **t = tp;
@@ -489,7 +499,20 @@ void msort_with_network(void *b, size_t n, size_t s, compar_d_fn_t cmp,
     }
     p.s = sizeof(void *);
     p.var = PTR;
-    msort_with_network_recur(&p, p.t + n * sizeof(void *), n, threshold);
+    msort_with_network_recur(&p, tp, n, threshold);
+
+    /* for (size_t i = 0; i < n; ++i) */
+    /* { */
+    /*   void *v = tp[i]; */
+    /*   sort_t *val = (sort_t *)v; */
+    /*   fprintf(stderr, "%li\n", val->val); */
+    /* } */
+
+    /* for (size_t i = 0; i < n; ++i) */
+    /* { */
+    /*   void *v = ((void **)tp)[i]; */
+    /*   fprintf(stderr, "%p\n", v); */
+    /* } */
 
     /* tp[0] .. tp[n - 1] is now sorted, copy around entries of
        the original array.  Knuth vol. 3 (2nd ed.) exercise 5.2-10.  */

@@ -207,11 +207,13 @@ void msort_heap(void *b, size_t n, size_t s, compar_d_fn_t cmp)
 
 void basic_ins_sort(void *b, size_t n, const size_t s, compar_d_fn_t cmp)
 {
-  short c = 1;
+  short c;
   char *base = (char *)b;
   char *v = alloca(s);
+
   for (size_t i = 1; i < n; ++i)
   {
+    c = 1;
     size_t j = i - 1;
     memcpy(v, base + (i * s), s);
     while ((*cmp)(base + (j * s), v) > 0)
