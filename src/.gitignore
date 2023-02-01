@@ -111,3 +111,5 @@ dkms.conf
 
 # Executables
 QST-c
+tests
+tst-*
