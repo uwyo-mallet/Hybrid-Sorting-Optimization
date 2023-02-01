@@ -10,6 +10,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -pedantic # -O3 -DNDEBUG
 CFLAGS += -DSORT_LARGE_STRUCTS
 DEBUGFLAGS = -ggdb -fsanitize=address,undefined,leak -Og
+TESTFLAGS = -Wno-unused-function -Wno-unused-const-variable
 # DEBUGFLAGS = -ggdb -O3
 # DEBUGFLAGS = -ggdb -Og
 
@@ -33,8 +34,8 @@ sort.o: sort.c sort.h
 msort_opt.o: msort_opt.c sort.h
 	$(CC) $(CFLAGS) $(DEBUGFLAGS) msort_opt.c -c
 
-tst-big: QST-c
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) -o tst-big tst-big.c $(OBJS)
+check: QST-c tests.c
+	$(CC) $(CFLAGS) $(DEBUGFLAGS) $(TESTFLAGS) -o tests tests.c $(OBJS) -lcmocka
 
 clean:
 	rm -f QST-c $(OBJS)

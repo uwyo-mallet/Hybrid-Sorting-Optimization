@@ -1,0 +1,4 @@
+StatementMacros: [
+  "TEST_*",
+  "COMPARE_*",
+]
