@@ -23,8 +23,7 @@ inline static void sort2(const struct msort_param *p, void *a, void *b)
 {
   const compar_d_fn_t cmp = p->cmp;
   const size_t s = p->s;
-
-  char *tmp = alloca(s);
+  char *tmp = p->t;
   switch (p->var)
   {
     case UINT32:
@@ -80,7 +79,6 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
   char *tmp = p->t;
 
   char *base = (char *)b;
-  /* struct msort_param sort_param = {s, var, cmp, tmp}; */
   switch (n)
   {
     case 2:
