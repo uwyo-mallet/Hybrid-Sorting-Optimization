@@ -14,7 +14,7 @@ import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 
-# pd.set_option("display.max_rows", None)
+pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
 
@@ -129,7 +129,13 @@ class Result:
         # Follow the following order for types
         return dfs
 
-    def _plot(self, dfs, baseline_dfs, min_threshold=0, max_threshold=0):
+    def _plot_threshold_v_runtime(
+        self,
+        dfs,
+        baseline_dfs,
+        min_threshold=0,
+        max_threshold=0,
+    ):
         fig, axes = plt.subplots(nrows=len(dfs), figsize=(16, 12))
         index = 0
         for type_, sub_df in dfs.items():
@@ -162,14 +168,33 @@ class Result:
         plt.tight_layout()
         return fig, axes
 
-    def _prompt_for_size(self, sizes):
-        pprint(sizes)
-        while picked := input("Please select a size: ") not in sizes:
+    def _plot_size_v_runtime(self, dfs):
+        fig, axes = plt.subplots(nrows=len(dfs), figsize=(16, 12))
+        index = 0
+        for type_, sub_df in dfs.items():
+            for method, df in sub_df.items():
+                yerr = list(df[("std", "wall_secs")])
+                df.plot.line(
+                    x="size",
+                    y=("mean", "wall_secs"),
+                    marker="o",
+                    yerr=yerr,
+                    title=type_.capitalize(),
+                    ax=axes[index],
+                    label=method,
+                )
+            index += 1
+        plt.tight_layout()
+        return fig, axes
+
+    def _prompt_for_thing(self, thing, things):
+        pprint(things)
+        while picked := input(f"Please select a {thing}: ") not in things:
             print("Invalid size, please pick from the list printed above.")
 
         return picked
 
-    def plot(self, interactive=False):
+    def plot_threshold_v_runtime(self, interactive=False):
         """TODO."""
         standard_data = self.df.query("method in @self._standard_methods")
         threshold_data = self.df.query("method in @self._threshold_methods")
@@ -180,7 +205,7 @@ class Result:
         sizes = threshold_data["size"].unique()
         if len(sizes) > 1:
             if interactive:
-                size = self._prompt_for_size(list(sizes))
+                size = self._prompt_for_thing("size", list(sizes))
             else:
                 size = sizes[-1]
         else:
@@ -191,7 +216,7 @@ class Result:
         standard_dfs = self._gen_sub_dfs(standard_data)
         threshold_dfs = self._gen_sub_dfs(threshold_data)
 
-        fig, axes = self._plot(
+        fig, axes = self._plot_threshold_v_runtime(
             threshold_dfs,
             standard_dfs,
             min_threshold=min_threshold,
@@ -200,7 +225,25 @@ class Result:
         fig.suptitle(f"Threshold vs. Runtime (size = {size:,})", fontsize=16)
         fig.tight_layout()
 
-        plt.show()
+    def plot_size_v_runtime(self, interactive=False):
+        """TODO."""
+        df = self.df
+        thresholds = self.df["threshold"].unique()
+        if len(thresholds) > 1:
+            if interactive:
+                threshold = self._prompt_for_thing("threshold", list(thresholds))
+            else:
+                threshold = thresholds[-1]
+            df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
+        else:
+            threshold = thresholds[0]
+            df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
+
+        dfs = self._gen_sub_dfs(df)
+
+        fig, axes = self._plot_size_v_runtime(dfs)
+        fig.suptitle("Size vs. Runtime", fontsize=16)
+        fig.tight_layout()
 
 
 def main():
@@ -227,7 +270,10 @@ def main():
         last_result_path = get_latest_subdir(base_results_dir)
         result = Result(last_result_path)
 
-    result.plot()
+    result.plot_threshold_v_runtime()
+    result.plot_size_v_runtime()
+
+    plt.show()
 
 
 if __name__ == "__main__":
