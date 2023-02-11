@@ -20,7 +20,6 @@ Options:
 Commands:
     evaluate            Evaluate an output CSV from QST run(s).
     generate            Generate testing data.
-
 """
 import gzip
 import json
@@ -45,15 +44,14 @@ class DataGen:
     """Utility class for generating lots of data really fast."""
 
     def __init__(self, output: Path, minimum: int, maximum: int, increment: int):
-        """
-        Initialize range and output parameters.
+        """Initialize range and output parameters.
 
-        @param output: Path to folder to output data.
-        @param minimum: Minimum size data to create.
-        @param maximum: Maximum size data to create.
-        @param increment: Increments of data to create, should evenly divise maximum.
+        :param output: Path to folder to output data.
+        :param minimum: Minimum size data to create.
+        :param maximum: Maximum size data to create.
+        :param increment: Increments of data to create, should evenly divise maximum.
 
-        @exception NotADirectoryError Output requires a directory, not a file
+        :raises NotADirectoryError: Output requires a directory, not a file
         """
         random.seed()
         self.dirs = {
@@ -84,12 +82,14 @@ class DataGen:
             real_path.mkdir(exist_ok=True)
 
     def _copy_and_append(self, prev: Path, current: Path, data: np.array):
-        """
-        Copy a .gz file and append to the new file.
+        """Copy a .gz file and append to the new file.
 
-        @param prev: Path to prev file.
-        @param current: Path to new file to be created.
-        @param data: Data to be appended to current.
+        This leverages the OS APIs to very quickly generate new data, which just
+        extends the previous data.
+
+        :param prev: Path to prev file.
+        :param current: Path to new file to be created.
+        :param data: Data to be appended to current.
         """
         shutil.copy(prev, current)
         with gzip.open(current, "a") as append_file:
@@ -101,11 +101,10 @@ class DataGen:
         np.savetxt(output, data, fmt="%u", delimiter="\n", comments="")
 
     def _generic(self, output: Path, data):
-        """
-        Generic save routine for all other methods.
+        """Generic save routine for all other methods.
 
-        @param output: Path to folder to save outputs (0.EXT, 1.EXT, ...).
-        @param data: Iterable to write to disk.
+        :param output: Path to folder to save outputs (0.EXT, 1.EXT, ...).
+        :param data: Iterable to write to disk.
         """
         self._save(Path(output, "0.gz"), data[: self.min])
 
@@ -161,7 +160,7 @@ class DataGen:
         """
         Generate data in parallel.
 
-        @param t: Singular type of data to generate. If none, generate all types.
+        :param t: Singular type of data to generate. If none, generate all types.
         """
         # Save some details about the data
         with open(Path(self.base_path, "details.json"), "w") as f:
