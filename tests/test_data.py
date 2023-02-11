@@ -33,8 +33,8 @@ def setup_function():
     OUTPUT_DIR.mkdir()
 
 
-def teardown_function():
-    shutil.rmtree(OUTPUT_DIR)
+# def teardown_function():
+#     shutil.rmtree(OUTPUT_DIR)
 
 
 def is_ascending(arr: np.array):
@@ -83,8 +83,9 @@ def test_generate(min: int, max: int, inc: int):
 
     lengths = list(range(min, max, inc))
 
-    for i, l in enumerate(lengths):
-        for t in validator_funcs.keys():
+    for t in validator_funcs.keys():
+        for i, l in enumerate(lengths):
+
             # Validate data file existing
             path = OUTPUT_DIR / t / f"{i}.gz"
             assert path.is_file()

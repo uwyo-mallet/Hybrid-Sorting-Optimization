@@ -65,7 +65,7 @@ class DataGen:
         }
 
         self.min = minimum
-        self.max = maximum + increment
+        self.max = maximum
         self.inc = increment
 
         self.base_path = output or "./data/"
@@ -109,7 +109,7 @@ class DataGen:
         """
         self._save(Path(output, "0.gz"), data[: self.min])
 
-        for i, n in enumerate(range(self.min, self.max, self.inc), 1):
+        for i, n in enumerate(range(self.min, self.max - self.inc, self.inc), 1):
             prev = Path(output, f"{i - 1}.gz")
             current = Path(output, f"{i}.gz")
             to_write = data[n : n + self.inc]
@@ -146,7 +146,7 @@ class DataGen:
 
         Ex: 12321
         """
-        for i, n in enumerate(range(self.min, self.max, self.inc)):
+        for i, n in enumerate(range(self.min, self.max + self.inc, self.inc)):
             first = np.arange(0, n // 2, dtype=np.uint64)
             second = np.flip(first)
             # Handle the even/odd debacle
