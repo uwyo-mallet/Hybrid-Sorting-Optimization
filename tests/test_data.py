@@ -33,8 +33,8 @@ def setup_function():
     OUTPUT_DIR.mkdir()
 
 
-# def teardown_function():
-#     shutil.rmtree(OUTPUT_DIR)
+def teardown_function():
+    shutil.rmtree(OUTPUT_DIR)
 
 
 def is_ascending(arr: np.array):
