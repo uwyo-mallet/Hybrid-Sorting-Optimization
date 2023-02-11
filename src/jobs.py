@@ -60,7 +60,7 @@ from info import get_supported_methods, write_info
 VERSION = "1.1.6"
 
 
-DATA_TYPES = {"ascending", "descending", "random", "single_num"}
+DATA_TYPES = {"ascending", "descending", "random", "single_num", "pipe_organ"}
 
 # Maximum array index supported by slurm
 # https://slurm.schedmd.com/job_array.html
