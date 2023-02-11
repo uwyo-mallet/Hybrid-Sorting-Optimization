@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Generate large amounts of testing data as fast as possible.
-TODO: Document why this is so esoteric...
+"""Generate large amounts of testing data as fast as possible.
+
+Multithreaded, super-fast, data generation manipulating syscalls to achieve
+maximum performance!
 
 Usage:
     data.py evaluate FILE [options]
@@ -19,6 +20,7 @@ Options:
 Commands:
     evaluate            Evaluate an output CSV from QST run(s).
     generate            Generate testing data.
+
 """
 import gzip
 import json
@@ -31,7 +33,7 @@ from pathlib import Path
 import numpy as np
 from docopt import docopt
 
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 
 # Default thresholds
 INCREMENT = 100_000
@@ -144,13 +146,14 @@ class DataGen:
 
         Ex: 12321
         """
-        lower = self.min + self.inc
-        upper = self.max - (2 * self.inc)
-        inc = self.inc
-        for i, n in enumerate(range(lower, upper, inc), 1):
-            first = np.arange(self.min, n, dtype=np.uint64)
+        for i, n in enumerate(range(self.min, self.max, self.inc)):
+            first = np.arange(0, n // 2, dtype=np.uint64)
             second = np.flip(first)
-            data = np.concatenate([first, second[1:]])
+            # Handle the even/odd debacle
+            if len(first) * 2 < n:
+                data = np.concatenate([first, [first[-1]], second])
+            else:
+                data = np.concatenate([first, second])
 
             self._save(Path(output, f"{i}.gz"), data)
 
@@ -187,10 +190,9 @@ class DataGen:
                 p = Process(target=v, args=(output,))
                 procs.append(p)
                 p.start()
-                p.join()
 
-            # for p in procs:
-            #     p.join()
+            for p in procs:
+                p.join()
 
             return
 

@@ -54,12 +54,22 @@ def is_single_num(arr: np.array):
         raise ValueError(f"Array contains non-expected value, {arr}")
 
 
+def is_pipe_organ(arr: np.array):
+    n = len(arr)
+    first, second = np.array_split(arr, 2)
+    if len(first) != len(second):
+        first = first[:-1]
+
+    if (first != np.flip(second)).all():
+        raise ValueError(f"Array contains non pipe organ sequence, {arr}")
+
+
 validator_funcs = {
     "ascending": is_ascending,
     "descending": is_descending,
     "random": lambda _: None,
     "single_num": is_single_num,
-    # "pipe_organ": lambda _: print("[WARNING]: Not Implemented"),
+    "pipe_organ": is_pipe_organ,
 }
 
 
