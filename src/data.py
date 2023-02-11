@@ -59,6 +59,7 @@ class DataGen:
             "descending": self.descending,
             "random": self.random,
             "single_num": self.single_num,
+            "pipe_organ": self.pipe_organ,
         }
 
         self.min = minimum
@@ -80,21 +81,17 @@ class DataGen:
             real_path = Path(self.base_path, d)
             real_path.mkdir(exist_ok=True)
 
-    def _copy_and_append(self, prev: Path, current: Path, data):
+    def _copy_and_append(self, prev: Path, current: Path, data: np.array):
         """
-        Copy a .gz file and append to the new file assuming the data is an Iterable.
+        Copy a .gz file and append to the new file.
 
         @param prev: Path to prev file.
         @param current: Path to new file to be created.
         @param data: Data to be appended to current.
         """
-        data_str = ""
-        for i in data:
-            data_str += str(i) + "\n"
-
         shutil.copy(prev, current)
-        with gzip.open(current, "ab") as append_file:
-            append_file.write(data_str.encode())
+        with gzip.open(current, "a") as append_file:
+            np.savetxt(append_file, data, fmt="%u", delimiter="\n", comments="")
 
     @staticmethod
     def _save(output: Path, data):
@@ -110,21 +107,20 @@ class DataGen:
         """
         self._save(Path(output, "0.gz"), data[: self.min])
 
-        for i, n in enumerate(range(self.min, self.max - (2 * self.inc), self.inc), 1):
+        for i, n in enumerate(range(self.min, self.max, self.inc), 1):
             prev = Path(output, f"{i - 1}.gz")
             current = Path(output, f"{i}.gz")
-            self._copy_and_append(prev, current, data[n : n + self.inc])
+            to_write = data[n : n + self.inc]
+            self._copy_and_append(prev, current, to_write)
 
     def ascending(self, output: Path):
         """Ascending data, 0, 1, 2, 3, 4."""
-        data = np.arange(self.min, self.max, dtype=np.uint64)
+        data = np.arange(0, self.max, dtype=np.uint64)
         self._generic(output, data)
 
     def descending(self, output: Path):
         """Descending data, 4, 3, 2, 1, 0."""
-        data = np.arange(
-            self.max - self.inc - 1, self.min - self.inc - 1, -1, dtype=np.uint64
-        )
+        data = np.flip(np.arange(0, self.max, dtype=np.uint64))
         self._generic(output, data)
 
     def random(self, output: Path):
@@ -139,9 +135,24 @@ class DataGen:
 
     def single_num(self, output: Path):
         """Repeated single number, 42."""
-        data = np.empty(self.max + 1, dtype=np.int64)
+        data = np.empty(self.max, dtype=np.uint64)
         data.fill(42)
         self._generic(output, data)
+
+    def pipe_organ(self, output: Path):
+        """Ascending followed by descending data.
+
+        Ex: 12321
+        """
+        lower = self.min + self.inc
+        upper = self.max - (2 * self.inc)
+        inc = self.inc
+        for i, n in enumerate(range(lower, upper, inc), 1):
+            first = np.arange(self.min, n, dtype=np.uint64)
+            second = np.flip(first)
+            data = np.concatenate([first, second[1:]])
+
+            self._save(Path(output, f"{i}.gz"), data)
 
     def generate(self, t=None):
         """
@@ -165,7 +176,7 @@ class DataGen:
         # are not IO bound. This brought the runtime from ~7 mins to ~3
         # for a dataset of threshold 5_000_000,100_000_000. This result is still
         # largely subjective and hardware specific.
-        processes = []
+        procs = []
         if t is None:
             for k, v in self.dirs.items():
                 output = Path(self.base_path, k)
@@ -174,60 +185,81 @@ class DataGen:
                     shutil.rmtree(output)
                 output.mkdir()
                 p = Process(target=v, args=(output,))
+                procs.append(p)
                 p.start()
-
-            for p in processes:
                 p.join()
 
-        else:
-            if t not in self.dirs:
-                raise ValueError("Invalid type")
+            # for p in procs:
+            #     p.join()
 
-            output = Path(self.base_path, t)
-            self.dirs[t](output)
+            return
+
+        if t not in self.dirs:
+            raise ValueError("Invalid type")
+
+        output = Path(self.base_path, t)
+        self.dirs[t](output)
+
+
+def main(output, minimum=None, maximum=None, increment=None, type=None):
+    """Entrypoint."""
+    if minimum is None and maximum is None and increment is None:
+        minimum = MIN_ELEMENTS
+        maximum = MAX_ELEMENTS
+        increment = INCREMENT
+    elif maximum is None and increment is None:
+        maximum = minimum
+        increment = minimum
+    elif maximum < minimum or minimum < 0 or maximum < 0 or increment < 0:
+        raise ValueError("Invalid threshold range")
+
+    print("Generating data...", file=sys.stderr)
+    print(f"Minimum: {minimum:,}", file=sys.stderr)
+    print(f"Maximum: {maximum:,}", file=sys.stderr)
+    print(f"Increment: {increment:,}", file=sys.stderr)
+
+    d = DataGen(output, minimum, maximum, increment)
+    return d.generate(type)
 
 
 if __name__ == "__main__":
     args = docopt(__doc__, version=VERSION)
     if args.get("evaluate"):
         print("[Deprecated]: Use the evaluate.ipynb jupyter notebook instead.")
+        exit(1)
 
-    if args.get("generate"):
-        # Parse threshold and validate
-        if args.get("--threshold") is not None:
-            try:
-                buf = args.get("--threshold").rstrip(",")
-                buf = buf.split(",")
-                if 0 <= len(buf) > 3:
-                    raise ValueError
-                buf = [int(i) for i in buf]
+    # Parse threshold and validate
+    if args.get("--threshold") is not None:
+        try:
+            buf = args.get("--threshold").rstrip(",")
+            buf = buf.split(",")
+            if 0 <= len(buf) > 3:
+                raise ValueError
+            buf = [int(i) for i in buf]
 
-                if len(buf) == 1:
-                    minimum = buf[0]
-                    maximum = buf[0]
-                    increment = buf[0]
-                else:
-                    minimum = buf[0]
-                    maximum = buf[1]
-                    try:
-                        increment = buf[2]
-                    except IndexError:
-                        increment = minimum
+            if len(buf) == 1:
+                minimum = buf[0]
+                maximum = buf[0]
+                increment = buf[0]
+            else:
+                minimum = buf[0]
+                maximum = buf[1]
+                try:
+                    increment = buf[2]
+                except IndexError:
+                    increment = minimum
 
-            except ValueError as e:
-                raise ValueError(f"Invalid threshold: {buf}") from e
-        else:
-            minimum = MIN_ELEMENTS
-            maximum = MAX_ELEMENTS
-            increment = INCREMENT
+        except ValueError as e:
+            raise ValueError(f"Invalid threshold: {buf}") from e
+    else:
+        minimum = None
+        maximum = None
+        increment = None
 
-        if maximum < minimum or minimum < 0 or maximum < 0 or increment < 0:
-            raise ValueError("Invalid threshold range")
-
-        print("Generating data...", file=sys.stderr)
-        print(f"Minimum: {minimum:,}", file=sys.stderr)
-        print(f"Maximum: {maximum:,}", file=sys.stderr)
-        print(f"Increment: {increment:,}", file=sys.stderr)
-
-        d = DataGen(args.get("--output"), minimum, maximum, increment)
-        d.generate(args.get("--type"))
+    main(
+        output=args.get("--output"),
+        minimum=minimum,
+        maximum=maximum,
+        increment=increment,
+        type=args.get("--type"),
+    )
