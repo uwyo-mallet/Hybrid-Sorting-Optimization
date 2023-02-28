@@ -8,6 +8,7 @@ Usage:
 
 Options:
     -e, --exclusive          Slurm exclusive flag.
+    -f, --feature=FEAT       Use an optional feature constraint.
     -h, --help               Show this help.
     -n, --dry-run            Do everything except actually submit the jobs to slurm.
     -w, --wait=N             Time to wait in seconds between slurm submissions
@@ -25,7 +26,7 @@ from pathlib import Path
 
 from docopt import docopt
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 
 class cd:
@@ -65,12 +66,21 @@ def fast_line_count(filename: Path) -> int:
 
 # All valid partition names for job submission.
 VALID_PARTITIONS = {
-    "teton",
-    "teton-cascade",
-    "teton-hugemem",
-    "teton-massmem",
-    "teton-knl",
-    "moran",
+    "moran": {"fdr", "intel", "sandy", "ivy", "community"},
+    "moran-bigmem": {"fdr", "intel", "haswell"},
+    "dgx": {"edr", "intel", "broadwell"},
+    "teton": {"edr", "intel", "broadwell", "community"},
+    "teton-cascade": {"edr", "intel", "broadwell", "community"},
+    "teton-hugemem": {"edr", "intel", "broadwell"},
+    "teton-knl": {"edr", "intel", "knl"},
+    "beartooth": {"edr", "intel", "icelake"},
+    "beartooth-bigmem": {"edr", "intel", "icelake"},
+    "beartooth-hugemem": {"edr", "intel", "icelake"},
+}
+
+cpu_feature_sets = {
+    "intel": {"ivy", "sandy", "broadwell", "haswell", "knl", "icelake"},
+    "amd": {"epyc"},
 }
 
 
@@ -84,6 +94,7 @@ Args = namedtuple(
         "exclusive",
         "dry_run",
         "wait",
+        "feature",
     ],
 )
 
@@ -94,6 +105,21 @@ def validate(args):
         raise FileNotFoundError("Can't find job.sbatch")
     if args.partition not in VALID_PARTITIONS:
         raise ValueError(f"Invalid partition selection: {args.partition}")
+
+    feature_set = VALID_PARTITIONS[args.partition]
+    if "intel" in feature_set:
+        cpu_feature_set = cpu_feature_sets["intel"]
+    elif "amd" in feature_set:
+        cpu_feature_set = cpu_feature_sets["amd"]
+    else:
+        cpu_feature_set = []
+
+    if (
+        args.feature is not None
+        and args.feature not in feature_set
+        and args.feature not in cpu_feature_set
+    ):
+        raise ValueError(f"Invalid feature: '{args.feature}'")
 
     for d in args.slurm_dirs:
         if not d.is_dir():
@@ -155,6 +181,9 @@ def submit(args):
                 if args.exclusive:
                     command.insert(1, "--exclusive")
 
+                if args.feature is not None:
+                    command.insert(1, f"--constraint={args.feature}")
+
                 print(f"\t{batch.name}: {num_lines}")
                 print(f"\t\t{' '.join(command)}")
                 if not args.dry_run:
@@ -182,6 +211,7 @@ if __name__ == "__main__":
     DRY_RUN = raw_args["--dry-run"]
     EXCLUSIVE = raw_args["--exclusive"]
     WAIT = float(raw_args["--wait"])
+    FEATURE = raw_args["--feature"]
 
     args = Args(
         PARTITION,
@@ -191,6 +221,7 @@ if __name__ == "__main__":
         raw_args["--exclusive"],
         DRY_RUN,
         WAIT,
+        FEATURE,
     )
 
     validate(args)
