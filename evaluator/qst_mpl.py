@@ -54,7 +54,7 @@ class Result:
 
     path: Path
     df: pd.DataFrame
-    job_details: Optional[dict]
+    job_details: dict
     partition: Optional[str]
 
     _standard_methods: list[str]
@@ -222,7 +222,10 @@ class Result:
             min_threshold=min_threshold,
             max_threshold=max_threshold,
         )
-        fig.suptitle(f"Threshold vs. Runtime (size = {size:,})", fontsize=16)
+        fig.suptitle(
+            f"Threshold vs. Runtime (size={size:,}, host={self.job_details['Node']}, arch={self.job_details['Machine']})",
+            fontsize=16,
+        )
         fig.tight_layout()
 
     def plot_size_v_runtime(self, interactive=False):
