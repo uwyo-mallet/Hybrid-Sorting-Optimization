@@ -27,9 +27,10 @@ import platform
 import subprocess
 from pathlib import Path
 
+from cpuinfo import get_cpu_info
 from docopt import docopt
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 
 def get_exec_version(exec_path: Path):
@@ -112,6 +113,7 @@ def write_info(
         "Number of concurrent jobs": concurrent,
         "Platform": platform.platform(),
         "Processor": platform.processor(),
+        "CPU Info": get_cpu_info(),
         "QST": {
             "Version": qst_vers,
             "Methods": {
