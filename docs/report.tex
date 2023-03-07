@@ -1,0 +1,103 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%2345678901234567890123456789012345678901234567890123456789012345678901234567890
+%        1         2         3         4         5         6         7         8
+
+\documentclass[letter, 12pt, conference]{ieeeconf}
+
+\overrideIEEEmargins
+% See the \addtolength command later in the file to balance the column lengths
+% on the last page of the document
+
+% Reduce space between figures and text
+\setlength{\textfloatsep}{5pt}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{float}
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage{nth}
+\usepackage{pgfplots}
+\usepackage{titlesec}
+\usepackage[backend=biber,style=ieee]{biblatex}
+
+\newcommand{\todo}{\colorbox{red}{TODO}}
+\newcommand{\todocite}{\colorbox{red}{TODO\_CITE}}
+
+\addbibresource{references.bib}
+\renewcommand*{\bibfont}{\small}
+
+\title{\LARGE \bf TODO}
+\author{Joshua Arulsamy}
+
+\author{\parbox{3 in}{
+	\centering
+	Joshua Arulsamy\\
+    University of Wyoming\\
+    {\tt\small jarulsam@uwyo.edu}}}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{plain}
+\pagestyle{plain}
+\nocite{*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+
+  \todo
+
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{INTRODUCTION}
+
+Most applications require data to be arranged in a certain order. The procedure
+of reordering data according to some comparator is called sorting. Sorting can
+be found in nearly every computer system today. From databases to payment
+processing systems, data is constantly being sorted. The near omnipresent need
+for performant sorting implementations has resulted in all major programming
+languages including a generic sorting function within their standard libraries.
+These standard implementations can use a variety of algorithms internally, such
+as Quicksort, Mergesort, and many others (\todocite), however, rarely does a
+single algorithm perform exceptionally well. Often, these algorithms are paired
+with one or more other sorting algorithms to offer sizeable performance
+benefits. These hybrid algorithms include some tuneable parameters, such as when
+to switch from one sorting algorithm to another. While these hybridized
+algorithms have varying space and time complexities, their actual performance in
+real-world scenarios is rarely formally examined, and the values for these
+various parameters are often chosen arbitrarily by the developer. This paper
+aims to analyze a wide variety of sorting algorithm implementations across
+varying system architectures to determine optimal parameter configurations for
+hybrid sorting algorithms. This paper also proposes a new, performant standard
+sorting implementation for GNU's C standard library.
+
+\section{ALGORITHMS}
+
+\todo
+
+\section{EXPERIMENTAL SETUP}
+
+\todo
+
+\section{RESULTS}
+
+\todo
+
+\section{CONCLUSION}
+
+\todo
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This command serves to balance the column lengths on the last page of the
+% document manually. It shortens the textheight of the last page by a suitable
+% amount. This command does not take effect until the next page so it should
+% come on the page before the last. Make sure that you do not shorten the
+% textheight too much.
+% \addtolength{\textheight}{-12cm}
+
+% \titleformat*{\section}{\fontsize{12pt}{14pt}\MakeUppercase\selectfont}
+\printbibliography
+\end{document}

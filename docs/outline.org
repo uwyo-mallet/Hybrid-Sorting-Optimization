@@ -1,0 +1,20 @@
+#+title: Outline
+
+* Abstract
+
+* Introduction
++ What problem am I analyzing?
++ What will this paper encompass?
+  + Evaluation of a variety of sorting algorithms from a practical perspective.
+  + Proposed hybrid algorithms that perform better than glibc.
+  + Discussion of theoretical performance versus reality.
+  + Analysis of caches and other performance metrics
+  + Experimental setup; variety of systems, ARCC, valgrind, etc.
+  + What is my algorithm?
+  + Why is it fast and better than the existing standard library implementation?
+
+* Sorting Algorithms
++ Quicksort
++ Insertion sort (basic, fast, binary, etc.)
++ Shell
++ Network (n <= 6)
