@@ -3,6 +3,7 @@
 import itertools
 import json
 import logging
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from pprint import pprint
@@ -12,12 +13,10 @@ import dash
 import numpy as np
 import pandas as pd
 from bokeh.io import output_file, save
-from bokeh.layouts import column, gridplot
-from bokeh.models import (ColumnDataSource, CustomJSTickFormatter, Div,
-                          NumeralTickFormatter, RangeSlider, Spinner)
+from bokeh.layouts import gridplot
+from bokeh.models import ColumnDataSource, NumeralTickFormatter
 from bokeh.palettes import Spectral4
-from bokeh.plotting import figure, show
-from bokeh.transform import factor_cmap
+from bokeh.plotting import figure
 from bokeh.util.browser import view
 from dash import dcc
 
@@ -32,6 +31,7 @@ RESULTS_DIR = Path("./results")
 
 GRAPH_ORDER = (
     "random",
+    "pipe_organ",
     "ascending",
     "descending",
     "single_num",
@@ -320,7 +320,6 @@ class Result:
 
     def add_widgets(self):
         """TODO."""
-        # threshold_slider =
         pass
 
     def plot(self, title=None):
@@ -385,6 +384,7 @@ class Result:
 
         # show(gridplot(standard_plots + threshold_plots), center=True)
         save(gridplot(standard_plots + threshold_plots), template=template)
+        pprint(self.job_details)
         return result_path
 
 
@@ -410,12 +410,21 @@ def main():
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
-    base_results_dir = Path("./results")
-    if not base_results_dir.is_dir():
-        raise NotADirectoryError(f"'{base_results_dir}' is not a directory")
+    args = sys.argv
+    if len(args) > 2:
+        print("Usage: evaluator")
+        print("       evaluator RESULTS_DIR")
+        exit()
 
-    last_result_path = get_latest_subdir(base_results_dir)
-    result = Result(last_result_path)
+    if len(args) == 2:
+        result = Result(Path(args[1]))
+    else:
+        base_results_dir = Path("./results")
+        if not base_results_dir.is_dir():
+            raise NotADirectoryError(f"'{base_results_dir}' is not a directory")
+
+        last_result_path = get_latest_subdir(base_results_dir)
+        result = Result(last_result_path)
 
     output_path = result.plot()
     view(str(output_path))
