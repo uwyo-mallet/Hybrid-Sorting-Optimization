@@ -27,7 +27,7 @@ class Partition:
                 f"--constraint={c}",
                 JOB_SBATCH,
                 *args,
-                f"--partition='{partition}'",
+                f"--arcc-partition={partition}",
             ]
 
             result.append(cmd)
@@ -57,7 +57,7 @@ def build_parser():
     parser.add_argument(
         "-p",
         "--partition",
-        nargs="+",
+        nargs=1,
         choices=partition_opts,
         default=["all"],
     )

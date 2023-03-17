@@ -411,6 +411,8 @@ def parse_args(args):
     else:
         parsed["output"] = Path(args.get("--output"))
 
+    parsed["arcc_partition"] = json.loads(args.get("--arcc-partition") or "{}")
+
     # Threshold
     parsed["threshold"] = parse_threshold_arg(args.get("--threshold"))
 
@@ -424,7 +426,6 @@ def parse_args(args):
     if parsed["slurm"] is None:
         Path(parsed["output"].parent, "valgrind").mkdir(exist_ok=True)
 
-    parsed["arcc_partition"] = json.loads(args.get("--arcc-partition", "{}"))
     return parsed
 
 
