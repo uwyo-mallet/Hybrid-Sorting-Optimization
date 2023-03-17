@@ -35,12 +35,14 @@ Options:
     --callgrind              Enable callgrind data collection for each job.
     --cachegrind             Enable cachegrind data collection for each job.
     --massif                 Enable massif data collection for each job.
+    --arcc-partition=PART    ARCC Partition, Must be parseable JSON.
 
 """
 import itertools
+import json
 import multiprocessing
 import os
-import random
+import platform
 import shutil
 import signal
 import subprocess
@@ -403,7 +405,7 @@ def parse_args(args):
             # Assume that the output should be in the folder I'm in.
             parsed["output"] = Path(f"./output_{now}.csv")
         else:
-            parent = Path(f"./results/{now}/")
+            parent = Path(f"./results/{now}_{platform.node()}/")
             parent.mkdir(exist_ok=True, parents=True)
             parsed["output"] = Path(parent, f"./output_{now}.csv")
     else:
@@ -422,6 +424,7 @@ def parse_args(args):
     if parsed["slurm"] is None:
         Path(parsed["output"].parent, "valgrind").mkdir(exist_ok=True)
 
+    parsed["arcc_partition"] = json.loads(args.get("--arcc-partition", "{}"))
     return parsed
 
 
@@ -439,6 +442,7 @@ class Scheduler:
         slurm: Path,
         threshold: range,
         progress: bool,
+        arcc_partition: dict,
         base: bool,
         callgrind: bool,
         cachegrind: bool,
@@ -470,6 +474,7 @@ class Scheduler:
         self.slurm = slurm
         self.threshold = threshold
         self.progress = progress
+        self.arcc_partition = arcc_partition
 
         self.base = base
         self.callgrind = callgrind
@@ -574,6 +579,7 @@ class Scheduler:
             runs=self.runs,
             total_num_jobs=total_num_jobs,
             total_num_sorts=total_num_jobs * self.runs,
+            arcc_partition=self.arcc_partition,
             base=self.base,
             callgrind=self.callgrind,
             massif=self.massif,

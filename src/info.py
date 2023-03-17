@@ -77,6 +77,7 @@ def write_info(
     runs=0,
     total_num_jobs=0,
     total_num_sorts=0,
+    arcc_partition=None,
     base=True,
     callgrind=False,
     massif=False,
@@ -129,6 +130,7 @@ def write_info(
         "Base": base,
         "Callgrind": callgrind,
         "Massif": massif,
+        "ARCC Partition": arcc_partition,
         "Version": platform.version(),
     }
 
@@ -140,10 +142,10 @@ if __name__ == "__main__":
     args = docopt(__doc__, version=VERSION)
     OUT_DIR = Path(args.get("DIR"))
 
-    concurrent = args.get("--concurrent") or 1
+    concurrent = args.get("--concurrent", 1)
     concurrent = int(concurrent)
 
-    total_num_jobs = args.get("--total") or 0
+    total_num_jobs = args.get("--total", 0)
     total_num_jobs = int(total_num_jobs)
 
     runs = args.get("--runs") or 1

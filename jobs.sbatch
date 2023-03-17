@@ -15,6 +15,7 @@ module load python/3.10.6
 source /project/mallet/jarulsam/venv/bin/activate
 
 cd /project/mallet/jarulsam/Hybrid-Sorting-Optimization
+mkdir -p ./results
 
 # Mimic the src/jobs.py script
 printf "%s\n" "$@"
