@@ -42,7 +42,7 @@ partitions = (
     Partition("teton", ["broadwell"]),
     Partition("teton-cascade", ["cascade"]),
     Partition("teton-massmem", ["epyc"]),
-    Partition("teton-knl", ["teton-knl"]),
+    Partition("teton-knl", ["knl"]),
 )
 partitions = {p.name: p for p in partitions}
 partition_names = list(partitions.keys())
