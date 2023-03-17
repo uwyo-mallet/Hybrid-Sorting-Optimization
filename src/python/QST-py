@@ -114,7 +114,7 @@ def nat_int(s: str) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Python frontend to QST.")
+    parser = argparse.ArgumentParser(description="Python frontend to HSO.")
 
     parser.add_argument(
         "--cols",

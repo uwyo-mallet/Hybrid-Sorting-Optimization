@@ -3,7 +3,7 @@
 VERSION="1.1.0"
 
 # Ensure that this does have a trailing slash
-REMOTE_DIR="jarulsam@beartooth.arcc.uwyo.edu:/project/mallet/jarulsam/quicksort-tuning/"
+REMOTE_DIR="jarulsam@beartooth.arcc.uwyo.edu:/project/mallet/jarulsam/Hybrid-Sorting-Optimization/"
 CWD="$(pwd -P)"
 CWD="${CWD}/"
 EXCLUDE_FILE="./exclude-file.txt"
@@ -34,21 +34,6 @@ to() {
 # Pull from remote
 from() {
 	rsync -auv --progress -e 'ssh -o StrictHostKeyChecking=no' --exclude-from="${EXCLUDE_FILE}" "${REMOTE_DIR}" "${CWD}"
-}
-
-# Activate the required modules and build QST
-build() {
-	module load gcc
-	module load swset
-	module load boost/1.67.0
-	module load cmake/3.16.5
-	module load miniconda3
-
-	rm -r build/
-	mkdir ./build/
-	cd ./build/ || exit 1
-	cmake .. -DCMAKE_BUILD_TYPE=RELEASE
-	make -j
 }
 
 # More safety, by turning some bugs into errors.

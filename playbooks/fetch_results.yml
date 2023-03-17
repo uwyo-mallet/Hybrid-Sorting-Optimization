@@ -3,9 +3,9 @@
   hosts: all
 
   vars:
-    base_path: /QST
-    qst_path: "{{ base_path }}/quicksort-tuning"
-    results_path: "{{ qst_path }}/results"
+    base_path: /HSO
+    hso_path: "{{ base_path }}/Hybrid-Sorting-Optimization"
+    results_path: "{{ hso_path }}/results"
 
   tasks:
     - name: Install dependencies

@@ -1,13 +1,13 @@
 """TODO."""
 from dash import dcc, html
 
-from .generics import QST_RESULTS_DIR
+from .generics import RESULTS_DIR
 
 
 def gen_layout(clocks, data_types, cachegrind_metrics, dirs=None):
     """TODO."""
     if dirs is None:
-        dirs = sorted(list(QST_RESULTS_DIR.iterdir()))
+        dirs = sorted(list(RESULTS_DIR.iterdir()))
     res = html.Div(
         [
             dcc.Store(id="run-data"),

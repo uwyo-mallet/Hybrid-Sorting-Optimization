@@ -18,7 +18,7 @@ Options:
     --type=TYPE              Only generate one type of data
 
 Commands:
-    evaluate            Evaluate an output CSV from QST run(s).
+    evaluate            Evaluate an output CSV.
     generate            Generate testing data.
 """
 import gzip

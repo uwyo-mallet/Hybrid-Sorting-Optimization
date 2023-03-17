@@ -15,10 +15,10 @@ Usage:
 
 Options:
     -h, --help               Show this help.
-    -e, --exec=EXEC          Path to QST executable.
+    -e, --exec=EXEC          Path to executable.
     -j, --jobs=N             Do N jobs in parallel.
     -m, --methods=METHODS    Comma seperated list of methods to use for sorters.
-    -o, --output=FILE        Output CSV to save results from QST.
+    -o, --output=FILE        Output CSV to save results.
     -p, --progress           Enable a progress bar.
     -r, --runs=N             Number of times to run the same input data.
     -s, --slurm=DIR          Generate a batch of slurm data files in this dir.
@@ -69,7 +69,7 @@ MAX_BATCH = 4_500
 
 @dataclass
 class Job:
-    """Represent a single call to QST."""
+    """Represent a single call to executable."""
 
     job_id: int
     exec_path: Path
@@ -107,8 +107,8 @@ class Job:
         Define the base parameters.
 
         @param job_id: Unique identifier for this 'run'.
-        @param exec_path: Path to QST executable.
-        @param infile_path: Path to input data file for QST.
+        @param exec_path: Path to executable.
+        @param infile_path: Path to input data.
         @param description: Input data description.
         @param method: Methods to use to sort.
         @param runs: Number of times to sort the same data.
@@ -351,10 +351,10 @@ def parse_args(args):
         raise NotADirectoryError("Invalid data directory")
 
     # Executable location
-    parsed["exec"] = args.get("--exec") or "./build/QST"
+    parsed["exec"] = args.get("--exec")
     parsed["exec"] = Path(parsed["exec"])
     if not parsed["exec"].is_file():
-        raise FileNotFoundError("Can't find QST executable")
+        raise FileNotFoundError("Can't find executable")
 
     # Populate the supported methods by calling the subprocess.
     valid_methods, _ = get_supported_methods(parsed["exec"])
@@ -448,7 +448,7 @@ class Scheduler:
         Define the base parameters.
 
         @param data_dir: Path to input data.
-        @param exec: Path to QST executable.
+        @param exec: Path to executable.
         @param jobs: Number of jobs to run concurrently.
         @param methods: List of all the methods to test.
         @param output: Path to output CSV file with all test results.
@@ -487,7 +487,7 @@ class Scheduler:
         self._gen_jobs()
 
     def _get_exec_version(self) -> str:
-        """Call the QST process and parse the version output."""
+        """Call the process and parse the version output."""
         cmd = (self.exec, "--version")
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         stdout, _ = p.communicate()
@@ -569,7 +569,7 @@ class Scheduler:
             command=" ".join(sys.argv),
             data_details_path=Path(self.data_dir, "details.json"),
             concurrent=self.jobs,
-            qst_path=self.exec,
+            exec_path=self.exec,
             runs=self.runs,
             total_num_jobs=total_num_jobs,
             total_num_sorts=total_num_jobs * self.runs,
@@ -605,7 +605,7 @@ class Scheduler:
             command=" ".join(sys.argv),
             concurrent="slurm",
             data_details_path=Path(self.data_dir, "details.json"),
-            qst_path=self.exec,
+            exec_path=self.exec,
             runs=self.runs,
             total_num_jobs=total_num_jobs,
             total_num_sorts=total_num_jobs * self.runs,

@@ -1,4 +1,4 @@
-"""QST result viewer."""
+"""Result viewer."""
 import itertools
 import json
 import logging
@@ -93,9 +93,9 @@ class Result:
             with open(job_details_path, "r") as fp:
                 self.job_details = json.load(fp)
             # Parse the methods
-            all_methods = set(self.job_details["QST"]["Methods"]["All"])
+            all_methods = set(self.job_details["Executable"]["Methods"]["All"])
             self._threshold_methods = set(
-                self.job_details["QST"]["Methods"]["Threshold"]
+                self.job_details["Executable"]["Methods"]["Threshold"]
             )
             self._standard_methods = all_methods - self._threshold_methods
         else:

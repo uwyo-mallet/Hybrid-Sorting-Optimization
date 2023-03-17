@@ -5,9 +5,8 @@ import dash
 import pandas as pd
 from dash import dcc
 
-QST_EXEC_PATH = Path("./build/QST")
-QST_RESULTS_DIR = Path("./results")
-GB_RESULTS_DIR = Path("./gb_results")
+EXEC_PATH = Path("./src/c/HSO-c")
+RESULTS_DIR = Path("./results")
 
 GRAPH_ORDER = (
     "random",
@@ -53,9 +52,9 @@ Expected \# of sorts: {total_num_sorts}
 
 Actual \# of sorts: {actual_num_sorts}
 
-QST Version:
+Version:
 ```txt
-{qst_version}
+{version}
 ```
 """
 
@@ -70,7 +69,7 @@ def update_info(info_json):
     num_concurrent = info["Number of concurrent jobs"]
     platform = info["Platform"]
     partition = info.get("partition", "")
-    qst_version = info["QST"]["Version"]
+    version = info["Executable"]["Version"]
     runs = info["Runs"]
     total_num_sorts = info.get("Total number of sorts", "")
 
@@ -86,7 +85,7 @@ def update_info(info_json):
         num_concurrent=num_concurrent,
         platform=platform,
         partition=partition,
-        qst_version=qst_version,
+        version=version,
         runs=runs,
         total_num_sorts=total_num_sorts,
         actual_num_sorts=actual_num_sorts,

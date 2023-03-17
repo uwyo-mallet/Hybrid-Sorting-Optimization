@@ -79,7 +79,7 @@ typedef enum
   FAIL,          /* An error occured, and was already reported with perror(). */
   PARSE_ERROR,   /* strtoll() parse error. */
   UNKNOWN_ERROR, /* Take a guess... */
-} QST_RET;
+} STATUS;
 
 // Not being able to keep this with the methods enum is a little unfortunate...
 const char* METHODS[] = {

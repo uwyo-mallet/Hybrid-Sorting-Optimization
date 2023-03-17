@@ -7,6 +7,8 @@ results/
 *slurm.d/
 gb_*/
 libcpp_libs/
+src/c/HSO-c
+src/c/tests
 
 # Jupyter notebook
 .ipynb_checkpoints/

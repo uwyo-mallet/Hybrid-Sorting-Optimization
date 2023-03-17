@@ -1,4 +1,4 @@
-"""Loader for QST results."""
+"""Loader for results."""
 import json
 import re
 import subprocess
@@ -10,8 +10,6 @@ import numpy as np
 import pandas as pd
 
 from .generics import CACHEGRIND_COLS
-
-# from qstpy import QST
 
 
 def load_cachegrind(df, valgrind_dir: Optional[Path]):
@@ -73,7 +71,7 @@ def load_cachegrind(df, valgrind_dir: Optional[Path]):
 
 def load(
     in_dir=None,
-    qst_results_dir=Path("./results"),
+    results_dir=Path("./results"),
     job_details_file=Path("job_details.json"),
     partition_file=Path("partition"),
     valgrind_dir=Path("valgrind/"),
@@ -81,12 +79,12 @@ def load(
     """TODO."""
     if in_dir is None:
         try:
-            qst_results_dir = Path(qst_results_dir)
-            dirs = sorted(list(qst_results_dir.iterdir()))
+            results_dir = Path(results_dir)
+            dirs = sorted(list(results_dir.iterdir()))
             in_dir = dirs[-1]
         except IndexError as e:
             raise FileNotFoundError(
-                f"No result subdirectories in '{qst_results_dir}'"
+                f"No result subdirectories in '{results_dir}'"
             ) from e
 
     csvs = tuple(in_dir.glob("output*.csv"))
