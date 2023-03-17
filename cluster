@@ -100,8 +100,6 @@ if [ "$op" == "to" ]; then
 	to
 elif [ "$op" == "from" ]; then
 	from
-elif [ "$op" == "build" ]; then
-	build
 else
 	echo "$op"
 	show_help
