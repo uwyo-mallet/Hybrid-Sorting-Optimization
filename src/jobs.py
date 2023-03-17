@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-Automatically dispatch sort jobs of varying inputs, methods, and threshold values.
+Automatically dispatch sort jobs of varying inputs, methods, and threshold
+values.
 
 This essentially serves as a job scheduler, with optional features to easily
 dispatch slurm job array batches. Only use the native scheduling features if
 running on a local multi-core machine.
 
 Usage:
-    jobs.py <DATA_DIR> [options]
-    jobs.py <DATA_DIR> [options] (--threshold=THRESH ...)
-    jobs.py <DATA_DIR> [options] (--valgrind-opt=OPT ...)
-    jobs.py <DATA_DIR> [options] (--threshold=THRESH ...) (--valgrind-opt=OPT ...)
+    jobs.py <EXEC> <DATA_DIR> [options]
+    jobs.py <EXEC> <DATA_DIR> [options] (--threshold=THRESH ...)
+    jobs.py <EXEC> <DATA_DIR> [options] (--valgrind-opt=OPT ...)
+    jobs.py <EXEC> <DATA_DIR> [options] (--threshold=THRESH ...) (--valgrind-opt=OPT ...)
     jobs.py -h | --help
 
 Options:
     -h, --help               Show this help.
-    -e, --exec=EXEC          Path to executable.
     -j, --jobs=N             Do N jobs in parallel.
     -m, --methods=METHODS    Comma seperated list of methods to use for sorters.
     -o, --output=FILE        Output CSV to save results.
@@ -35,6 +35,7 @@ Options:
     --callgrind              Enable callgrind data collection for each job.
     --cachegrind             Enable cachegrind data collection for each job.
     --massif                 Enable massif data collection for each job.
+
 """
 import itertools
 import multiprocessing
@@ -57,7 +58,7 @@ from tqdm import tqdm
 
 from info import get_supported_methods, write_info
 
-VERSION = "1.1.6"
+VERSION = "1.1.7"
 
 
 DATA_TYPES = {"ascending", "descending", "random", "single_num", "pipe_organ"}
@@ -351,7 +352,7 @@ def parse_args(args):
         raise NotADirectoryError("Invalid data directory")
 
     # Executable location
-    parsed["exec"] = args.get("--exec")
+    parsed["exec"] = args.get("<EXEC>")
     parsed["exec"] = Path(parsed["exec"])
     if not parsed["exec"].is_file():
         raise FileNotFoundError("Can't find executable")

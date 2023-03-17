@@ -37,12 +37,11 @@ def get_exec_version(exec_path: Path):
     cmd = (str(exec_path), "--version")
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     stdout, _ = p.communicate()
-    return stdout.decode()
+    return stdout.decode().strip()
 
 
 def get_supported_methods(exec_path: Path):
     """Call the process and parse the currently supported methods."""
-    # TODO: Rewrite this better
     valid_methods = (
         subprocess.run(
             (str(exec_path), "--show-methods=nonthreshold"),
@@ -115,6 +114,7 @@ def write_info(
         "Processor": platform.processor(),
         "CPU Info": get_cpu_info(),
         "Executable": {
+            "Name": str(exec_path.name),
             "Version": vers,
             "Methods": {
                 "All": methods,
