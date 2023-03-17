@@ -29,7 +29,6 @@ class Partition:
                 *args,
                 f"--arcc-partition={partition}",
             ]
-
             result.append(cmd)
 
         return result
@@ -77,7 +76,6 @@ def build_parser():
 
 
 if __name__ == "__main__":
-
     parser = build_parser()
     args = parser.parse_args()
     args = vars(args)
