@@ -20,6 +20,7 @@
 \usepackage{pgfplots}
 \usepackage{titlesec}
 \usepackage[backend=biber,style=ieee]{biblatex}
+\usepackage{multirow}
 
 \newcommand{\todo}{\colorbox{red}{TODO}}
 \newcommand{\todocite}{\colorbox{red}{TODO\_CITE}}
@@ -27,7 +28,7 @@
 \addbibresource{references.bib}
 \renewcommand*{\bibfont}{\small}
 
-\title{\LARGE \bf TODO}
+\title{\LARGE \bf Practical Analysis of Hybrid Sorting Algorithms}
 \author{Joshua Arulsamy}
 
 \author{\parbox{3 in}{
@@ -68,14 +69,35 @@ to switch from one sorting algorithm to another. While these hybridized
 algorithms have varying space and time complexities, their actual performance in
 real-world scenarios is rarely formally examined, and the values for these
 various parameters are often chosen arbitrarily by the developer. This paper
-aims to analyze a wide variety of sorting algorithm implementations across
-varying system architectures to determine optimal parameter configurations for
-hybrid sorting algorithms. This paper also proposes a new, performant standard
-sorting implementation for GNU's C standard library.
+analyzes a wide variety of sorting algorithm implementations across varying
+system architectures to determine optimal parameter configurations for hybrid
+sorting algorithms. This paper also proposes a new, performant standard sorting
+implementation for GNU's C standard library.
 
-\section{ALGORITHMS}
+\section{BACKGROUND}
 
-\todo
+Substantial effort has been spent on analysis of sorting algorithms. Typically,
+two major characteristics are considered when studying sorting algorithms from a
+purely theoretical standpoint, space and time complexity. Existing analysis of
+popular sorting algorithms such as Quicksort and Mergesort place substantial
+weight on their excellent asymptotic complexity in the average case(\todocite).
+However, rarely does asymptotic complexity alone determine the practical
+performance of an algorithm.
+
+\begin{table}[]
+\begin{tabular}{|c|ccc|c|}
+\hline
+\textbf{Algorithm} & \multicolumn{3}{c|}{\textbf{Time Complexity}}                                               & \textbf{Space Complexity} \\ \hline
+                   & \multicolumn{1}{c|}{\textbf{Best}} & \multicolumn{1}{c|}{\textbf{Average}} & \textbf{Worst} & \textbf{Worst}            \\ \hline
+Quicksort          & \multicolumn{1}{c}{$\Omega(n\log{(n)})$}          & \multicolumn{1}{c}{$\Theta(n\log{(n)})$}             & todo           & todo                      \\ \hline
+Mergesort          & \multicolumn{1}{c}{$\Omega(n\log{(n)})$}          & \multicolumn{1}{c}{$\Theta(n\log{(n)})$}             & todo           & todo                      \\ \hline
+Heapsort           & \multicolumn{1}{c}{$\Omega(n\log{(n)})$}          & \multicolumn{1}{c}{$\Theta(n\log{(n)})$}             & todo           & todo                      \\ \hline
+Bubble Sort        & \multicolumn{1}{c}{$\Omega(n)$}                   & \multicolumn{1}{c}{$\Theta(n^{2})$}             & todo           & todo                      \\ \hline
+Insertion Sort     & \multicolumn{1}{c}{$\Omega(n)$}                   & \multicolumn{1}{c}{$\Theta(n^{2})$}             & todo           & todo                      \\ \hline
+Tree Sort          & \multicolumn{1}{c}{$\Omega(n\log{(n)})$}          & \multicolumn{1}{c}{$\Theta((n\log{(n)}))^{2}$}             & todo           & todo                      \\ \hline
+Shell Sort         & \multicolumn{1}{c}{$\Omega(n\log{(n)})$}          & \multicolumn{1}{c}{todo}             & todo           & todo                      \\ \hline
+\end{tabular}
+\end{table}
 
 \section{EXPERIMENTAL SETUP}
 
