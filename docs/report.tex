@@ -32,10 +32,10 @@
 \author{Joshua Arulsamy}
 
 \author{\parbox{3 in}{
-	\centering
-	Joshua Arulsamy\\
-    University of Wyoming\\
-    {\tt\small jarulsam@uwyo.edu}}}
+\centering
+Joshua Arulsamy\\
+University of Wyoming\\
+{\tt\small jarulsam@uwyo.edu}}}
 
 \begin{document}
 
@@ -44,10 +44,13 @@
 \pagestyle{plain}
 \nocite{*}
 
+% Reduce space between figures and text
+\setlength{\textfloatsep}{2pt}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
-  \todo
+	\todo
 
 \end{abstract}
 
@@ -71,7 +74,7 @@ real-world scenarios is rarely formally examined, and the values for these
 various parameters are often chosen arbitrarily by the developer. This paper
 analyzes a wide variety of sorting algorithm implementations across varying
 system architectures to determine optimal parameter configurations for hybrid
-sorting algorithms. This paper also proposes a new, performant standard sorting
+sorting algorithms. This paper also proposes a new performant standard sorting
 implementation for GNU's C standard library.
 
 \section{BACKGROUND}
@@ -79,25 +82,41 @@ implementation for GNU's C standard library.
 Substantial effort has been spent on analysis of sorting algorithms. Typically,
 two major characteristics are considered when studying sorting algorithms from a
 purely theoretical standpoint, space and time complexity. Existing analysis of
-popular sorting algorithms such as Quicksort and Mergesort place substantial
-weight on their excellent asymptotic complexity in the average case(\todocite).
-However, rarely does asymptotic complexity alone determine the practical
-performance of an algorithm.
+popular sorting algorithms, such as Quicksort and Mergesort, place substantial
+emphasis on their excellent asymptotic complexity in the average
+case(\todocite). However, asymptotic complexity alone does not describe the
+practical performance of an algorithm. While Mergesort may have a better
+asymptotic time complexity in the worst case than insertion sort (Table
+\ref{fig:time_complexity_table}), for small inputs, insertion sort typically
+outperforms Mergesort.
 
-\begin{table}[]
-\begin{tabular}{|c|ccc|c|}
-\hline
-\textbf{Algorithm} & \multicolumn{3}{c|}{\textbf{Time Complexity}}                                               & \textbf{Space Complexity} \\ \hline
-                   & \multicolumn{1}{c|}{\textbf{Best}} & \multicolumn{1}{c|}{\textbf{Average}} & \textbf{Worst} & \textbf{Worst}            \\ \hline
-Quicksort          & \multicolumn{1}{c}{$\Omega(n\log{(n)})$}          & \multicolumn{1}{c}{$\Theta(n\log{(n)})$}             & todo           & todo                      \\ \hline
-Mergesort          & \multicolumn{1}{c}{$\Omega(n\log{(n)})$}          & \multicolumn{1}{c}{$\Theta(n\log{(n)})$}             & todo           & todo                      \\ \hline
-Heapsort           & \multicolumn{1}{c}{$\Omega(n\log{(n)})$}          & \multicolumn{1}{c}{$\Theta(n\log{(n)})$}             & todo           & todo                      \\ \hline
-Bubble Sort        & \multicolumn{1}{c}{$\Omega(n)$}                   & \multicolumn{1}{c}{$\Theta(n^{2})$}             & todo           & todo                      \\ \hline
-Insertion Sort     & \multicolumn{1}{c}{$\Omega(n)$}                   & \multicolumn{1}{c}{$\Theta(n^{2})$}             & todo           & todo                      \\ \hline
-Tree Sort          & \multicolumn{1}{c}{$\Omega(n\log{(n)})$}          & \multicolumn{1}{c}{$\Theta((n\log{(n)}))^{2}$}             & todo           & todo                      \\ \hline
-Shell Sort         & \multicolumn{1}{c}{$\Omega(n\log{(n)})$}          & \multicolumn{1}{c}{todo}             & todo           & todo                      \\ \hline
-\end{tabular}
+\begin{table}[h]
+	\centering
+	\resizebox{\columnwidth}{!}{
+		\begin{tabular}{|c|lll|}
+			\hline
+			\textbf{Algorithm} & \multicolumn{3}{c|}{\textbf{Time Complexity}}                                                                                 \\ \hline
+			                   & \multicolumn{1}{l|}{\textbf{Best}}            & \multicolumn{1}{l|}{\textbf{Average}}         & \textbf{Worst}                \\ \hline
+			Quicksort          & \multicolumn{1}{l|}{$\Omega(n\log{(n)})$}     & \multicolumn{1}{l|}{$\Theta(n\log{(n)})$}     & $\mathcal{O}(n^{2})$          \\ \hline
+			Mergesort          & \multicolumn{1}{l|}{$\Omega(n\log{(n)})$}     & \multicolumn{1}{l|}{$\Theta(n\log{(n)})$}     & $\mathcal{O}(n\log{(n)})$     \\ \hline
+			Heapsort           & \multicolumn{1}{l|}{$\Omega(n\log{(n)})$}     & \multicolumn{1}{l|}{$\Theta(n\log{(n)})$}     & $\mathcal{O}(n\log{(n)})$     \\ \hline
+			Bubble Sort        & \multicolumn{1}{l|}{$\Omega(n)$}              & \multicolumn{1}{l|}{$\Theta(n^{2})$}          & $\mathcal{O}(n\log{(n)})$     \\ \hline
+			Insertion Sort     & \multicolumn{1}{l|}{$\Omega(n)$}              & \multicolumn{1}{l|}{$\Theta(n^{2})$}          & $\mathcal{O}(n^{2})$          \\ \hline
+			Tree Sort          & \multicolumn{1}{l|}{$\Omega(n\log{(n)})$}     & \multicolumn{1}{l|}{$\Theta(n\log(n))$}       & $\mathcal{O}(n^{2})$          \\ \hline
+			Shell Sort         & \multicolumn{1}{l|}{$\Omega(n\log{(n)})$}     & \multicolumn{1}{l|}{$\Theta(n(\log(n))^{2})$} & $\mathcal{O}(n(\log(n))^{2})$ \\ \hline
+		\end{tabular}}
+	\caption{Sorting algorithm asymptotic time complexities \todocite}
+	\label{fig:time_complexity_table}
 \end{table}
+
+Most of these algorithms have not been sufficiently benchmarked in real world
+scenarios to determine a true optimal implementation for most scenarios. By
+evaluating specific scenarios where an algorithm performs well may lead to
+better sorting function implementations by combining several algorithms or
+excluding algorithms in specific situations. Since sorting is used so
+ubiquitously, even incremental improvements to standard library sorting
+implementations can broadly influence the performance of many different
+applications. This marks an area in obvious need of further investigation.
 
 \section{EXPERIMENTAL SETUP}
 
