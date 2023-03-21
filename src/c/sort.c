@@ -186,17 +186,16 @@ void msort_heap(void *b, size_t n, size_t s, compar_d_fn_t cmp)
   p.cmp = cmp;
   p.t = tmp;
 
-  // TODO: Guess the type?
   if ((s & (sizeof(uint32_t) - 1)) == 0 &&
-      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+      ((uintptr_t)b) % __alignof__(uint32_t) == 0)
   {
     if (s == sizeof(uint32_t))
       p.var = 0;
     else if (s == sizeof(uint64_t) &&
-             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+             ((uintptr_t)b) % __alignof__(uint64_t) == 0)
       p.var = 1;
     else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
-             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+             ((uintptr_t)b) % __alignof__(unsigned long) == 0)
       p.var = 2;
   }
 
@@ -564,17 +563,16 @@ void msort_heap_with_old_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
   p.cmp = cmp;
   p.t = tmp;
 
-  // TODO: Guess the type?
   if ((s & (sizeof(uint32_t) - 1)) == 0 &&
-      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+      ((uintptr_t)b) % __alignof__(uint32_t) == 0)
   {
     if (s == sizeof(uint32_t))
       p.var = 0;
     else if (s == sizeof(uint64_t) &&
-             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+             ((uintptr_t)b) % __alignof__(uint64_t) == 0)
       p.var = 1;
     else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
-             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+             ((uintptr_t)b) % __alignof__(unsigned long) == 0)
       p.var = 2;
   }
 
@@ -604,17 +602,16 @@ void msort_heap_with_basic_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
   p.cmp = cmp;
   p.t = tmp;
 
-  // TODO: Guess the type?
   if ((s & (sizeof(uint32_t) - 1)) == 0 &&
-      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+      ((uintptr_t)b) % __alignof__(uint32_t) == 0)
   {
     if (s == sizeof(uint32_t))
       p.var = 0;
     else if (s == sizeof(uint64_t) &&
-             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+             ((uintptr_t)b) % __alignof__(uint64_t) == 0)
       p.var = 1;
     else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
-             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+             ((uintptr_t)b) % __alignof__(unsigned long) == 0)
       p.var = 2;
   }
 
@@ -799,17 +796,16 @@ void msort_heap_with_shell(void *b, size_t n, size_t s, compar_d_fn_t cmp,
   p.cmp = cmp;
   p.t = tmp;
 
-  // TODO: Guess the type?
   if ((s & (sizeof(uint32_t) - 1)) == 0 &&
-      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+      ((uintptr_t)b) % __alignof__(uint32_t) == 0)
   {
     if (s == sizeof(uint32_t))
       p.var = 0;
     else if (s == sizeof(uint64_t) &&
-             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+             ((uintptr_t)b) % __alignof__(uint64_t) == 0)
       p.var = 1;
     else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
-             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+             ((uintptr_t)b) % __alignof__(unsigned long) == 0)
       p.var = 2;
   }
 
@@ -966,17 +962,16 @@ void msort_heap_with_fast_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
   p.cmp = cmp;
   p.t = tmp;
 
-  // TODO: Guess the type?
   if ((s & (sizeof(uint32_t) - 1)) == 0 &&
-      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+      ((uintptr_t)b) % __alignof__(uint32_t) == 0)
   {
     if (s == sizeof(uint32_t))
       p.var = 0;
     else if (s == sizeof(uint64_t) &&
-             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+             ((uintptr_t)b) % __alignof__(uint64_t) == 0)
       p.var = 1;
     else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
-             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+             ((uintptr_t)b) % __alignof__(unsigned long) == 0)
       p.var = 2;
   }
 

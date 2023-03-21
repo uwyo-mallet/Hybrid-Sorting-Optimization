@@ -204,16 +204,22 @@ void fast_ins_sort(void *b, size_t n, size_t s, compar_d_fn_t cmp)
 {
   unsigned var = DEFAULT;
   if ((s & (sizeof(uint32_t) - 1)) == 0 &&
-      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+      ((uintptr_t)b) % __alignof__(uint32_t) == 0)
   {
     if (s == sizeof(uint32_t))
+    {
       var = UINT32;
+    }
     else if (s == sizeof(uint64_t) &&
-             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+             ((uintptr_t)b) % __alignof__(uint64_t) == 0)
+    {
       var = UINT64;
+    }
     else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
-             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+             ((uintptr_t)b) % __alignof__(unsigned long) == 0)
+    {
       var = ULONG;
+    }
   }
 
   char *tmp = alloca(s);
@@ -374,16 +380,22 @@ void msort_heap_with_network(void *b, size_t n, size_t s, compar_d_fn_t cmp,
 
   // Use alignment to avoid some syscalls later down the line.
   if ((s & (sizeof(uint32_t) - 1)) == 0 &&
-      ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+      ((uintptr_t)b) % __alignof__(uint32_t) == 0)
   {
     if (s == sizeof(uint32_t))
+    {
       p.var = UINT32;
+    }
     else if (s == sizeof(uint64_t) &&
-             ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+             ((uintptr_t)b) % __alignof__(uint64_t) == 0)
+    {
       p.var = UINT64;
+    }
     else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
-             ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+             ((uintptr_t)b) % __alignof__(unsigned long) == 0)
+    {
       p.var = ULONG;
+    }
   }
 
   msort_with_network_recur(&p, b, n, threshold);
@@ -519,16 +531,22 @@ void msort_with_network(void *b, size_t n, size_t s, compar_d_fn_t cmp,
   {
     // Use alignment to avoid some syscalls later down the line.
     if ((s & (sizeof(uint32_t) - 1)) == 0 &&
-        ((char *)b - (char *)0) % __alignof__(uint32_t) == 0)
+        ((uintptr_t)b) % __alignof__(uint32_t) == 0)
     {
       if (s == sizeof(uint32_t))
+      {
         p.var = UINT32;
+      }
       else if (s == sizeof(uint64_t) &&
-               ((char *)b - (char *)0) % __alignof__(uint64_t) == 0)
+               ((uintptr_t)b) % __alignof__(uint64_t) == 0)
+      {
         p.var = UINT64;
+      }
       else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
-               ((char *)b - (char *)0) % __alignof__(unsigned long) == 0)
+               ((uintptr_t)b) % __alignof__(unsigned long) == 0)
+      {
         p.var = ULONG;
+      }
     }
 
     msort_with_network_recur(&p, b, n, threshold);
