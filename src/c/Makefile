@@ -16,7 +16,7 @@ TESTFLAGS = -Wno-unused-function -Wno-unused-const-variable
 OBJS = benchmark.o platform.o sort.o msort_opt.o
 
 HSO-c: $(OBJS) main.o
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) -o HSO-c -lz main.o $(OBJS)
+	$(CC) $(CFLAGS) $(DEBUGFLAGS) -o HSO-c main.o $(OBJS) -lz
 
 main.o: main.c platform.h
 	$(CC) $(CFLAGS) $(DEBUGFLAGS) main.c -c
@@ -35,6 +35,30 @@ msort_opt.o: msort_opt.c sort.h
 
 check: HSO-c tests.c
 	$(CC) $(CFLAGS) $(DEBUGFLAGS) $(TESTFLAGS) -o tests tests.c $(OBJS) -lcmocka
+
+check-glibc-var:
+ifndef GLIBC
+		$(error GLIBC (glibc build path) is unset. Try again with 'make GLIBC=/foo/bar glibc')
+endif
+
+glibc: check-glibc-var
+	$(CC) -Wl,-rpath="$(GLIBC):$(GLIBC)/math:\
+                    $(GLIBC)/elf:\
+                    $(GLIBC)/dlfcn:\
+                    $(GLIBC)/nss:\
+                    $(GLIBC)/nis:\
+                    $(GLIBC)/rt:\
+                    $(GLIBC)/resolv:\
+                    $(GLIBC)/crypt:\
+                    $(GLIBC)/nptl:\
+                    $(GLIBC)/dfp" \
+        -Wl,--dynamic-linker=$(GLIBC)/elf/ld.so \
+        $(CFLAGS) $(DEBUGFLAGS) -o HSO-c-glibc \
+        main.c \
+        platform.c \
+        benchmark.c \
+        sort.c \
+        msort_opt.c -lz
 
 clean:
 	rm -f HSO-c $(OBJS)
