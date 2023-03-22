@@ -357,7 +357,8 @@ def parse_args(args):
     parsed["exec"] = args.get("<EXEC>")
     parsed["exec"] = Path(parsed["exec"])
     if not parsed["exec"].is_file():
-        raise FileNotFoundError("Can't find executable")
+        loc = parsed["exec"].absolute()
+        raise FileNotFoundError(f"Can't find executable: '{loc}'")
 
     # Populate the supported methods by calling the subprocess.
     valid_methods, _ = get_supported_methods(parsed["exec"])
@@ -586,7 +587,11 @@ class Scheduler:
             massif=self.massif,
         )
         # Create my own process group
-        os.setpgrp()
+        try:
+            os.setpgrp()
+        except PermissionError:
+            pass
+
         threads = []
         try:
             for _ in range(self.jobs):
