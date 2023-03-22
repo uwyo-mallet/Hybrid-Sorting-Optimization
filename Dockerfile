@@ -46,7 +46,7 @@ RUN pip install -r /HSO/requirements.txt
 
 COPY src/ src/
 WORKDIR /HSO/src/c
-RUN make GLIBC=/HSO/glibc-build all glibc && \
+RUN make -B GLIBC=/HSO/glibc-build all glibc && \
     ln -s /HSO/src/c/HSO-c /HSO/HSO-c && \
     ln -s /HSO/src/c/HSO-c-glibc /HSO/HSO-c-glibc
 

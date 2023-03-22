@@ -5,8 +5,10 @@ import argparse
 import json
 import subprocess
 from dataclasses import dataclass
+from pathlib import Path
 
-JOB_SBATCH = "jobs.sbatch"
+JOB_SBATCH = "job.sbatch"
+JOB_SINGULARITY = "job-singularity.sbatch"
 
 
 @dataclass
@@ -16,16 +18,20 @@ class Partition:
     name: str
     constraint: list[str]
 
-    def cmds(self, args) -> list[list[str]]:
+    def cmds(self, args, singularity=None) -> list[list[str]]:
         """Convert a set of arguments to a list of sbatch commands."""
         result = []
         for c in self.constraint:
             partition = json.dumps({"partition": self.name, "constraint": c})
+            if singularity is not None:
+                jobs_params = [JOB_SINGULARITY, str(singularity)]
+            else:
+                jobs_params = [JOB_SBATCH]
             cmd = [
                 "sbatch",
                 f"--partition={self.name}",
                 f"--constraint={c}",
-                JOB_SBATCH,
+                *jobs_params,
                 *args,
                 f"--arcc-partition={partition}",
             ]
@@ -67,6 +73,13 @@ def build_parser():
         action="store_true",
     )
     parser.add_argument(
+        "-s",
+        "--singularity",
+        help="Run the singularity container instead of the native execution",
+        action="store",
+        type=Path,
+    )
+    parser.add_argument(
         "PASSTHROUGH",
         nargs=argparse.REMAINDER,
         help="Pass through arguments to jobs.py",
@@ -81,6 +94,9 @@ if __name__ == "__main__":
     args = vars(args)
 
     selected_partitions = args["partition"]
+    singularity = args["singularity"]
+    passthrough = [a for a in args["PASSTHROUGH"] if a != "--"]
+
     if "all" in selected_partitions and len(selected_partitions) > 1:
         raise ValueError("Cannot specify multiple partitions with 'all'")
 
@@ -93,7 +109,7 @@ if __name__ == "__main__":
 
     for i in selected_partitions:
         obj = partitions[i]
-        cmds = obj.cmds(args["PASSTHROUGH"])
+        cmds = obj.cmds(passthrough, singularity=singularity)
         if args["dry_run"]:
             for c in cmds:
                 print(" ".join(c))

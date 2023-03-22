@@ -18,6 +18,7 @@ cd /project/mallet/jarulsam/Hybrid-Sorting-Optimization
 mkdir -p ./results
 
 # Mimic the src/jobs.py script
-printf "%s\n" "$@"
+printf "%s " "$@"
+printf "\n"
 
 python src/jobs.py "$@"
