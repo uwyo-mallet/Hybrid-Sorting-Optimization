@@ -9,6 +9,7 @@ gb_*/
 libcpp_libs/
 src/c/HSO-c
 src/c/tests
+experiment/
 
 # Jupyter notebook
 .ipynb_checkpoints/
