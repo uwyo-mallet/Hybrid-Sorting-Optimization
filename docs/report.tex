@@ -21,6 +21,8 @@
 \usepackage{titlesec}
 \usepackage[backend=biber,style=ieee]{biblatex}
 \usepackage{multirow}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
 
 \newcommand{\todo}{\colorbox{red}{TODO}}
 \newcommand{\todocite}{\colorbox{red}{TODO\_CITE}}
@@ -110,17 +112,99 @@ outperforms Mergesort.
 \end{table}
 
 Most of these algorithms have not been sufficiently benchmarked in real world
-scenarios to determine a true optimal implementation for most scenarios. By
-evaluating specific scenarios where an algorithm performs well may lead to
+scenarios to determine a true optimal implementation for most scenarios.
+Evaluating specific scenarios where an algorithm performs well may lead to
 better sorting function implementations by combining several algorithms or
 excluding algorithms in specific situations. Since sorting is used so
 ubiquitously, even incremental improvements to standard library sorting
 implementations can broadly influence the performance of many different
 applications. This marks an area in obvious need of further investigation.
 
+\todo Describe that such an analysis does not really exist.
+
 \section{EXPERIMENTAL SETUP}
 
-\todo
+A small subset of algorithms were chosen for evaluation. Primarily, algorithms
+utilized within standard library implementations are of particular interest,
+since they are typically highly performant in the general case. Other
+complementary algorithms which perform exceptionally well in specific scenarios
+were also evaluated. Since this analysis is focused on analyzing and improving
+existing implementations, general purpose sorting function were taken from
+various standard libraries, such as GNU's libc and musl libc \todocite. It is a
+priority to maintain the applicability of any optimizations discovered as a
+result of this evaluation to existing standard libraries, so any non-comparison
+based sorting algorithm, such as Radix sort or Bucket sort were excluded.
+
+% Any optimization gained as a result of this evaluation
+
+\subsection{General Purpose Algorithms}
+
+Of the well known sorting algorithms, two are used most often for general
+sorting tasks, Quicksort and Mergesort. Quicksort has been a staple algorithm
+for decades. It is well known to be easy to implement and works well for a
+variety of input data. Quicksort also requires a constant amount of extra memory
+independent of the size of the input, making it an obvious choice in resource
+constrained environments. However, it is important to acknowledge the
+significant pitfalls of most Quicksort implementations.
+
+\subsection{Specialized Algorithms}
+
+\subsection{Proposed Algorithm}
+
+General purpose sorting algorithms are typically difficult to optimize
+uniformly. Since these implementations very often live in standard libraries,
+use-case specific optimizations are not feasible. During runtime, quick,
+low-overhead analysis about the input can reveal opportunities for
+input-specific optimizations. However, for small input sizes, the overhead from
+such an analysis often contributes more to the overall runtime, than even
+utilizing an algorithm ill-suited for that specific input. This motivates
+placing significant importance on the input size itself. Comparing the input
+size against pre-defined threshold values is cheap and can help pick an
+algorithm.
+
+\begin{algorithm}
+	\caption{Network Sort}
+	\label{alg:network_sort}
+	\begin{algorithmic}
+		\Procedure{sort2}{a, b}
+		\State $t \gets min(a, b)$
+		\State $b \gets max(a, b)$
+		\State $a \gets t$
+		\EndProcedure
+
+		\Procedure{sort3}{a, b, c}
+		\State sort2(a, b)
+		\State sort2(b, c)
+		\State sort2(a, b)
+		\EndProcedure
+
+		\Procedure{sort4}{a, b, c, d}
+		\State sort2(a, b)
+		\State sort2(b, c)
+		\State sort2(a, c)
+		\State sort2(b, d)
+		\State sort2(b, c)
+		\EndProcedure
+	\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+	\caption{Insertion Sort}
+	\label{alg:insertion_sort}
+	\begin{algorithmic}
+		\Procedure{ins\_sort}{a, n}
+		\If {$n == 2$}
+		\State sort2(a[0], a[1])
+		\ElsIf {$n == 3$}
+		\State sort3(a[0], a[1], a[2])
+		\ElsIf {$n == 4$}
+		\State sort4(a[0], a[1], a[2], a[3])
+		\Endif
+
+		\EndProcedure
+	\end{algorithmic}
+\end{algorithm}
+
 
 \section{RESULTS}
 
