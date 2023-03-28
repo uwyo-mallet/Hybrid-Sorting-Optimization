@@ -23,6 +23,7 @@ pd.set_option("display.width", None)
 plt.style.use("seaborn-v0_8-paper")
 plt.rcParams.update({"figure.dpi": "100"})
 mpl.rcParams["errorbar.capsize"] = 3
+mpl.rcParams["lines.linewidth"] = 1
 
 
 def get_latest_subdir(path: Path) -> Path:
@@ -74,6 +75,7 @@ class Result:
         self._threshold_methods = []
 
         self._load_from_disk()
+        pprint(self.job_details)
 
     def _load_from_disk(self):
         """Load all the necessary data from disk."""
@@ -251,6 +253,64 @@ class Result:
         fig.suptitle("Size vs. Runtime", fontsize=16)
         fig.tight_layout()
 
+    def plot_relative_difference(self, baseline_method, interactive=False):
+        baseline_df = self.df[self.df["method"] == baseline_method]
+        df = self.df[self.df["method"] != baseline_method]
+        df = df.query("method in @self._threshold_methods").copy()
+
+        min_threshold = df["threshold"].min()
+        max_threshold = df["threshold"].max()
+
+        sizes = df["size"].unique()
+        if len(sizes) > 1:
+            if interactive:
+                size = self._prompt_for_thing("size", list(sizes))
+            else:
+                size = sizes[-1]
+        else:
+            size = sizes[0]
+        df = df[df["size"] == size]
+        dfs = self._gen_sub_dfs(df)
+
+        fig, axes = plt.subplots(nrows=len(dfs), figsize=(16, 12))
+        index = 0
+
+        for type_, sub_df in dfs.items():
+            # den = baseline_df["wall_nsecs"].reset_index(drop=True).mean()
+            den = (
+                baseline_df[baseline_df["description"] == type_]["wall_nsecs"]
+                .reset_index(drop=True)
+                .mean()
+            )
+            print(den)
+            for method, df in sub_df.items():
+                num = df[("mean", "wall_nsecs")].reset_index(drop=True)
+                relative = num / den
+                df["wall_nsecs_relative"] = relative.values
+
+                df.plot.line(
+                    x="threshold",
+                    y="wall_nsecs_relative",
+                    marker="o",
+                    title=type_.capitalize(),
+                    ax=axes[index],
+                    label=method,
+                )
+            axes[index].plot([0, max_threshold], [1, 1], "--", label=baseline_method)
+
+            axes[index].legend(loc="upper right")
+            axes[index].set_ylabel(f"% of {baseline_method} runtime")
+            axes[index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+            index += 1
+        plt.tight_layout()
+
+        fig.suptitle(
+            f"""Threshold vs. Runtime Relative to {baseline_method}
+            (size={size:,}, host={self.job_details['Node']}, arch={self.job_details['Machine']})""",
+            fontsize=16,
+        )
+        fig.tight_layout()
+
 
 def main():
     """TODO."""
@@ -277,7 +337,8 @@ def main():
         result = Result(last_result_path)
 
     result.plot_threshold_v_runtime()
-    result.plot_size_v_runtime()
+    # result.plot_size_v_runtime()
+    result.plot_relative_difference("qsort")
 
     plt.show()
 
