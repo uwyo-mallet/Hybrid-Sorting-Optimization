@@ -23,7 +23,7 @@ RUN apt-get update &&                          \
 
 
 # Clone glibc
-RUN git clone --depth=1                  \
+RUN git clone                            \
     https://sourceware.org/git/glibc.git \
     glibc &&                             \
     cd glibc &&                          \
@@ -36,7 +36,7 @@ RUN git apply /HSO/patches/*.patch
 
 # Build and test glibc
 WORKDIR /HSO/glibc-build
-RUN /HSO/glibc/configure --prefix=/usr && make -j12
+RUN /HSO/glibc/configure --prefix=/usr CC=gcc CFLAGS="-O3" && make -j16
 # RUN make check -j12
 
 WORKDIR /HSO
