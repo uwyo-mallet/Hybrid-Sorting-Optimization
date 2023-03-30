@@ -22,7 +22,7 @@
 \usepackage[backend=biber,style=ieee]{biblatex}
 \usepackage{multirow}
 \usepackage{algorithm}
-\usepackage[noend]{algpseudocode}
+\usepackage{algpseudocode}
 
 \newcommand{\todo}{\colorbox{red}{TODO}}
 \newcommand{\todocite}{\colorbox{red}{TODO\_CITE}}
@@ -46,9 +46,6 @@ University of Wyoming\\
 \pagestyle{plain}
 \nocite{*}
 
-% Reduce space between figures and text
-\setlength{\textfloatsep}{2pt}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
@@ -64,33 +61,33 @@ of reordering data according to some comparator is called sorting. Sorting can
 be found in nearly every computer system today. From databases to payment
 processing systems, data is constantly being sorted. The near omnipresent need
 for performant sorting implementations has resulted in all major programming
-languages including a generic sorting function within their standard libraries.
-These standard implementations can use a variety of algorithms internally, such
-as Quicksort, Mergesort, and many others (\todocite), however, rarely does a
-single algorithm perform exceptionally well. Often, these algorithms are paired
-with one or more other sorting algorithms to offer sizeable performance
-benefits. These hybrid algorithms include some tuneable parameters, such as when
-to switch from one sorting algorithm to another. While these hybridized
-algorithms have varying space and time complexities, their actual performance in
-real-world scenarios is rarely formally examined, and the values for these
-various parameters are often chosen arbitrarily by the developer. This paper
-analyzes a wide variety of sorting algorithm implementations across varying
-system architectures to determine optimal parameter configurations for hybrid
-sorting algorithms. This paper also proposes a new performant standard sorting
-implementation for GNU's C standard library.
+languages including a type-generic sorting function within their standard
+libraries. These standard implementations can use a variety of algorithms
+internally, such as Quicksort, Mergesort, and many others (\todocite), however,
+rarely does a single algorithm perform exceptionally well. Often, these
+algorithms are paired with one or more other sorting algorithms to offer
+sizeable performance benefits. These hybrid algorithms include some tuneable
+parameters, such as when to switch from one sorting algorithm to another. While
+these hybridized algorithms have varying space and time complexities, their
+actual performance in real-world scenarios is rarely formally examined, and the
+values for these various parameters are often chosen arbitrarily by the
+developers. This paper analyzes a wide variety of sorting algorithm
+implementations across varying system architectures to determine optimal
+parameter configurations for hybrid sorting algorithms. This paper also proposes
+a new performant standard sorting implementation for GNU's C standard library.
 
 \section{BACKGROUND}
 
 Substantial effort has been spent on analysis of sorting algorithms. Typically,
 two major characteristics are considered when studying sorting algorithms from a
-purely theoretical standpoint, space and time complexity. Existing analysis of
+purely theoretical standpoint; space and time complexity. Existing analysis of
 popular sorting algorithms, such as Quicksort and Mergesort, place substantial
 emphasis on their excellent asymptotic complexity in the average
 case(\todocite). However, asymptotic complexity alone does not describe the
 practical performance of an algorithm. While Mergesort may have a better
 asymptotic time complexity in the worst case than insertion sort (Table
 \ref{fig:time_complexity_table}), for small inputs, insertion sort typically
-outperforms Mergesort.
+outperforms Mergesort by avoiding the overhead of recursive calls.
 
 \begin{table}[h]
 	\centering
@@ -112,15 +109,13 @@ outperforms Mergesort.
 \end{table}
 
 Most of these algorithms have not been sufficiently benchmarked in real world
-scenarios to determine a true optimal implementation for most scenarios.
-Evaluating specific scenarios where an algorithm performs well may lead to
-better sorting function implementations by combining several algorithms or
-excluding algorithms in specific situations. Since sorting is used so
-ubiquitously, even incremental improvements to standard library sorting
-implementations can broadly influence the performance of many different
-applications. This marks an area in obvious need of further investigation.
-
-\todo Describe that such an analysis does not really exist.
+scenarios to determine an optimal implementation for common inputs. Evaluating
+specific scenarios where an algorithm performs well may lead to better sorting
+function implementations by combining several algorithms or excluding algorithms
+in specific situations. Since sorting is used so ubiquitously, even incremental
+improvements to standard library sorting implementations can broadly influence
+the performance of many different applications. This marks an area in obvious
+need of further investigation, and such an analysis does not presently exist.
 
 \section{EXPERIMENTAL SETUP}
 
@@ -135,21 +130,28 @@ priority to maintain the applicability of any optimizations discovered as a
 result of this evaluation to existing standard libraries, so any non-comparison
 based sorting algorithm, such as Radix sort or Bucket sort were excluded.
 
-% Any optimization gained as a result of this evaluation
-
 \subsection{General Purpose Algorithms}
 
-Of the well known sorting algorithms, two are used most often for general
-sorting tasks, Quicksort and Mergesort. Quicksort has been a staple algorithm
-for decades. It is well known to be easy to implement and works well for a
-variety of input data. Quicksort also requires a constant amount of extra memory
-independent of the size of the input, making it an obvious choice in resource
-constrained environments. However, it is important to acknowledge the
-significant pitfalls of most Quicksort implementations.
+Of the well known sorting algorithms, several are used for general sorting
+tasks, Quicksort, Mergesort, Heapsort, and Introsort. Quicksort has been a
+staple algorithm for decades. It is well known to be easy to implement and works
+well for a variety of input data. Quicksort requires a constant amount of extra
+memory independent of the size of the input, making it an obvious choice in
+resource constrained environments. However, in the advent of modern computing
+where using auxiliary memory to improve performance is much more common,
+Quicksort tends to fall behind other algorithms. Quicksort's performance is also
+primarily dictated by the selection of a suitable pivot value. Poor pivot
+selections can lead to worse performance. Simple implementations usually choose
+the left-most value of the input as the pivot, however this offers poor
+performance in many circumstances such as if the input is reverse sorted. So
+most implementations use a slightly more complex and costly pivot selection
+process such as \textit{median-of-three}\todocite.
 
 \subsection{Specialized Algorithms}
 
-\subsection{Proposed Algorithm}
+\todo
+
+\subsection{Proposed Algorithms}
 
 General purpose sorting algorithms are typically difficult to optimize
 uniformly. Since these implementations very often live in standard libraries,
@@ -158,53 +160,118 @@ low-overhead analysis about the input can reveal opportunities for
 input-specific optimizations. However, for small input sizes, the overhead from
 such an analysis often contributes more to the overall runtime, than even
 utilizing an algorithm ill-suited for that specific input. This motivates
-placing significant importance on the input size itself. Comparing the input
-size against pre-defined threshold values is cheap and can help pick an
+placing significant importance on the size of the input itself. Comparing the
+input size against pre-defined threshold values is cheap and can help pick an
 algorithm.
 
-\begin{algorithm}
+\todo\ Document proc parameters
+
+\begin{algorithm}[h]
 	\caption{Network Sort}
 	\label{alg:network_sort}
 	\begin{algorithmic}
-		\Procedure{sort2}{a, b}
+		\Procedure{sort2}{$a$, $b$}
 		\State $t \gets min(a, b)$
 		\State $b \gets max(a, b)$
 		\State $a \gets t$
 		\EndProcedure
 
-		\Procedure{sort3}{a, b, c}
-		\State sort2(a, b)
-		\State sort2(b, c)
-		\State sort2(a, b)
+		\Procedure{sort3}{$a$, $b$, $c$}
+		\State sort2($a$, $b$)
+		\State sort2($b$, $c$)
+		\State sort2($a$, $b$)
 		\EndProcedure
 
-		\Procedure{sort4}{a, b, c, d}
-		\State sort2(a, b)
-		\State sort2(b, c)
-		\State sort2(a, c)
-		\State sort2(b, d)
-		\State sort2(b, c)
+		\Procedure{sort4}{$a$, $b$, $c$, $d$}
+		\State sort2($a$, $b$)
+		\State sort2($b$, $c$)
+		\State sort2($a$, $c$)
+		\State sort2($b$, $d$)
+		\State sort2($b$, $c$)
 		\EndProcedure
 	\end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}
+\begin{algorithm}[h]
 	\caption{Insertion Sort}
 	\label{alg:insertion_sort}
 	\begin{algorithmic}
 		\Procedure{ins\_sort}{a, n}
-		\If {$n == 2$}
-		\State sort2(a[0], a[1])
-		\ElsIf {$n == 3$}
-		\State sort3(a[0], a[1], a[2])
-		\ElsIf {$n == 4$}
-		\State sort4(a[0], a[1], a[2], a[3])
-		\Endif
+		\If {$n = 2$}
+		\State sort2($a[0]$, $a[1]$)
+		\State \Return
+		\ElsIf {$n = 3$}
+		\State sort3($a[0]$, $a[1]$, $a[2]$)
+		\State \Return
+		\ElsIf {$n = 4$}
+		\State sort4($a[0]$, $a[1]$, $a[2]$, $a[3]$)
+		\State \Return
+		\EndIf
 
+		\For {$i \gets 1$ to $n$}
+		\State $c \gets 1$
+		\State $j \gets i - 1$
+		\If {$a[j] > a[j]$}
+		\State $tmp \gets a[i]$
+		\Repeat
+		\State $a[j + 1] \gets a[j]$
+		\State $j \gets j - 1$
+		\If {$j = 0$}
+		\State $c \gets 0$
+		\State break
+		\EndIf
+		\Until $a[j] \le tmp$
+		\State $a[j + c] \gets tmp$
+		\EndIf
+		\EndFor
 		\EndProcedure
 	\end{algorithmic}
 \end{algorithm}
 
+\begin{algorithm}[h]
+	\caption{Merge Sort}
+	\label{alg:merge_sort}
+	\begin{algorithmic}
+		\Procedure{msort}{$a$, $n$, $threshold$}
+		\If {$n \le 1$}
+		\State \Return
+		\EndIf
+
+		% \Comment{Use insertion sort if the input is small.}
+		\If {$n < threshold$}
+		\State ins\_sort($a$, $n$)
+		\State \Return
+		\EndIf
+
+		\State $n_{1} \gets \frac{n}{2}$
+		\State $n_{2} \gets n - n_{1}$
+		\State $b_{1} \gets a$
+		\State $b_{2} \gets \&b[n_{1}]$
+
+		% \Comment{Recursively sort two halves.}
+		\State msort($b_{1}$, $n_{1}$, $threshold$)
+		\State msort($b_{2}$, $n_{2}$, $threshold$)
+
+		% \Comment{Merge the two halves.}
+		\While {$n_{1} > 0$ and $n_{2} > 0$}
+		\If {$b_{1}[0] \le b_{2}[0]$}
+		\State $tmp \gets b_{1}$
+		\State $b_{1} \gets \&b_{1}[1]$
+		\State $n_{1} \gets n_{1} - 1$
+		\Else
+		\State $tmp \gets b_{2}$
+		\State $b_{2} \gets \&b_{2}[1]$
+		\State $n_{2} \gets n_{2} - 1$
+		\EndIf
+		\EndWhile
+
+		\If {$n_{1} > 0$}
+			\State memcpy($tmp$, $b_{1}$, $n_{1}$)
+		\EndIf
+		\EndProcedure
+		\State memcpy($a$, $tmp$, $n - n_{2}$)
+	\end{algorithmic}
+\end{algorithm}
 
 \section{RESULTS}
 
