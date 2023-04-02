@@ -1,5 +1,5 @@
 CC = pdflatex
-FLAGS = --shell-escape -interaction=scrollmode
+FLAGS = --shell-escape -interaction=scrollmode --synctex=1
 REPORT_JOB = report
 
 .PHONY: tidy clean

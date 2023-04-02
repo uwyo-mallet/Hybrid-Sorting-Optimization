@@ -25,7 +25,7 @@
 \usepackage{algpseudocode}
 
 \newcommand{\todo}{\colorbox{red}{TODO}}
-\newcommand{\todocite}{\colorbox{red}{TODO\_CITE}}
+\newcommand{\todocite}{\colorbox{red}{CITE}}
 
 \addbibresource{references.bib}
 \renewcommand*{\bibfont}{\small}
@@ -60,7 +60,7 @@ Most applications require data to be arranged in a certain order. The procedure
 of reordering data according to some comparator is called sorting. Sorting can
 be found in nearly every computer system today. From databases to payment
 processing systems, data is constantly being sorted. The near omnipresent need
-for performant sorting implementations has resulted in all major programming
+for performant sorting implementations has resulted in most major programming
 languages including a type-generic sorting function within their standard
 libraries. These standard implementations can use a variety of algorithms
 internally, such as Quicksort, Mergesort, and many others (\todocite), however,
@@ -70,26 +70,26 @@ sizeable performance benefits. These hybrid algorithms include some tuneable
 parameters, such as when to switch from one sorting algorithm to another. While
 these hybridized algorithms have varying space and time complexities, their
 actual performance in real-world scenarios is rarely formally examined, and the
-values for these various parameters are often chosen arbitrarily by the
-developers. This paper analyzes a wide variety of sorting algorithm
-implementations across varying system architectures to determine optimal
-parameter configurations for hybrid sorting algorithms. This paper also proposes
-a new performant standard sorting implementation for GNU's C standard library.
+values for these parameters are often chosen arbitrarily by the developers. This
+paper analyzes a wide variety of sorting algorithm implementations across
+varying system architectures to determine optimal parameter configurations for
+hybrid sorting algorithms. This paper also proposes a new performant standard
+sorting implementation for GNU's C standard library.
 
 \section{BACKGROUND}
 
-Substantial effort has been spent on analysis of sorting algorithms. Typically,
-two major characteristics are considered when studying sorting algorithms from a
-purely theoretical standpoint; space and time complexity. Existing analysis of
-popular sorting algorithms, such as Quicksort and Mergesort, place substantial
-emphasis on their excellent asymptotic complexity in the average
-case(\todocite). However, asymptotic complexity alone does not describe the
-practical performance of an algorithm. While Mergesort may have a better
-asymptotic time complexity in the worst case than insertion sort (Table
+Substantial effort has been spent on the analysis of sorting algorithms.
+Typically, two major characteristics are considered when studying sorting
+algorithms from a purely theoretical standpoint; space and time complexity.
+Existing analysis of popular sorting algorithms, such as Quicksort and
+Mergesort, place substantial emphasis on their excellent asymptotic complexity
+in the average case(\todocite). However, asymptotic complexity alone does not
+describe the practical performance of these algorithms. While Mergesort may have
+a better asymptotic time complexity in the worst case than insertion sort (Table
 \ref{fig:time_complexity_table}), for small inputs, insertion sort typically
 outperforms Mergesort by avoiding the overhead of recursive calls.
 
-\begin{table}[h]
+\begin{table}[ht]
 	\centering
 	\resizebox{\columnwidth}{!}{
 		\begin{tabular}{|c|lll|}
@@ -125,19 +125,20 @@ since they are typically highly performant in the general case. Other
 complementary algorithms which perform exceptionally well in specific scenarios
 were also evaluated. Since this analysis is focused on analyzing and improving
 existing implementations, general purpose sorting function were taken from
-various standard libraries, such as GNU's libc and musl libc \todocite. It is a
-priority to maintain the applicability of any optimizations discovered as a
-result of this evaluation to existing standard libraries, so any non-comparison
-based sorting algorithm, such as Radix sort or Bucket sort were excluded.
+various standard libraries, such as GNU's libc\parencite{glibc} and musl
+libc\parencite{musl_libc}. It is a priority to maintain the applicability of any
+optimizations discovered as a result of this evaluation to existing standard
+libraries, so any non-comparison based sorting algorithm, such as Radix sort or
+Bucket sort were excluded.
 
 \subsection{General Purpose Algorithms}
 
 Of the well known sorting algorithms, several are used for general sorting
-tasks, Quicksort, Mergesort, Heapsort, and Introsort. Quicksort has been a
-staple algorithm for decades. It is well known to be easy to implement and works
-well for a variety of input data. Quicksort requires a constant amount of extra
-memory independent of the size of the input, making it an obvious choice in
-resource constrained environments. However, in the advent of modern computing
+tasks, such as Quicksort, Mergesort, Heapsort, and Introsort. Quicksort has been
+a staple algorithm for decades. It is well known to be easy to implement and
+works well for a variety of input data. Quicksort requires a constant amount of
+extra memory independent of the size of the input, making it an obvious choice
+in resource constrained environments. However, in the advent of modern computing
 where using auxiliary memory to improve performance is much more common,
 Quicksort tends to fall behind other algorithms. Quicksort's performance is also
 primarily dictated by the selection of a suitable pivot value. Poor pivot
@@ -145,66 +146,104 @@ selections can lead to worse performance. Simple implementations usually choose
 the left-most value of the input as the pivot, however this offers poor
 performance in many circumstances such as if the input is reverse sorted. So
 most implementations use a slightly more complex and costly pivot selection
-process such as \textit{median-of-three}\todocite.
+process such as \textit{median-of-three}\todocite. The increased memory
+availability of modern systems and the difficulty of good pivot selection within
+Quicksort has motivated many standard libraries -- such as GNU's libc -- to
+default to using Mergesort, falling back to Quicksort only when memory
+requirements are too high\parencite{glibc}. Such implementations are typically
+more performant in most cases, since Mergesort can leverage extra memory for
+better performance, and maintain reliability even in memory constrained
+environments by falling back to Quicksort whenever necessary.
 
 \subsection{Specialized Algorithms}
 
-\todo
+A few algorithms used in specialized circumstances are also evaluated, most
+notably, network sort, insertion sort, and shell sort. These algorithms are
+often regarded as the best sorting algorithms for extremely small inputs. Since
+their asymptotic complexity is substantially worse than a general purpose
+sorting algorithm such as Quicksort or Mergesort their runtime typically grows
+exponentially as the input size increases (Table
+\ref{fig:time_complexity_table}). However, for small inputs, these algorithms
+are highly performant since they avoid the overhead of more complicated
+algorithms.
 
-\subsection{Proposed Algorithms}
+\subsubsection{Sorting Networks}
+
+Sorting networks, also commonly referred to as comparator networks, are designed
+to sort fixed numbers of items. Unlike other sorting algorithms, networks cannot
+handle arbitrarily large inputs. However, even with these many constraints,
+sorting networks are highly performant in instances where the input is extremely
+small.
+
+% These algorithms are prime candidates for hybridization with general
+% purpose algorithms. For example, combining insertion sort with Mergesort can
+% avoid repeated recursive calls for small arrays, granting a performance benefit.
+
+\subsection{Proposed Algorithm}
 
 General purpose sorting algorithms are typically difficult to optimize
 uniformly. Since these implementations very often live in standard libraries,
 use-case specific optimizations are not feasible. During runtime, quick,
 low-overhead analysis about the input can reveal opportunities for
-input-specific optimizations. However, for small input sizes, the overhead from
-such an analysis often contributes more to the overall runtime, than even
-utilizing an algorithm ill-suited for that specific input. This motivates
-placing significant importance on the size of the input itself. Comparing the
-input size against pre-defined threshold values is cheap and can help pick an
-algorithm.
+input-specific optimizations. More esoteric sorting methods, such as TimSort,
+take advantage of such analysis during sorting to improve performance in most
+real-world cases. However, for small input sizes, the overhead from such an
+analysis often contributes more to the overall runtime, than even utilizing an
+algorithm ill-suited for that specific input\parencite{the_basic_algorithms}.
+This motivates placing significant importance on the size of the input itself.
+
+Comparing the input size against predefined threshold values is cheap and can
+help pick an algorithm. Since such comparisons are so cheap, they can be
+repeated during recursive calls of other algorithms. This algorithm checks the
+size of each subarray during Mergesort before switching to insertion sort for
+small arrays. In instances where a subarray has less than 5 elements, a network
+sorting algorithm is used instead of insertion sort. Utilizing a secondary
+algorithm limits the depth of recursive calls substantially. Practically, this
+reduces a significant amount of the overhead of Mergesort, even though there is
+an additional size comparison during each recursive
+call\parencite{the_basic_algorithms}.
 
 \todo\ Document proc parameters
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
 	\caption{Network Sort}
 	\label{alg:network_sort}
 	\begin{algorithmic}
-		\Procedure{sort2}{$a$, $b$}
+		\Procedure{SORT2}{$a$, $b$}
 		\State $t \gets min(a, b)$
 		\State $b \gets max(a, b)$
 		\State $a \gets t$
 		\EndProcedure
 
-		\Procedure{sort3}{$a$, $b$, $c$}
-		\State sort2($a$, $b$)
-		\State sort2($b$, $c$)
-		\State sort2($a$, $b$)
+		\Procedure{SORT3}{$a$, $b$, $c$}
+		\State SORT2($a$, $b$)
+		\State SORT2($b$, $c$)
+		\State SORT2($a$, $b$)
 		\EndProcedure
 
-		\Procedure{sort4}{$a$, $b$, $c$, $d$}
-		\State sort2($a$, $b$)
-		\State sort2($b$, $c$)
-		\State sort2($a$, $c$)
-		\State sort2($b$, $d$)
-		\State sort2($b$, $c$)
+		\Procedure{SORT4}{$a$, $b$, $c$, $d$}
+		\State SORT2($a$, $b$)
+		\State SORT2($b$, $c$)
+		\State SORT2($a$, $c$)
+		\State SORT2($b$, $d$)
+		\State SORT2($b$, $c$)
 		\EndProcedure
 	\end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
 	\caption{Insertion Sort}
 	\label{alg:insertion_sort}
 	\begin{algorithmic}
-		\Procedure{ins\_sort}{a, n}
+		\Procedure{INS\_SORT}{a, n}
 		\If {$n = 2$}
-		\State sort2($a[0]$, $a[1]$)
+		\State SORT2($a[0]$, $a[1]$)
 		\State \Return
 		\ElsIf {$n = 3$}
-		\State sort3($a[0]$, $a[1]$, $a[2]$)
+		\State SORT3($a[0]$, $a[1]$, $a[2]$)
 		\State \Return
 		\ElsIf {$n = 4$}
-		\State sort4($a[0]$, $a[1]$, $a[2]$, $a[3]$)
+		\State SORT4($a[0]$, $a[1]$, $a[2]$, $a[3]$)
 		\State \Return
 		\EndIf
 
@@ -228,7 +267,7 @@ algorithm.
 	\end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[h]
+\begin{algorithm}[ht]
 	\caption{Merge Sort}
 	\label{alg:merge_sort}
 	\begin{algorithmic}
@@ -249,8 +288,8 @@ algorithm.
 		\State $b_{2} \gets \&b[n_{1}]$
 
 		% \Comment{Recursively sort two halves.}
-		\State msort($b_{1}$, $n_{1}$, $threshold$)
-		\State msort($b_{2}$, $n_{2}$, $threshold$)
+		\State MSORT($b_{1}$, $n_{1}$, $threshold$)
+		\State MSORT($b_{2}$, $n_{2}$, $threshold$)
 
 		% \Comment{Merge the two halves.}
 		\While {$n_{1} > 0$ and $n_{2} > 0$}
@@ -266,10 +305,10 @@ algorithm.
 		\EndWhile
 
 		\If {$n_{1} > 0$}
-			\State memcpy($tmp$, $b_{1}$, $n_{1}$)
+		\State copy($tmp$, $b_{1}$, $n_{1}$)
 		\EndIf
 		\EndProcedure
-		\State memcpy($a$, $tmp$, $n - n_{2}$)
+		\State copy($a$, $tmp$, $n - n_{2}$)
 	\end{algorithmic}
 \end{algorithm}
 
