@@ -19,6 +19,11 @@
 #define min_cmp(a, b, cmp) (((*cmp))((a), (b)) < 0 ? (a) : (b))
 #define max_cmp(a, b, cmp) (((*cmp))((a), (b)) >= 0 ? (a) : (b))
 
+/*
+ * The following functions are an extremely fast version of a bose-nelson
+ * sorting network up to n = 8.
+ */
+
 inline static void sort2(const struct msort_param *p, void *a, void *b)
 {
   const compar_d_fn_t cmp = p->cmp;
@@ -55,8 +60,8 @@ inline static void sort2(const struct msort_param *p, void *a, void *b)
 inline static void sort3(const struct msort_param *p, void *p0, void *p1,
                          void *p2)
 {
-  sort2(p, p0, p1);
   sort2(p, p1, p2);
+  sort2(p, p0, p2);
   sort2(p, p0, p1);
 }
 
@@ -68,6 +73,83 @@ inline static void sort4(const struct msort_param *p, void *p0, void *p1,
   sort2(p, p0, p2);
   sort2(p, p1, p3);
   sort2(p, p1, p2);
+}
+
+inline static void sort5(const struct msort_param *p, void *p0, void *p1,
+                         void *p2, void *p3, void *p4)
+{
+  sort2(p, p0, p1);
+  sort2(p, p3, p4);
+  sort2(p, p2, p4);
+  sort2(p, p2, p3);
+  sort2(p, p0, p3);
+  sort2(p, p0, p2);
+  sort2(p, p1, p4);
+  sort2(p, p1, p3);
+  sort2(p, p1, p2);
+}
+
+inline static void sort6(const struct msort_param *p, void *p0, void *p1,
+                         void *p2, void *p3, void *p4, void *p5)
+{
+  sort2(p, p1, p2);
+  sort2(p, p0, p2);
+  sort2(p, p0, p1);
+  sort2(p, p4, p5);
+  sort2(p, p3, p5);
+  sort2(p, p3, p4);
+  sort2(p, p0, p3);
+  sort2(p, p1, p4);
+  sort2(p, p2, p5);
+  sort2(p, p2, p4);
+  sort2(p, p1, p3);
+  sort2(p, p2, p3);
+}
+
+inline static void sort7(const struct msort_param *p, void *p0, void *p1,
+                         void *p2, void *p3, void *p4, void *p5, void *p6)
+{
+  sort2(p, p1, p2);
+  sort2(p, p0, p2);
+  sort2(p, p0, p1);
+  sort2(p, p3, p4);
+  sort2(p, p5, p6);
+  sort2(p, p3, p5);
+  sort2(p, p4, p6);
+  sort2(p, p4, p5);
+  sort2(p, p0, p4);
+  sort2(p, p0, p3);
+  sort2(p, p1, p5);
+  sort2(p, p2, p6);
+  sort2(p, p2, p5);
+  sort2(p, p1, p3);
+  sort2(p, p2, p4);
+  sort2(p, p2, p3);
+}
+
+inline static void sort8(const struct msort_param *p, void *p0, void *p1,
+                         void *p2, void *p3, void *p4, void *p5, void *p6,
+                         void *p7)
+{
+  sort2(p, p0, p1);
+  sort2(p, p2, p3);
+  sort2(p, p0, p2);
+  sort2(p, p1, p3);
+  sort2(p, p1, p2);
+  sort2(p, p4, p5);
+  sort2(p, p6, p7);
+  sort2(p, p4, p6);
+  sort2(p, p5, p7);
+  sort2(p, p5, p6);
+  sort2(p, p0, p4);
+  sort2(p, p1, p5);
+  sort2(p, p1, p4);
+  sort2(p, p2, p6);
+  sort2(p, p3, p7);
+  sort2(p, p3, p6);
+  sort2(p, p2, p4);
+  sort2(p, p3, p5);
+  sort2(p, p3, p4);
 }
 
 inline static void ins_sort(const struct msort_param *const p, void *b,
@@ -89,6 +171,39 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
       return;
     case 4:
       sort4(p, base, base + s, base + (2 * s), base + (3 * s));
+      return;
+    case 5:
+      sort5(p, base, base + s, base + (2 * s), base + (3 * s), base + (4 * s));
+      return;
+    case 6:
+      sort6(p,
+            base,
+            base + s,
+            base + (2 * s),
+            base + (3 * s),
+            base + (4 * s),
+            base + (5 * s));
+      return;
+    case 7:
+      sort7(p,
+            base,
+            base + s,
+            base + (2 * s),
+            base + (3 * s),
+            base + (4 * s),
+            base + (5 * s),
+            base + (6 * s));
+      return;
+    case 8:
+      sort8(p,
+            base,
+            base + s,
+            base + (2 * s),
+            base + (3 * s),
+            base + (4 * s),
+            base + (5 * s),
+            base + (6 * s),
+            base + (7 * s));
       return;
   }
 
