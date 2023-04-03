@@ -1,5 +1,5 @@
 ---
-- name: Quicksort Tuning Fetch Results
+- name: Hybrid Sorting Optimization Fetch Results
   hosts: all
 
   vars:

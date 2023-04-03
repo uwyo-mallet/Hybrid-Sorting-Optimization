@@ -1,5 +1,5 @@
 ---
-- name: Quicksort Tuning Deploy
+- name: Hybrid Sorting Optimization Deploy
   hosts: all
 
   vars:
@@ -12,10 +12,11 @@
     data_size: "50_000"
 
     job_parameters_list:
-      - "--methods qsort,msort_heap,msort_heap_with_old_ins,msort_heap_with_basic_ins"
+      - "{{ hso_path }}/src/c/HSO-c"
+      - "{{ data_path }}"
+      - "--methods qsort,msort_heap,msort_heap_with_old_ins,msort_heap_with_basic_ins,msort_with_network"
       - "--threshold 1,20,1"
       - "--runs 100"
-      - "--exec {{ hso_path }}/src/c/HSO-c"
     job_parameters: "{{ job_parameters_list | join(' ') }}"
 
   tasks:
@@ -87,4 +88,4 @@
     - name: Run job in tmux session
       ansible.builtin.shell:
         chdir: "{{ hso_path }}"
-        cmd: "tmux new-session -d -s hso-session '{{ virtualenv_py_path }} src/jobs.py {{ job_parameters }} {{ data_path }} 2>&1 | tee log'"
+        cmd: "tmux new-session -d -s hso-session '{{ virtualenv_py_path }} src/jobs.py {{ job_parameters }} 2>&1 | tee log'"
