@@ -129,7 +129,7 @@ various standard libraries, such as GNU's libc\parencite{glibc} and musl
 libc\parencite{musl_libc}. It is a priority to maintain the applicability of any
 optimizations discovered as a result of this evaluation to existing standard
 libraries, so any non-comparison based sorting algorithm, such as Radix sort or
-Bucket sort were excluded.
+Bucket sort, were excluded.
 
 \subsection{General Purpose Algorithms}
 
@@ -144,8 +144,8 @@ Quicksort tends to fall behind other algorithms. Quicksort's performance is also
 primarily dictated by the selection of a suitable pivot value. Poor pivot
 selections can lead to worse performance. Simple implementations usually choose
 the left-most value of the input as the pivot, however this offers poor
-performance in many circumstances such as if the input is reverse sorted. So
-most implementations use a slightly more complex and costly pivot selection
+performance in many circumstances, for example, if the input is reverse sorted.
+So most implementations use a slightly more complex and costly pivot selection
 process such as \textit{median-of-three}\todocite. The increased memory
 availability of modern systems and the difficulty of good pivot selection within
 Quicksort has motivated many standard libraries -- such as GNU's libc -- to
@@ -158,10 +158,10 @@ environments by falling back to Quicksort whenever necessary.
 \subsection{Specialized Algorithms}
 
 A few algorithms used in specialized circumstances are also evaluated, most
-notably, network sort, insertion sort, and shell sort. These algorithms are
-often regarded as the best sorting algorithms for extremely small inputs. Since
-their asymptotic complexity is substantially worse than a general purpose
-sorting algorithm such as Quicksort or Mergesort their runtime typically grows
+notably, various sorting network implementations, insertion sort, and shell
+sort. These algorithms are often regarded as the best sorting algorithms for
+extremely small inputs. Since their asymptotic complexity is substantially worse
+than a general purpose sorting algorithm their runtime typically grows
 exponentially as the input size increases (Table
 \ref{fig:time_complexity_table}). However, for small inputs, these algorithms
 are highly performant since they avoid the overhead of more complicated
@@ -171,9 +171,9 @@ algorithms.
 
 Sorting networks, also commonly referred to as comparator networks, are designed
 to sort fixed numbers of items. Unlike other sorting algorithms, networks cannot
-handle arbitrarily large inputs. However, even with these many constraints,
-sorting networks are highly performant in instances where the input is extremely
-small.
+handle arbitrarily large inputs. However, even with this constraint, sorting
+networks are still commonly used since they are highly performant in instances
+where the input is extremely small. \todo
 
 % These algorithms are prime candidates for hybridization with general
 % purpose algorithms. For example, combining insertion sort with Mergesort can
