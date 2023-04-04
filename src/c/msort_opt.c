@@ -14,14 +14,19 @@
 #define max_cmp(a, b, cmp) (((*cmp))((a), (b)) >= 0 ? (a) : (b))
 
 /*
- * The following functions are optimal sorting networks up to n = 6.
+ * The following functions implement optimal sorting networks up to n = 6.
+ *
+ * Reference:
+ *  The Art of Computer Programming, Volume 3: Sorting and Searching (Second
+ *  ed.). Addison–Wesley. pp. 219–247. ISBN 978-0-201-89685-5. Section 5.3.4:
+ *  Networks for Sorting.
  */
 
 static inline void sort2(const struct msort_param *p, void *a, void *b)
 {
   const compar_d_fn_t cmp = p->cmp;
   const size_t s = p->s;
-  char *tmp = p->t;
+  char *const tmp = p->t;
 
   void *const min = min_cmp(a, b, cmp);
   void *const max = a == min ? b : a;
@@ -57,30 +62,30 @@ static inline void sort2(const struct msort_param *p, void *a, void *b)
 void sort3(const struct msort_param *p, void *b)
 {
   char *base = (char *)b;
-  sort2(p, base, base + p->s);
   sort2(p, base, base + (2 * p->s));
+  sort2(p, base, base + p->s);
   sort2(p, base + p->s, base + (2 * p->s));
 }
 
 void sort4(const struct msort_param *p, void *b)
 {
   char *base = (char *)b;
-  sort2(p, base, base + p->s);
-  sort2(p, base + (2 * p->s), base + (3 * p->s));
   sort2(p, base, base + (2 * p->s));
   sort2(p, base + p->s, base + (3 * p->s));
+  sort2(p, base, base + p->s);
+  sort2(p, base + (2 * p->s), base + (3 * p->s));
   sort2(p, base + p->s, base + (2 * p->s));
 }
 
 void sort5(const struct msort_param *p, void *b)
 {
   char *base = (char *)b;
-  sort2(p, base, base + p->s);
-  sort2(p, base + (2 * p->s), base + (3 * p->s));
-  sort2(p, base, base + (2 * p->s));
+  sort2(p, base, base + (3 * p->s));
   sort2(p, base + p->s, base + (4 * p->s));
+  sort2(p, base, base + (2 * p->s));
+  sort2(p, base + p->s, base + (3 * p->s));
   sort2(p, base, base + p->s);
-  sort2(p, base + (2 * p->s), base + (3 * p->s));
+  sort2(p, base + (2 * p->s), base + (4 * p->s));
   sort2(p, base + p->s, base + (2 * p->s));
   sort2(p, base + (3 * p->s), base + (4 * p->s));
   sort2(p, base + (2 * p->s), base + (3 * p->s));
@@ -89,18 +94,18 @@ void sort5(const struct msort_param *p, void *b)
 void sort6(const struct msort_param *p, void *b)
 {
   char *base = (char *)b;
-  sort2(p, base, base + p->s);
-  sort2(p, base + (2 * p->s), base + (3 * p->s));
-  sort2(p, base + (4 * p->s), base + (5 * p->s));
-  sort2(p, base, base + (2 * p->s));
-  sort2(p, base + p->s, base + (4 * p->s));
-  sort2(p, base + (3 * p->s), base + (5 * p->s));
+  sort2(p, base, base + (5 * p->s));
+  sort2(p, base + p->s, base + (3 * p->s));
+  sort2(p, base + (2 * p->s), base + (4 * p->s));
+  sort2(p, base + p->s, base + (2 * p->s));
+  sort2(p, base + (3 * p->s), base + (4 * p->s));
+  sort2(p, base, base + (3 * p->s));
+  sort2(p, base + (2 * p->s), base + (5 * p->s));
   sort2(p, base, base + p->s);
   sort2(p, base + (2 * p->s), base + (3 * p->s));
   sort2(p, base + (4 * p->s), base + (5 * p->s));
   sort2(p, base + p->s, base + (2 * p->s));
   sort2(p, base + (3 * p->s), base + (4 * p->s));
-  sort2(p, base + (2 * p->s), base + (3 * p->s));
 }
 
 void ins_sort(const struct msort_param *const p, void *b, size_t n)
