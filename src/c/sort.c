@@ -824,7 +824,7 @@ static void msort_with_fast_ins_recur(const struct msort_param *p, void *b,
 
   if (n < threshold)
   {
-    fast_ins_sort(b, n, p->s, p->cmp);
+    ins_sort(p, b, n);
     return;
   }
 
@@ -841,7 +841,7 @@ static void msort_with_fast_ins_recur(const struct msort_param *p, void *b,
   compar_d_fn_t cmp = p->cmp;
   switch (p->var)
   {
-    case 0:
+    case UINT32:
       while (n1 > 0 && n2 > 0)
       {
         if ((*cmp)(b1, b2) <= 0)
@@ -859,7 +859,7 @@ static void msort_with_fast_ins_recur(const struct msort_param *p, void *b,
         tmp += sizeof(uint32_t);
       }
       break;
-    case 1:
+    case UINT64:
       while (n1 > 0 && n2 > 0)
       {
         if ((*cmp)(b1, b2) <= 0)
@@ -877,7 +877,7 @@ static void msort_with_fast_ins_recur(const struct msort_param *p, void *b,
         tmp += sizeof(uint64_t);
       }
       break;
-    case 2:
+    case ULONG:
       while (n1 > 0 && n2 > 0)
       {
         unsigned long *tmpl = (unsigned long *)tmp;
@@ -899,7 +899,7 @@ static void msort_with_fast_ins_recur(const struct msort_param *p, void *b,
         while (tmpl < (unsigned long *)tmp) *tmpl++ = *bl++;
       }
       break;
-    case 3:
+    case PTR:
       while (n1 > 0 && n2 > 0)
       {
         if ((*cmp)(*(const void **)b1, *(const void **)b2) <= 0)
@@ -958,7 +958,7 @@ void msort_heap_with_fast_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
 
   struct msort_param p;
   p.s = s;
-  p.var = 4;
+  p.var = DEFAULT;
   p.cmp = cmp;
   p.t = tmp;
 
@@ -966,13 +966,13 @@ void msort_heap_with_fast_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
       ((uintptr_t)b) % __alignof__(uint32_t) == 0)
   {
     if (s == sizeof(uint32_t))
-      p.var = 0;
+      p.var = UINT32;
     else if (s == sizeof(uint64_t) &&
              ((uintptr_t)b) % __alignof__(uint64_t) == 0)
-      p.var = 1;
+      p.var = UINT64;
     else if ((s & (sizeof(unsigned long) - 1)) == 0 &&
              ((uintptr_t)b) % __alignof__(unsigned long) == 0)
-      p.var = 2;
+      p.var = ULONG;
   }
 
   msort_with_fast_ins_recur(&p, b, n, threshold);

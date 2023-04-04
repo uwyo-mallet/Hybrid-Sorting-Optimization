@@ -10,36 +10,33 @@
 
 #include "sort.h"
 
-#define UINT32 0
-#define UINT64 1
-#define ULONG 2
-#define PTR 3
-#define DEFAULT 4
-
 #define min_cmp(a, b, cmp) (((*cmp))((a), (b)) < 0 ? (a) : (b))
 #define max_cmp(a, b, cmp) (((*cmp))((a), (b)) >= 0 ? (a) : (b))
 
 /*
- * The following functions are an extremely fast version of a bose-nelson
- * sorting network up to n = 8.
+ * The following functions are optimal sorting networks up to n = 6.
  */
 
-inline static void sort2(const struct msort_param *p, void *a, void *b)
+static inline void sort2(const struct msort_param *p, void *a, void *b)
 {
   const compar_d_fn_t cmp = p->cmp;
   const size_t s = p->s;
   char *tmp = p->t;
+
+  void *const min = min_cmp(a, b, cmp);
+  void *const max = a == min ? b : a;
+
   switch (p->var)
   {
     case UINT32:
       // 32-bit
-      *(uint32_t *)tmp = *(uint32_t *)min_cmp(a, b, cmp);
-      *(uint32_t *)b = *(uint32_t *)max_cmp(a, b, cmp);
+      *(uint32_t *)tmp = *(uint32_t *)min;
+      *(uint32_t *)b = *(uint32_t *)max;
       *(uint32_t *)a = *(uint32_t *)tmp;
       return;
     case UINT64:
-      *(uint64_t *)tmp = *(uint64_t *)min_cmp(a, b, cmp);
-      *(uint64_t *)b = *(uint64_t *)max_cmp(a, b, cmp);
+      *(uint64_t *)tmp = *(uint64_t *)min;
+      *(uint64_t *)b = *(uint64_t *)max;
       *(uint64_t *)a = *(uint64_t *)tmp;
       return;
     case PTR:
@@ -50,141 +47,71 @@ inline static void sort2(const struct msort_param *p, void *a, void *b)
       // clang-format on
       return;
     default:
-      memcpy(tmp, min_cmp(a, b, cmp), s);
-      memcpy(b, max_cmp(a, b, cmp), s);
+      memcpy(tmp, min, s);
+      memcpy(b, max, s);
       memcpy(a, tmp, s);
       return;
   }
 }
 
-/* inline static void sortn(const struct msort_param *p, void *b) */
-/* { */
-/*   const size_t s = p->s; */
-/* } */
-
-inline static void sort3(const struct msort_param *p, void *b)
+void sort3(const struct msort_param *p, void *b)
 {
-  sort2(p, ((char *)b + p->s), ((char *)b + (2 * p->s)));
-  sort2(p, b, ((char *)b + (2 * p->s)));
-  sort2(p, b, ((char *)b + p->s));
+  char *base = (char *)b;
+  sort2(p, base, base + p->s);
+  sort2(p, base, base + (2 * p->s));
+  sort2(p, base + p->s, base + (2 * p->s));
 }
 
-inline static void sort4(const struct msort_param *p, void *b)
+void sort4(const struct msort_param *p, void *b)
 {
-  sort2(p, b, ((char *)b + p->s));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (3 * p->s)));
-  sort2(p, b, ((char *)b + (2 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (3 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (2 * p->s)));
+  char *base = (char *)b;
+  sort2(p, base, base + p->s);
+  sort2(p, base + (2 * p->s), base + (3 * p->s));
+  sort2(p, base, base + (2 * p->s));
+  sort2(p, base + p->s, base + (3 * p->s));
+  sort2(p, base + p->s, base + (2 * p->s));
 }
 
-inline static void sort5(const struct msort_param *p, void *b)
+void sort5(const struct msort_param *p, void *b)
 {
-  sort2(p, b, ((char *)b + p->s));
-  sort2(p, ((char *)b + (3 * p->s)), ((char *)b + (4 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (4 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (3 * p->s)));
-  sort2(p, b, ((char *)b + (3 * p->s)));
-  sort2(p, b, ((char *)b + (2 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (4 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (3 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (2 * p->s)));
+  char *base = (char *)b;
+  sort2(p, base, base + p->s);
+  sort2(p, base + (2 * p->s), base + (3 * p->s));
+  sort2(p, base, base + (2 * p->s));
+  sort2(p, base + p->s, base + (4 * p->s));
+  sort2(p, base, base + p->s);
+  sort2(p, base + (2 * p->s), base + (3 * p->s));
+  sort2(p, base + p->s, base + (2 * p->s));
+  sort2(p, base + (3 * p->s), base + (4 * p->s));
+  sort2(p, base + (2 * p->s), base + (3 * p->s));
 }
 
-inline static void sort6(const struct msort_param *p, void *b)
+void sort6(const struct msort_param *p, void *b)
 {
-  sort2(p, ((char *)b + p->s), ((char *)b + (2 * p->s)));
-  sort2(p, b, ((char *)b + (2 * p->s)));
-  sort2(p, b, ((char *)b + p->s));
-  sort2(p, ((char *)b + (4 * p->s)), ((char *)b + (5 * p->s)));
-  sort2(p, ((char *)b + (3 * p->s)), ((char *)b + (5 * p->s)));
-  sort2(p, ((char *)b + (3 * p->s)), ((char *)b + (4 * p->s)));
-  sort2(p, b, ((char *)b + (3 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (4 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (5 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (4 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (3 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (3 * p->s)));
+  char *base = (char *)b;
+  sort2(p, base, base + p->s);
+  sort2(p, base + (2 * p->s), base + (3 * p->s));
+  sort2(p, base + (4 * p->s), base + (5 * p->s));
+  sort2(p, base, base + (2 * p->s));
+  sort2(p, base + p->s, base + (4 * p->s));
+  sort2(p, base + (3 * p->s), base + (5 * p->s));
+  sort2(p, base, base + p->s);
+  sort2(p, base + (2 * p->s), base + (3 * p->s));
+  sort2(p, base + (4 * p->s), base + (5 * p->s));
+  sort2(p, base + p->s, base + (2 * p->s));
+  sort2(p, base + (3 * p->s), base + (4 * p->s));
+  sort2(p, base + (2 * p->s), base + (3 * p->s));
 }
 
-inline static void sort7(const struct msort_param *p, void *b)
-{
-  sort2(p, ((char *)b + p->s), ((char *)b + (2 * p->s)));
-  sort2(p, b, ((char *)b + (2 * p->s)));
-  sort2(p, b, ((char *)b + p->s));
-  sort2(p, ((char *)b + (3 * p->s)), ((char *)b + (4 * p->s)));
-  sort2(p, ((char *)b + (5 * p->s)), ((char *)b + (6 * p->s)));
-  sort2(p, ((char *)b + (3 * p->s)), ((char *)b + (5 * p->s)));
-  sort2(p, ((char *)b + (4 * p->s)), ((char *)b + (6 * p->s)));
-  sort2(p, ((char *)b + (4 * p->s)), ((char *)b + (5 * p->s)));
-  sort2(p, b, ((char *)b + (4 * p->s)));
-  sort2(p, b, ((char *)b + (3 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (5 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (6 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (5 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (3 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (4 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (3 * p->s)));
-}
-
-inline static void sort8(const struct msort_param *p, void *b)
-{
-  sort2(p, b, ((char *)b + p->s));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (3 * p->s)));
-  sort2(p, b, ((char *)b + (2 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (3 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (2 * p->s)));
-  sort2(p, ((char *)b + (4 * p->s)), ((char *)b + (5 * p->s)));
-  sort2(p, ((char *)b + (6 * p->s)), ((char *)b + (7 * p->s)));
-  sort2(p, ((char *)b + (4 * p->s)), ((char *)b + (6 * p->s)));
-  sort2(p, ((char *)b + (5 * p->s)), ((char *)b + (7 * p->s)));
-  sort2(p, ((char *)b + (5 * p->s)), ((char *)b + (6 * p->s)));
-  sort2(p, b, ((char *)b + (4 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (5 * p->s)));
-  sort2(p, ((char *)b + p->s), ((char *)b + (4 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (6 * p->s)));
-  sort2(p, ((char *)b + (3 * p->s)), ((char *)b + (7 * p->s)));
-  sort2(p, ((char *)b + (3 * p->s)), ((char *)b + (6 * p->s)));
-  sort2(p, ((char *)b + (2 * p->s)), ((char *)b + (4 * p->s)));
-  sort2(p, ((char *)b + (3 * p->s)), ((char *)b + (5 * p->s)));
-  sort2(p, ((char *)b + (3 * p->s)), ((char *)b + (4 * p->s)));
-}
-
-inline static void ins_sort(const struct msort_param *const p, void *b,
-                            size_t n)
+void ins_sort(const struct msort_param *const p, void *b, size_t n)
 {
   const compar_d_fn_t cmp = p->cmp;
   const size_t s = p->s;
   const unsigned var = p->var;
   char *tmp = p->t;
 
-  char *base = (char *)b;
-  switch (n)
-  {
-    case 2:
-      sort2(p, base, (base + s));
-      return;
-    case 3:
-      sort3(p, base);
-      return;
-    case 4:
-      sort4(p, base);
-      return;
-    case 5:
-      sort5(p, base);
-      return;
-    case 6:
-      sort6(p, base);
-      return;
-    case 7:
-      sort7(p, base);
-      return;
-    case 8:
-      sort8(p, base);
-      return;
-  }
-
   unsigned c;
+  char *base = (char *)b;
   switch (var)
   {
     case UINT32:
@@ -202,12 +129,11 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
             if (j == 0)
             {
               c = 0;
-              goto outer0;
+              break;
             }
             j--;
           } while ((*cmp)(base + (j * s), tmp) > 0);
 
-        outer0:
           ((uint32_t *)base)[j + c] = *(uint32_t *)tmp;
         }
       }
@@ -227,12 +153,11 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
             if (j == 0)
             {
               c = 0;
-              goto outer1;
+              break;
             }
             j--;
           } while ((*cmp)(base + (j * s), tmp) > 0);
 
-        outer1:
           ((uint64_t *)base)[j + c] = *(uint64_t *)tmp;
         }
       }
@@ -251,12 +176,11 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
             if (j == 0)
             {
               c = 0;
-              goto outer3;
+              break;
             }
             --j;
           } while ((*cmp)(((const void **)base)[j], *(const void **)tmp) > 0);
 
-        outer3:
           ((void **)base)[j + c] = *(void **)tmp;
         }
       }
@@ -278,12 +202,11 @@ inline static void ins_sort(const struct msort_param *const p, void *b,
             if (j == 0)
             {
               c = 0;
-              goto outer4;
+              break;
             }
             j--;
           } while ((*cmp)(base + (j * s), tmp) > 0);
 
-        outer4:
           /* base[j + c] = v; */
           memcpy(base + ((j + c) * s), tmp, s);
         }
@@ -322,20 +245,43 @@ void fast_ins_sort(void *b, size_t n, size_t s, compar_d_fn_t cmp)
 static void msort_with_network_recur(const struct msort_param *const p, void *b,
                                      const size_t n, const size_t threshold)
 {
+  if (n <= 1)
+  {
+    return;
+  }
+
+  if (n < threshold)
+  {
+    char *base = (char *)b;
+    switch (n)
+    {
+      case 2:
+        sort2(p, base, (base + p->s));
+        return;
+      case 3:
+        sort3(p, base);
+        return;
+      case 4:
+        sort4(p, base);
+        return;
+      case 5:
+        sort5(p, base);
+        return;
+      case 6:
+        sort6(p, base);
+        return;
+    }
+
+    ins_sort(p, b, n);
+    return;
+  }
+
   char *b1, *b2;
   size_t n1, n2;
 
   char *tmp = p->t;
   const size_t s = p->s;
   const compar_d_fn_t cmp = p->cmp;
-
-  if (n <= 1) return;
-
-  if (n < threshold)
-  {
-    ins_sort(p, b, n);
-    return;
-  }
 
   n1 = n / 2;
   n2 = n - n1;

@@ -33,6 +33,12 @@ enum METHOD_TOK
   MSORT_WITH_NETWORK,
 };
 
+#define UINT32 0
+#define UINT64 1
+#define ULONG 2
+#define PTR 3
+#define DEFAULT 4
+
 typedef int (*compar_d_fn_t)(const void*, const void*);
 struct msort_param
 {
@@ -47,6 +53,8 @@ int sort_t_compare(const void* a, const void* b);
 void msort_heap(void* b, size_t n, size_t s, compar_d_fn_t cmp);
 void basic_ins_sort(void* b, size_t n, size_t s, compar_d_fn_t cmp);
 void fast_ins_sort(void* b, size_t n, size_t s, compar_d_fn_t cmp);
+void ins_sort(const struct msort_param* const p, void* b, const size_t n);
+
 void msort_heap_with_old_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                              const size_t threshold);
 void msort_heap_with_basic_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
