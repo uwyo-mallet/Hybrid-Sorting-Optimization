@@ -10,8 +10,8 @@
 
 #include "sort.h"
 
-#define min_cmp(a, b, cmp) (((*cmp))((a), (b)) < 0 ? (a) : (b))
-#define max_cmp(a, b, cmp) (((*cmp))((a), (b)) >= 0 ? (a) : (b))
+#define min_cmp(a, b, cmp) (((*cmp))((a), (b)) <= 0 ? (a) : (b))
+#define max_cmp(a, b, cmp) (((*cmp))((a), (b)) > 0 ? (a) : (b))
 
 /*
  * The following functions implement optimal sorting networks up to n = 6.
@@ -136,7 +136,7 @@ void ins_sort(const struct msort_param *const p, void *b, size_t n)
               c = 0;
               break;
             }
-            j--;
+            --j;
           } while ((*cmp)(base + (j * s), tmp) > 0);
 
           ((uint32_t *)base)[j + c] = *(uint32_t *)tmp;
@@ -160,7 +160,7 @@ void ins_sort(const struct msort_param *const p, void *b, size_t n)
               c = 0;
               break;
             }
-            j--;
+            --j;
           } while ((*cmp)(base + (j * s), tmp) > 0);
 
           ((uint64_t *)base)[j + c] = *(uint64_t *)tmp;
@@ -209,7 +209,7 @@ void ins_sort(const struct msort_param *const p, void *b, size_t n)
               c = 0;
               break;
             }
-            j--;
+            --j;
           } while ((*cmp)(base + (j * s), tmp) > 0);
 
           /* base[j + c] = v; */
@@ -268,12 +268,6 @@ static void msort_with_network_recur(const struct msort_param *const p, void *b,
         return;
       case 4:
         sort4(p, base);
-        return;
-      case 5:
-        sort5(p, base);
-        return;
-      case 6:
-        sort6(p, base);
         return;
     }
 
