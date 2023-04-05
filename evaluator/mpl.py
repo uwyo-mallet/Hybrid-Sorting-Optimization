@@ -21,7 +21,7 @@ pd.set_option("display.width", None)
 
 plt.style.use(["science", "ieee"])
 plt.style.use("seaborn-v0_8-paper")
-plt.rcParams.update({"figure.dpi": "100"})
+# plt.rcParams.update({"figure.dpi": "100"})
 mpl.rcParams["errorbar.capsize"] = 3
 mpl.rcParams["lines.linewidth"] = 1
 
@@ -400,7 +400,7 @@ def gen_report_plots(result: Result):
     figs = [plt.figure(n) for n in plt.get_fignums()]
     for i, v in enumerate(figs):
         dst = plots_dir / f"{i}.gen.png"
-        v.savefig(dst, dpi=100, bbox_inches="tight")
+        v.savefig(dst, bbox_inches="tight")
 
 
 def main():
