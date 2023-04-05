@@ -32,6 +32,7 @@ enum METHOD_TOK
   MSORT_HEAP_WITH_NETWORK,
   MSORT_WITH_NETWORK,
   QUICKSORT_WITH_INS,
+  QUICKSORT_WITH_FAST_INS,
 };
 
 #define UINT32 0
@@ -70,6 +71,8 @@ void msort_heap_with_network(void* b, size_t n, size_t s, compar_d_fn_t cmp,
 void msort_with_network(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                         const size_t threshold);
 
+void quicksort_with_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
+                        const size_t threshold);
 void quicksort_with_fast_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                              const size_t threshold);
 

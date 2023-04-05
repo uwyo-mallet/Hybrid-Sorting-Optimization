@@ -65,6 +65,10 @@ struct times measure_sort_time(int method, sort_t* data, const size_t n,
       break;
     case QUICKSORT_WITH_INS:
       start = get_times();
+      quicksort_with_ins(data, n, sizeof(sort_t), sort_t_compare, threshold);
+      break;
+    case QUICKSORT_WITH_FAST_INS:
+      start = get_times();
       quicksort_with_fast_ins(
           data, n, sizeof(sort_t), sort_t_compare, threshold);
       break;

@@ -8,7 +8,7 @@
 #include <string.h>
 
 #ifdef SORT_LARGE_STRUCTS
-__inline__ int sort_t_compare(const void *a, const void *b)
+inline int sort_t_compare(const void *a, const void *b)
 {
   sort_t *A = (sort_t *)a;
   sort_t *B = (sort_t *)b;
@@ -17,7 +17,7 @@ __inline__ int sort_t_compare(const void *a, const void *b)
   return 0;
 }
 #else
-__inline__ int sort_t_compare(const void *a, const void *b)
+inline int sort_t_compare(const void *a, const void *b)
 {
   int64_t *A = (int64_t *)a;
   int64_t *B = (int64_t *)b;
@@ -27,6 +27,7 @@ __inline__ int sort_t_compare(const void *a, const void *b)
 }
 #endif  // SORT_LARGE_STRUCTS
 
+/* Byte-wise swap two items of size SIZE. */
 #define SWAP(a, b, size)         \
   do                             \
   {                              \
@@ -40,11 +41,22 @@ __inline__ int sort_t_compare(const void *a, const void *b)
     } while (--__size > 0);      \
   } while (0)
 
+/* Stack node declarations used to store unfulfilled partition obligations. */
 typedef struct
 {
-  size_t *lo;
-  size_t *hi;
+  char *lo;
+  char *hi;
 } stack_node;
+
+/* The next 4 #defines implement a very fast in-line stack abstraction. */
+/* The stack needs log (total_elements) entries (we could even subtract
+   log(MAX_THRESH)).  Since total_elements has type size_t, we get as
+   upper bound for log (total_elements):
+   bits per byte (CHAR_BIT) * sizeof(size_t).  */
+#define STACK_SIZE (CHAR_BIT * sizeof(size_t))
+#define PUSH(low, high) ((void)((top->lo = (low)), (top->hi = (high)), ++top))
+#define POP(low, high) ((void)(--top, (low = top->lo), (high = top->hi)))
+#define STACK_NOT_EMPTY (stack < top)
 
 static void msort_with_tmp(const struct msort_param *p, void *b, size_t n)
 {
@@ -980,64 +992,34 @@ void msort_heap_with_fast_ins(void *b, size_t n, size_t s, compar_d_fn_t cmp,
   free(tmp);
 }
 
-void quicksort_with_fast_ins(void *pbase, size_t n, size_t size,
-                             compar_d_fn_t cmp, const size_t threshold)
+/* Order size using quicksort.  This implementation incorporates
+   four optimizations discussed in Sedgewick:
+
+   1. Non-recursive, using an explicit stack of pointer that store the
+      next array partition to sort.  To save time, this maximum amount
+      of space required to store an array of SIZE_MAX is allocated on the
+      stack.  Assuming a 32-bit (64 bit) integer for size_t, this needs
+      only 32 * sizeof(stack_node) == 256 bytes (for 64 bit: 1024 bytes).
+      Pretty cheap, actually.
+
+   2. Chose the pivot element using a median-of-three decision tree.
+      This reduces the probability of selecting a bad pivot value and
+      eliminates certain extraneous comparisons.
+
+   3. Only quicksorts TOTAL_ELEMS / MAX_THRESH partitions, leaving
+      insertion sort to order the MAX_THRESH items within each partition.
+      This is a big win, since insertion sort is faster for small, mostly
+      sorted array segments.
+
+   4. The larger of the two sub-partitions is always pushed onto the
+      stack first, with the algorithm then concentrating on the
+      smaller partition.  This *guarantees* no more than log (total_elems)
+      stack size is needed (actually O(1) in this case)!  */
+#define min(x, y) ((x) < (y) ? (x) : (y))
+
+void quicksort_with_ins(void *pbase, size_t n, size_t size, compar_d_fn_t cmp,
+                        const size_t threshold)
 {
-/* Byte-wise swap two items of size SIZE. */
-#define SWAP(a, b, size)         \
-  do                             \
-  {                              \
-    size_t __size = (size);      \
-    char *__a = (a), *__b = (b); \
-    do                           \
-    {                            \
-      char __tmp = *__a;         \
-      *__a++ = *__b;             \
-      *__b++ = __tmp;            \
-    } while (--__size > 0);      \
-  } while (0)
-
-  /* Stack node declarations used to store unfulfilled partition obligations. */
-  typedef struct
-  {
-    char *lo;
-    char *hi;
-  } stack_node;
-
-/* The next 4 #defines implement a very fast in-line stack abstraction. */
-/* The stack needs log (total_elements) entries (we could even subtract
-   log(MAX_THRESH)).  Since total_elements has type size_t, we get as
-   upper bound for log (total_elements):
-   bits per byte (CHAR_BIT) * sizeof(size_t).  */
-#define STACK_SIZE (CHAR_BIT * sizeof(size_t))
-#define PUSH(low, high) ((void)((top->lo = (low)), (top->hi = (high)), ++top))
-#define POP(low, high) ((void)(--top, (low = top->lo), (high = top->hi)))
-#define STACK_NOT_EMPTY (stack < top)
-
-  /* Order size using quicksort.  This implementation incorporates
-     four optimizations discussed in Sedgewick:
-
-     1. Non-recursive, using an explicit stack of pointer that store the
-        next array partition to sort.  To save time, this maximum amount
-        of space required to store an array of SIZE_MAX is allocated on the
-        stack.  Assuming a 32-bit (64 bit) integer for size_t, this needs
-        only 32 * sizeof(stack_node) == 256 bytes (for 64 bit: 1024 bytes).
-        Pretty cheap, actually.
-
-     2. Chose the pivot element using a median-of-three decision tree.
-        This reduces the probability of selecting a bad pivot value and
-        eliminates certain extraneous comparisons.
-
-     3. Only quicksorts TOTAL_ELEMS / MAX_THRESH partitions, leaving
-        insertion sort to order the MAX_THRESH items within each partition.
-        This is a big win, since insertion sort is faster for small, mostly
-        sorted array segments.
-
-     4. The larger of the two sub-partitions is always pushed onto the
-        stack first, with the algorithm then concentrating on the
-        smaller partition.  This *guarantees* no more than log (total_elems)
-        stack size is needed (actually O(1) in this case)!  */
-
   char *base_ptr = (char *)pbase;
 
   const size_t max_thresh = threshold * size;
@@ -1143,8 +1125,6 @@ void quicksort_with_fast_ins(void *pbase, size_t n, size_t size,
      of the array to sort, and END_PTR points at the very last element in
      the array (*not* one beyond it!). */
 
-#define min(x, y) ((x) < (y) ? (x) : (y))
-
   {
     char *const end_ptr = &base_ptr[size * (n - 1)];
     char *tmp_ptr = base_ptr;
@@ -1185,4 +1165,134 @@ void quicksort_with_fast_ins(void *pbase, size_t n, size_t size,
       }
     }
   }
+}
+
+void quicksort_with_fast_ins(void *pbase, size_t n, size_t size,
+                             compar_d_fn_t cmp, const size_t threshold)
+{
+  char *base_ptr = (char *)pbase;
+
+  const size_t max_thresh = threshold * size;
+
+  if (n == 0) /* Avoid lossage with unsigned arithmetic below.  */
+    return;
+
+  if (n > threshold)
+  {
+    char *lo = base_ptr;
+    char *hi = &lo[size * (n - 1)];
+    stack_node stack[STACK_SIZE];
+    stack_node *top = stack;
+
+    PUSH(NULL, NULL);
+
+    while (STACK_NOT_EMPTY)
+    {
+      char *left_ptr;
+      char *right_ptr;
+
+      /* Select median value from among LO, MID, and HI. Rearrange
+         LO and HI so the three values are sorted. This lowers the
+         probability of picking a pathological pivot value and
+         skips a comparison for both the LEFT_PTR and RIGHT_PTR in
+         the while loops. */
+
+      char *mid = lo + size * ((hi - lo) / size >> 1);
+
+      if ((*cmp)((void *)mid, (void *)lo) < 0) SWAP(mid, lo, size);
+      if ((*cmp)((void *)hi, (void *)mid) < 0)
+        SWAP(mid, hi, size);
+      else
+        goto jump_over;
+      if ((*cmp)((void *)mid, (void *)lo) < 0) SWAP(mid, lo, size);
+    jump_over:;
+
+      left_ptr = lo + size;
+      right_ptr = hi - size;
+
+      /* Here's the famous ``collapse the walls'' section of quicksort.
+         Gotta like those tight inner loops!  They are the main reason
+         that this algorithm runs much faster than others. */
+      do
+      {
+        while ((*cmp)((void *)left_ptr, (void *)mid) < 0) left_ptr += size;
+
+        while ((*cmp)((void *)mid, (void *)right_ptr) < 0) right_ptr -= size;
+
+        if (left_ptr < right_ptr)
+        {
+          SWAP(left_ptr, right_ptr, size);
+          if (mid == left_ptr)
+            mid = right_ptr;
+          else if (mid == right_ptr)
+            mid = left_ptr;
+          left_ptr += size;
+          right_ptr -= size;
+        }
+        else if (left_ptr == right_ptr)
+        {
+          left_ptr += size;
+          right_ptr -= size;
+          break;
+        }
+      } while (left_ptr <= right_ptr);
+
+      /* Set up pointers for next iteration.  First determine whether
+         left and right partitions are below the threshold size.  If so,
+         ignore one or both.  Otherwise, push the larger partition's
+         bounds on the stack and continue sorting the smaller one. */
+
+      if ((size_t)(right_ptr - lo) <= max_thresh)
+      {
+        if ((size_t)(hi - left_ptr) <= max_thresh)
+          /* Ignore both small partitions. */
+          POP(lo, hi);
+        else
+          /* Ignore small left partition. */
+          lo = left_ptr;
+      }
+      else if ((size_t)(hi - left_ptr) <= max_thresh)
+        /* Ignore small right partition. */
+        hi = right_ptr;
+      else if ((right_ptr - lo) > (hi - left_ptr))
+      {
+        /* Push larger left partition indices. */
+        PUSH(lo, right_ptr);
+        lo = left_ptr;
+      }
+      else
+      {
+        /* Push larger right partition indices. */
+        PUSH(left_ptr, hi);
+        hi = right_ptr;
+      }
+    }
+  }
+
+  /* Once the BASE_PTR array is partially sorted by quicksort the rest
+     is completely sorted using insertion sort, since this is efficient
+     for partitions below MAX_THRESH size. BASE_PTR points to the beginning
+     of the array to sort, and END_PTR points at the very last element in
+     the array (*not* one beyond it!). */
+
+  struct msort_param p;
+  p.s = size;
+  p.var = DEFAULT;
+  p.cmp = cmp;
+  p.t = alloca(size);
+
+  if ((size & (sizeof(uint32_t) - 1)) == 0 &&
+      ((uintptr_t)pbase) % __alignof__(uint32_t) == 0)
+  {
+    if (size == sizeof(uint32_t))
+      p.var = UINT32;
+    else if (size == sizeof(uint64_t) &&
+             ((uintptr_t)pbase) % __alignof__(uint64_t) == 0)
+      p.var = UINT64;
+    else if ((size & (sizeof(unsigned long) - 1)) == 0 &&
+             ((uintptr_t)pbase) % __alignof__(unsigned long) == 0)
+      p.var = ULONG;
+  }
+
+  ins_sort(&p, pbase, n);
 }
