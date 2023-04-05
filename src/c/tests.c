@@ -447,6 +447,7 @@ TEST_THRESH_EMPTY(msort_heap_with_shell)
 TEST_THRESH_EMPTY(msort_heap_with_fast_ins)
 TEST_THRESH_EMPTY(msort_heap_with_network)
 TEST_THRESH_EMPTY(msort_with_network)
+TEST_THRESH_EMPTY(quicksort_with_fast_ins)
 
 /* int ascending */
 TEST_SIGNED_ASCENDING(qsort, int)
@@ -460,6 +461,7 @@ TEST_THRESH_SIGNED_ASCENDING(msort_heap_with_shell, int)
 TEST_THRESH_SIGNED_ASCENDING(msort_heap_with_fast_ins, int)
 TEST_THRESH_SIGNED_ASCENDING(msort_heap_with_network, int)
 TEST_THRESH_SIGNED_ASCENDING(msort_with_network, int)
+TEST_THRESH_SIGNED_ASCENDING(quicksort_with_fast_ins, int)
 
 /* int descending */
 TEST_SIGNED_DESCENDING(qsort, int)
@@ -473,6 +475,7 @@ TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_shell, int)
 TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_fast_ins, int)
 TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_network, int)
 TEST_THRESH_SIGNED_DESCENDING(msort_with_network, int)
+TEST_THRESH_SIGNED_DESCENDING(quicksort_with_fast_ins, int)
 
 /* int random */
 TEST_SIGNED_RANDOM(qsort, int)
@@ -486,6 +489,7 @@ TEST_THRESH_SIGNED_RANDOM(msort_heap_with_shell, int)
 TEST_THRESH_SIGNED_RANDOM(msort_heap_with_fast_ins, int)
 TEST_THRESH_SIGNED_RANDOM(msort_heap_with_network, int)
 TEST_THRESH_SIGNED_RANDOM(msort_with_network, int)
+TEST_THRESH_SIGNED_RANDOM(quicksort_with_fast_ins, int)
 
 /* int32_t ascending */
 TEST_SIGNED_ASCENDING(qsort, int32_t)
@@ -499,6 +503,7 @@ TEST_THRESH_SIGNED_ASCENDING(msort_heap_with_shell, int32_t)
 TEST_THRESH_SIGNED_ASCENDING(msort_heap_with_fast_ins, int32_t)
 TEST_THRESH_SIGNED_ASCENDING(msort_heap_with_network, int32_t)
 TEST_THRESH_SIGNED_ASCENDING(msort_with_network, int32_t)
+TEST_THRESH_SIGNED_ASCENDING(quicksort_with_fast_ins, int32_t)
 
 /* int32_t descending */
 TEST_SIGNED_DESCENDING(qsort, int32_t)
@@ -512,6 +517,7 @@ TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_shell, int32_t)
 TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_fast_ins, int32_t)
 TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_network, int32_t)
 TEST_THRESH_SIGNED_DESCENDING(msort_with_network, int32_t)
+TEST_THRESH_SIGNED_DESCENDING(quicksort_with_fast_ins, int32_t)
 
 /* int32_t random */
 TEST_SIGNED_RANDOM(qsort, int32_t)
@@ -525,6 +531,7 @@ TEST_THRESH_SIGNED_RANDOM(msort_heap_with_shell, int32_t)
 TEST_THRESH_SIGNED_RANDOM(msort_heap_with_fast_ins, int32_t)
 TEST_THRESH_SIGNED_RANDOM(msort_heap_with_network, int32_t)
 TEST_THRESH_SIGNED_RANDOM(msort_with_network, int32_t)
+TEST_THRESH_SIGNED_RANDOM(quicksort_with_fast_ins, int32_t)
 
 /* int64_t ascending */
 TEST_SIGNED_ASCENDING(qsort, int64_t)
@@ -538,6 +545,7 @@ TEST_THRESH_SIGNED_ASCENDING(msort_heap_with_shell, int64_t)
 TEST_THRESH_SIGNED_ASCENDING(msort_heap_with_fast_ins, int64_t)
 TEST_THRESH_SIGNED_ASCENDING(msort_heap_with_network, int64_t)
 TEST_THRESH_SIGNED_ASCENDING(msort_with_network, int64_t)
+TEST_THRESH_SIGNED_ASCENDING(quicksort_with_fast_ins, int64_t)
 
 /* int64_t descending */
 TEST_SIGNED_DESCENDING(qsort, int64_t)
@@ -551,6 +559,7 @@ TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_shell, int64_t)
 TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_fast_ins, int64_t)
 TEST_THRESH_SIGNED_DESCENDING(msort_heap_with_network, int64_t)
 TEST_THRESH_SIGNED_DESCENDING(msort_with_network, int64_t)
+TEST_THRESH_SIGNED_DESCENDING(quicksort_with_fast_ins, int64_t)
 
 /* int64_t random */
 TEST_SIGNED_RANDOM(qsort, int64_t)
@@ -564,6 +573,7 @@ TEST_THRESH_SIGNED_RANDOM(msort_heap_with_shell, int64_t)
 TEST_THRESH_SIGNED_RANDOM(msort_heap_with_fast_ins, int64_t)
 TEST_THRESH_SIGNED_RANDOM(msort_heap_with_network, int64_t)
 TEST_THRESH_SIGNED_RANDOM(msort_with_network, int64_t)
+TEST_THRESH_SIGNED_RANDOM(quicksort_with_fast_ins, int64_t)
 
 /* large_struct ascending */
 TEST_LARGE_STRUCT_ASCENDING(qsort)
@@ -577,6 +587,7 @@ TEST_THRESH_LARGE_STRUCT_ASCENDING(msort_heap_with_shell)
 TEST_THRESH_LARGE_STRUCT_ASCENDING(msort_heap_with_fast_ins)
 TEST_THRESH_LARGE_STRUCT_ASCENDING(msort_heap_with_network)
 TEST_THRESH_LARGE_STRUCT_ASCENDING(msort_with_network)
+TEST_THRESH_LARGE_STRUCT_ASCENDING(quicksort_with_fast_ins)
 
 /* large_struct descending */
 TEST_LARGE_STRUCT_DESCENDING(qsort)
@@ -590,6 +601,8 @@ TEST_THRESH_LARGE_STRUCT_DESCENDING(msort_heap_with_shell)
 TEST_THRESH_LARGE_STRUCT_DESCENDING(msort_heap_with_fast_ins)
 TEST_THRESH_LARGE_STRUCT_DESCENDING(msort_heap_with_network)
 TEST_THRESH_LARGE_STRUCT_DESCENDING(msort_with_network)
+TEST_THRESH_LARGE_STRUCT_DESCENDING(quicksort_with_fast_ins)
+
 /* large_struct random */
 TEST_LARGE_STRUCT_RANDOM(qsort)
 TEST_LARGE_STRUCT_RANDOM(msort_heap)
@@ -602,6 +615,7 @@ TEST_THRESH_LARGE_STRUCT_RANDOM(msort_heap_with_shell)
 TEST_THRESH_LARGE_STRUCT_RANDOM(msort_heap_with_fast_ins)
 TEST_THRESH_LARGE_STRUCT_RANDOM(msort_heap_with_network)
 TEST_THRESH_LARGE_STRUCT_RANDOM(msort_with_network)
+TEST_THRESH_LARGE_STRUCT_RANDOM(quicksort_with_fast_ins)
 
 int main()
 {
@@ -619,6 +633,7 @@ int main()
       cmocka_unit_test(test_thresh_empty_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_empty_msort_heap_with_network),
       cmocka_unit_test(test_thresh_empty_msort_with_network),
+      cmocka_unit_test(test_thresh_empty_quicksort_with_fast_ins),
 
       /* int ascending */
       cmocka_unit_test(test_signed_ascending_int_qsort),
@@ -632,6 +647,8 @@ int main()
       cmocka_unit_test(test_thresh_signed_ascending_int_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_ascending_int_msort_with_network),
+      cmocka_unit_test(test_thresh_signed_ascending_int_quicksort_with_fast_ins),
+
       /* int descending */
       cmocka_unit_test(test_signed_descending_int_qsort),
       cmocka_unit_test(test_signed_descending_int_msort_heap),
@@ -644,6 +661,8 @@ int main()
       cmocka_unit_test(test_thresh_signed_descending_int_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_descending_int_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_descending_int_msort_with_network),
+      cmocka_unit_test(test_thresh_signed_descending_int_quicksort_with_fast_ins),
+
       /* int random */
       cmocka_unit_test(test_signed_random_int_qsort),
       cmocka_unit_test(test_signed_random_int_msort_heap),
@@ -656,6 +675,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_random_int_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_random_int_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_random_int_msort_with_network),
+      cmocka_unit_test(test_thresh_signed_random_int_quicksort_with_fast_ins),
 
       /* int32_t ascending */
       cmocka_unit_test(test_signed_ascending_int32_t_qsort),
@@ -669,6 +689,8 @@ int main()
       cmocka_unit_test(test_thresh_signed_ascending_int32_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int32_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_ascending_int32_t_msort_with_network),
+      cmocka_unit_test(test_thresh_signed_ascending_int32_t_quicksort_with_fast_ins),
+
       /* int32_t descending */
       cmocka_unit_test(test_signed_descending_int32_t_qsort),
       cmocka_unit_test(test_signed_descending_int32_t_msort_heap),
@@ -681,6 +703,8 @@ int main()
       cmocka_unit_test(test_thresh_signed_descending_int32_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_descending_int32_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_descending_int32_t_msort_with_network),
+      cmocka_unit_test(test_thresh_signed_descending_int32_t_quicksort_with_fast_ins),
+
       /* int32_t random */
       cmocka_unit_test(test_signed_random_int32_t_qsort),
       cmocka_unit_test(test_signed_random_int32_t_msort_heap),
@@ -693,6 +717,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_random_int32_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_random_int32_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_random_int32_t_msort_with_network),
+      cmocka_unit_test(test_thresh_signed_random_int32_t_quicksort_with_fast_ins),
 
       /* int64_t ascending */
       cmocka_unit_test(test_signed_ascending_int64_t_qsort),
@@ -706,6 +731,8 @@ int main()
       cmocka_unit_test(test_thresh_signed_ascending_int64_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_ascending_int64_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_ascending_int64_t_msort_with_network),
+      cmocka_unit_test(test_thresh_signed_ascending_int64_t_quicksort_with_fast_ins),
+
       /* int64_t descending */
       cmocka_unit_test(test_signed_descending_int64_t_qsort),
       cmocka_unit_test(test_signed_descending_int64_t_msort_heap),
@@ -718,6 +745,8 @@ int main()
       cmocka_unit_test(test_thresh_signed_descending_int64_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_descending_int64_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_descending_int64_t_msort_with_network),
+      cmocka_unit_test(test_thresh_signed_descending_int64_t_quicksort_with_fast_ins),
+
       /* int64_t random */
       cmocka_unit_test(test_signed_random_int64_t_qsort),
       cmocka_unit_test(test_signed_random_int64_t_msort_heap),
@@ -730,6 +759,7 @@ int main()
       cmocka_unit_test(test_thresh_signed_random_int64_t_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_signed_random_int64_t_msort_heap_with_network),
       cmocka_unit_test(test_thresh_signed_random_int64_t_msort_with_network),
+      cmocka_unit_test(test_thresh_signed_random_int64_t_quicksort_with_fast_ins),
 
       /* large_struct ascending */
       cmocka_unit_test(test_large_struct_ascending_qsort),
@@ -743,6 +773,8 @@ int main()
       cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_large_struct_ascending_msort_heap_with_network),
       cmocka_unit_test(test_thresh_large_struct_ascending_msort_with_network),
+      cmocka_unit_test(test_thresh_large_struct_ascending_quicksort_with_fast_ins),
+
       /* large_struct descending */
       cmocka_unit_test(test_large_struct_descending_qsort),
       cmocka_unit_test(test_large_struct_descending_msort_heap),
@@ -755,6 +787,8 @@ int main()
       cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_large_struct_descending_msort_heap_with_network),
       cmocka_unit_test(test_thresh_large_struct_descending_msort_with_network),
+      cmocka_unit_test(test_thresh_large_struct_descending_quicksort_with_fast_ins),
+
       /* large_struct random */
       cmocka_unit_test(test_large_struct_random_qsort),
       cmocka_unit_test(test_large_struct_random_msort_heap),
@@ -767,6 +801,7 @@ int main()
       cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_fast_ins),
       cmocka_unit_test(test_thresh_large_struct_random_msort_heap_with_network),
       cmocka_unit_test(test_thresh_large_struct_random_msort_with_network),
+      /* cmocka_unit_test(test_thresh_large_struct_random_quicksort_with_fast_ins), */
   };
   // clang-format on
 

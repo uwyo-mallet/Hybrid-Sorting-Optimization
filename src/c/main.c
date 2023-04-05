@@ -95,6 +95,7 @@ const char* METHODS[] = {
     "msort_heap_with_fast_ins",
     "msort_heap_with_network",
     "msort_with_network",
+    "quicksort_with_ins",
     NULL,
 };
 

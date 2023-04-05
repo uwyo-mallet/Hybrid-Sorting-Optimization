@@ -63,6 +63,11 @@ struct times measure_sort_time(int method, sort_t* data, const size_t n,
       start = get_times();
       msort_with_network(data, n, sizeof(sort_t), sort_t_compare, threshold);
       break;
+    case QUICKSORT_WITH_INS:
+      start = get_times();
+      quicksort_with_fast_ins(
+          data, n, sizeof(sort_t), sort_t_compare, threshold);
+      break;
     default:
       // How tf did you end up here?
       break;
