@@ -19,7 +19,7 @@ pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
 
-# plt.style.use(["science", "ieee"])
+plt.style.use(["science", "ieee"])
 plt.style.use("seaborn-v0_8-paper")
 plt.rcParams.update({"figure.dpi": "100"})
 mpl.rcParams["errorbar.capsize"] = 3
@@ -255,8 +255,11 @@ class Result:
 
     def plot_relative_difference(self, baseline_method, interactive=False):
         baseline_df = self.df[self.df["method"] == baseline_method]
-        df = self.df[self.df["method"] != baseline_method]
-        df = df.query("method in @self._threshold_methods").copy()
+        baseline_df = self.df[self.df["method"] != baseline_method]
+        df = baseline_df.query("method in @self._threshold_methods").copy()
+
+        other_baselines = baseline_df.query("method in @self._standard_methods").copy()
+        other_baselines = self._gen_sub_dfs(other_baselines)
 
         min_threshold = df["threshold"].min()
         max_threshold = df["threshold"].max()
@@ -276,13 +279,14 @@ class Result:
         index = 0
 
         for type_, sub_df in dfs.items():
+            fig = plt.figure()
+            ax = fig.subplots()
             # den = baseline_df["wall_nsecs"].reset_index(drop=True).mean()
             den = (
                 baseline_df[baseline_df["description"] == type_]["wall_nsecs"]
                 .reset_index(drop=True)
                 .mean()
             )
-            print(den)
             for method, df in sub_df.items():
                 num = df[("mean", "wall_nsecs")].reset_index(drop=True)
                 relative = num / den
@@ -292,24 +296,100 @@ class Result:
                     x="threshold",
                     y="wall_nsecs_relative",
                     marker="o",
-                    title=type_.capitalize(),
-                    ax=axes[index],
+                    title=type_.title(),
+                    ax=ax,
                     label=method,
                 )
-            axes[index].plot([0, max_threshold], [1, 1], "--", label=baseline_method)
+            ax.plot([0, max_threshold], [1, 1], "--", label=baseline_method)
+            for v in other_baselines[type_].values():
+                row = v.iloc[0]
+                val = row[("mean", "wall_nsecs")]
+                # I have no idea why this is a series, there's a bug somewhere
+                label = row["method"].values[0]
+                relative = val / den
+                ax.plot([0, max_threshold], [relative, relative], "--", label=label)
 
-            axes[index].legend(loc="upper right")
-            axes[index].set_ylabel(f"% of {baseline_method} runtime")
-            axes[index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            index += 1
-        plt.tight_layout()
+            ax.legend(
+                title="Method",
+                bbox_to_anchor=(0.96, -0.03),
+                bbox_transform=fig.transFigure,
+                loc="lower right",
+                ncol=1,
+                # frameon=True,
+                fancybox=True,
+            )
+            ax.set_xlabel("Threshold")
+            ax.set_ylabel(f"% of {baseline_method} runtime")
+            ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
-        fig.suptitle(
-            f"""Threshold vs. Runtime Relative to {baseline_method}
-            (size={size:,}, host={self.job_details['Node']}, arch={self.job_details['Machine']})""",
-            fontsize=16,
-        )
-        fig.tight_layout()
+            fig.tight_layout(pad=3)
+
+            fig.suptitle(
+                f"""Threshold vs. Runtime Relative to GNU glibc's {baseline_method}
+                (size={size:,}, arch={self.job_details['Machine']})""",
+            )
+            fig.tight_layout()
+
+
+def get_fig_size(width=440, fraction=1):
+    """Set figure dimensions to avoid scaling in LaTeX.
+
+    Source: https://jwalton.info/Embed-Publication-Matplotlib-Latex/
+    """
+    # Width of figure (in pts)
+    fig_width_pt = width * fraction
+
+    # Convert from pt to inches
+    inches_per_pt = 1 / 72.27
+
+    # Golden ratio to set aesthetic figure height
+    # https://disq.us/p/2940ij3
+    golden_ratio = (5**0.5 - 1) / 2
+
+    # Figure height/width in inches
+    fig_width_in = fig_width_pt * inches_per_pt
+    fig_height_in = fig_width_in * golden_ratio
+
+    fig_dim = (fig_width_in, fig_height_in)
+
+    return fig_dim
+
+
+def gen_report_plots(result: Result):
+    """Generate publication quality plots."""
+    rename_methods_map = {
+        "msort_heap_with_old_ins": "Mergesort with Primitive InsSort",
+        "msort_heap_with_basic_ins": "Mergesort with Basic InsSort",
+        "msort_heap_with_shell": "Mergesort with ShellSort",
+        "msort_heap_with_fast_ins": "Mergesort with Fast InsSort",
+        "msort_heap_with_network": "Mergesort with Fast InsSort and Network",
+        "msort_with_network": "Mergesort with Fast InsSort and Network",
+        "quicksort_with_ins": "Quicksort with Fast InsSort",
+        "fast_ins": "Fast InsSort",
+    }
+    rename_standard_methods_map = {
+        "msort_heap": "Mergesort",
+    }
+    rename_data_map = {
+        "single_num": "Repeated Single Integer",
+        "pipe_organ": "Pipe Organ",
+    }
+    result._threshold_methods.update(set(rename_methods_map.values()))
+    result._standard_methods.update(set(rename_standard_methods_map.values()))
+    result.df = result.df.replace(rename_methods_map)
+    result.df = result.df.replace(rename_standard_methods_map)
+    result.df = result.df.replace(rename_data_map)
+    plots_dir = result.path / "plots"
+    plots_dir.mkdir(exist_ok=True)
+
+    # result.plot_threshold_v_runtime()
+    # result.plot_size_v_runtime()
+    result.plot_relative_difference("qsort")
+
+    figs = [plt.figure(n) for n in plt.get_fignums()]
+    for i, v in enumerate(figs):
+        dst = plots_dir / f"{i}.gen.png"
+        v.savefig(dst, dpi=400, bbox_inches="tight")
 
 
 def main():
@@ -336,11 +416,12 @@ def main():
         last_result_path = get_latest_subdir(base_results_dir)
         result = Result(last_result_path)
 
-    result.plot_threshold_v_runtime()
+    gen_report_plots(result)
+    # result.plot_threshold_v_runtime()
     # result.plot_size_v_runtime()
-    result.plot_relative_difference("qsort")
+    # result.plot_relative_difference("qsort")
 
-    plt.show()
+    # plt.show()
 
 
 if __name__ == "__main__":
