@@ -275,9 +275,6 @@ class Result:
         df = df[df["size"] == size]
         dfs = self._gen_sub_dfs(df)
 
-        fig, axes = plt.subplots(nrows=len(dfs), figsize=(16, 12))
-        index = 0
-
         for type_, sub_df in dfs.items():
             fig = plt.figure()
             ax = fig.subplots()
@@ -315,18 +312,31 @@ class Result:
                 bbox_transform=fig.transFigure,
                 loc="lower right",
                 ncol=1,
-                # frameon=True,
                 fancybox=True,
             )
-            ax.set_xlabel("Threshold")
-            ax.set_ylabel(f"% of {baseline_method} runtime")
-            ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+            fig.tight_layout(pad=5)
 
-            fig.tight_layout(pad=3)
+            t = f"""CPU: {self.job_details['CPU Info']['brand_raw'].split("@")[0]}
+            CPU Count: {self.job_details['CPU Info']['count']}
+            CPU Frequency: {self.job_details['CPU Info']['hz_actual_friendly']}
+            Arch: {self.job_details['CPU Info']['arch_string_raw']}
+            Compiler: gcc 12.2.1
+            CFlags: -O3
+            """
+            fig.text(
+                0.1,
+                0,
+                t,
+                # transform=fig.transFigure,
+            )
+            ax.set_xlabel("Threshold")
+            # Escape % since it is the comment char of latex
+            ax.set_ylabel(f"\% of {baseline_method} runtime")
+            ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
             fig.suptitle(
                 f"""Threshold vs. Runtime Relative to GNU glibc's {baseline_method}
-                (size={size:,}, arch={self.job_details['Machine']})""",
+                (Input size=${size:,}$)""",
             )
             fig.tight_layout()
 
@@ -364,7 +374,8 @@ def gen_report_plots(result: Result):
         "msort_heap_with_fast_ins": "Mergesort with Fast InsSort",
         "msort_heap_with_network": "Mergesort with Fast InsSort and Network",
         "msort_with_network": "Mergesort with Fast InsSort and Network",
-        "quicksort_with_ins": "Quicksort with Fast InsSort",
+        "quicksort_with_ins": "Quicksort with InsSort",
+        "quicksort_with_fast_ins": "Quicksort with Fast InsSort",
         "fast_ins": "Fast InsSort",
     }
     rename_standard_methods_map = {
@@ -389,7 +400,7 @@ def gen_report_plots(result: Result):
     figs = [plt.figure(n) for n in plt.get_fignums()]
     for i, v in enumerate(figs):
         dst = plots_dir / f"{i}.gen.png"
-        v.savefig(dst, dpi=400, bbox_inches="tight")
+        v.savefig(dst, dpi=100, bbox_inches="tight")
 
 
 def main():
