@@ -6,7 +6,7 @@ REPORT_JOB = report
 
 all: report.pdf
 
-report.pdf: report.tex references.bib
+report.pdf: report.tex references.bib figures/*.png
 	$(CC) $(FLAGS) -jobname $(REPORT_JOB) report.tex
 	biber $(REPORT_JOB)
 	$(CC) $(FLAGS) -jobname $(REPORT_JOB) report.tex

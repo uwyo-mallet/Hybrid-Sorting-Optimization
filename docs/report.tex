@@ -36,8 +36,10 @@
 % \setlength{\intextsep}{12pt plus 2.0pt minus 2.0pt}
 
 % \setlength{\textfloatsep}{0pt plus 1.0pt minus 2.0pt}
-% \setlength{\floatsep}{12pt plus 2.0pt minus 2.0pt}
-\setlength{\intextsep}{5pt plus 2.0pt minus 2.0pt}
+\setlength{\floatsep}{3pt plus 2.0pt minus 2.0pt}
+\setlength{\intextsep}{3pt plus 2.0pt minus 2.0pt}
+
+\graphicspath{{./figures/}}
 
 \title{\LARGE \bf Practical Analysis of Hybrid Sorting Algorithms}
 \author{Joshua Arulsamy}
@@ -74,15 +76,15 @@ languages including a type-generic sorting function within their standard
 libraries. These standard implementations can use a variety of algorithms
 internally, such as Quicksort, Mergesort, and many others, however, rarely does
 a single algorithm perform exceptionally well. Often, these algorithms are
-paired with one or more other sorting algorithms to offer sizeable performance
-benefits. These hybrid algorithms include some tuneable parameters, such as when
-to switch from one sorting algorithm to another. While these hybridized
-algorithms have varying space and time complexities, their actual performance in
-real-world scenarios is rarely formally examined, and the values for these
-parameters are often chosen arbitrarily by the developers. This paper analyzes a
-wide variety of sorting algorithm implementations across varying system
-architectures to determine optimal parameter configurations for hybrid sorting
-algorithms. This paper also proposes a new performant standard sorting
+paired with one or more specialized sorting algorithms to offer sizeable
+performance benefits. These hybrid algorithms include some tuneable parameters,
+such as when to switch from one sorting algorithm to another. While these
+hybridized algorithms have varying space and time complexities, their actual
+performance in real-world scenarios is rarely formally examined, and the values
+for these parameters are often chosen arbitrarily by the developers. This paper
+analyzes a wide variety of sorting algorithm implementations across varying
+system architectures to determine optimal parameter configurations for hybrid
+sorting algorithms. This paper also proposes a new performant standard sorting
 implementation for GNU's C standard library leveraging Mergesort, insertion
 sort, and sorting networks.
 
@@ -90,14 +92,14 @@ sort, and sorting networks.
 
 Substantial effort has been spent on the analysis of sorting algorithms.
 Typically, two major characteristics are considered when studying sorting
-algorithms from a purely theoretical standpoint; space and time complexity.
-Existing analysis of popular sorting algorithms, such as Quicksort and
-Mergesort, place substantial emphasis on their excellent asymptotic complexity
-in the average case\parencite{glibc}. However, asymptotic complexity alone does
-not describe the practical performance of these algorithms. While Mergesort may
-have a better asymptotic time complexity in the worst case than insertion sort
-(Table \ref{fig:time_complexity_table}), for small inputs, insertion sort
-typically outperforms Mergesort by avoiding the overhead of recursive calls.
+algorithms; space and time complexity. Existing analysis of popular sorting
+algorithms, such as Quicksort and Mergesort, place substantial emphasis on their
+excellent asymptotic complexity in the average case\parencite{glibc}. However,
+asymptotic complexity alone does not describe the practical performance of these
+algorithms. While Mergesort may have a better asymptotic time complexity in the
+worst case than insertion sort (Table \ref{fig:time_complexity_table}), for
+small inputs, insertion sort typically outperforms Mergesort by avoiding the
+overhead of recursive calls.
 
 \begin{table}[ht]
 	\centering
@@ -124,9 +126,8 @@ specific scenarios where an algorithm performs well may lead to better sorting
 function implementations by combining several algorithms or excluding algorithms
 in specific situations. Since sorting is used so ubiquitously, even incremental
 improvements to standard library sorting implementations can broadly influence
-the performance of many different applications. This marks an area in obvious
-need of further investigation, and such an analysis does not presently exist.
-
+the performance of many different applications. Such an analysis does not
+presently exist, marking an area in obvious need of further investigation.
 
 \subsection{General Purpose Algorithms}
 
@@ -143,7 +144,7 @@ selections can lead to worse performance. Simple implementations usually choose
 the left-most value of the input as the pivot, however this offers poor
 performance in many circumstances, for example, if the input is reverse sorted.
 So most implementations use a slightly more complex and costly pivot selection
-process such as \textit{median-of-three}\todocite.
+process such as \textit{median-of-three}\parencite{Bentley1993EngineeringAS}.
 
 The increased memory availability of modern systems and the difficulty of good
 pivot selection within Quicksort has motivated many standard libraries -- such
@@ -197,53 +198,19 @@ This motivates placing significant importance on the size of the input itself.
 
 Comparing the input size against predefined threshold values is cheap and can
 help pick an algorithm. Since such comparisons are so cheap, they can be
-repeated during recursive calls of other algorithms. This algorithm checks the
-size of each subarray during Mergesort before switching to insertion sort for
-small arrays. In instances where a subarray contains less than 5 elements, a
-network sorting algorithm is used instead of insertion sort. Utilizing secondary
-algorithms limits the depth of recursive calls substantially. Practically, this
-reduces a significant amount of the overhead of Mergesort, even though there are
+repeated during recursive calls of other algorithms. The proposed algorithm is
+an optimized version of Mergesort (Algorithm \ref{alg:merge_sort}) which checks
+the size of each subarray during each recursive call. If the subarray's length
+is less than a threshold value insertion sort (Algorithm
+\ref{alg:insertion_sort}) is used instead. In instances where a subarray
+contains less than 5 elements, a comparison-optimal network sorting algorithm
+(Algorithm \ref{alg:network_sort}) is used instead of insertion sort. Utilizing
+secondary algorithms limits the depth of recursive calls substantially.
+Practically, this offers significant performance gains, even though there are
 additional size comparisons during each recursive
 call\parencite{the_basic_algorithms}.
 
-\subsection{Implementation}
-
-The actual implementation of the proposed algorithms differ slightly from the
-psuedocode descriptions. Since this investigation is focused on improving
-standard library implementations, specifically GNU libc's \verb|qsort()|, all of
-these algorithms are implemented in C in a type-generic fashion in accordance
-with ISO C standard\parencite{iso_c}. This presents another opportunity for
-optimization. Typically, type-generic functions in C are implemented using
-\verb|void| pointers -- essentially subverting the type system itself. Such
-implementations must take care in maintaining alignment when moving any elements
-within a contiguous block of un-typed memory. The catch-all method for safely
-manipulating un-typed memory is resorting to \verb|memcpy| and its family of
-system calls. However, system calls are extremely expensive and repeated usage
-of \verb|memcpy| has a significant performance penalty. This implementation
-avoids repeated system calls. Upon invocation, several preliminary heuristics
-are immediately examined; size of each element within the input, total input
-length, and alignment.
-
-If the size of each individual element is large, indirect sorting is utilized. A
-new array is populated with pointers to the original inputs and the pointers are
-ordered according to the comparator function. Once the pointers are correctly
-ordered, the elements in the original array are copied to the correct location
-based on the position of their corresponding indirect sorting pointer. This way,
-swaps stay cheap, since the amount of total memory being moved remains less than
-8 bytes per element per swap.
-
-The size of each element and total length of input are used to calculate the
-total required auxiliary temporary space for Mergesort. If the required memory
-is sufficiently small, it is stack allocated, otherwise it is heap allocated. If
-at any time a request for memory fails, Mergesort is abandoned and Quicksort is
-utilized. Using some clever pointer arithmetic, the alignment of the input data
-is matched against several pre-defined alignments. Depending on the alignment,
-the input data can be treated as a known primitive, such as an 32-bit unsigned
-integer, making swaps of type-generic inputs essentially cost the same as
-swapping primitive integers. In practice, this offers a very sizeable
-performance gain.
-
-\begin{algorithm}[ht]
+\begin{algorithm}[H]
 	\caption{Network Sort}
 	\label{alg:network_sort}
 	\begin{algorithmic}
@@ -275,7 +242,7 @@ performance gain.
 	\end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[ht]
+\begin{algorithm}[H]
 	\caption{Insertion Sort}
 	\label{alg:insertion_sort}
 	\begin{algorithmic}
@@ -300,7 +267,7 @@ performance gain.
 	\end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}[ht]
+\begin{algorithm}[H]
 	\caption{Hybridized Merge Sort}
 	\label{alg:merge_sort}
 	\begin{algorithmic}
@@ -350,12 +317,49 @@ performance gain.
 		\If {$n_{1} > 0$}
 		\State copy($tmp$, $b_{1}$, $n_{1}$)
 		\EndIf
-		\EndProcedure
 		\State copy($a$, $tmp$, $n - n_{2}$)
+		\EndProcedure
 	\end{algorithmic}
 \end{algorithm}
 
-% \section{EXPERIMENTAL SETUP}
+\subsection{Implementation}
+
+The actual implementation of the proposed algorithms differ slightly from the
+psuedocode descriptions (Algorithm \ref{alg:network_sort},
+\ref{alg:insertion_sort}, \& \ref{alg:merge_sort}). Since this investigation is
+focused on improving standard library implementations, specifically GNU libc's
+\verb|qsort()|, all of these algorithms are implemented in C in a type-generic
+fashion in accordance with ISO C standard\parencite{iso_c}. This presents
+another opportunity for optimization. Type-generic functions in C are
+implemented using \verb|void| pointers -- essentially subverting the type system
+itself. Such implementations must take care in maintaining alignment when moving
+any elements within a contiguous block of un-typed memory. The catch-all method
+for safely manipulating un-typed memory is resorting to \verb|memcpy| and its
+family of system calls. However, system calls are extremely expensive and
+repeated usage of \verb|memcpy| has a significant performance penalty. This
+implementation avoids repeated system calls. Upon invocation, several
+preliminary heuristics are immediately examined; size of each element within the
+input, total input length, and alignment.
+
+The size of each element and total length of input are used to calculate the
+total required auxiliary temporary space for Mergesort. If the required memory
+is sufficiently small, it is stack allocated, otherwise it is heap allocated. If
+at any time a request for memory fails, Mergesort is abandoned and Quicksort is
+utilized. Using some clever pointer arithmetic, the alignment of the input data
+is matched against several pre-defined alignments. Depending on the alignment,
+the input data can be treated as a known primitive, such as an 32-bit unsigned
+integer, making swaps of type-generic inputs essentially cost the same as
+swapping primitive integers. In practice, this offers a very sizeable
+performance gain. If the size of each individual element is large, indirect
+sorting is utilized. A new array is populated with pointers to the original
+inputs and the pointers are ordered according to the comparator function. Once
+the pointers are correctly ordered, the elements in the original array are
+copied to the correct location based on the position of their corresponding
+indirect sorting pointer. This way, swaps stay cheap, since the amount of total
+memory being moved remains less than 8 bytes per element per swap.
+
+
+\section{EXPERIMENTAL SETUP}
 
 A small subset of algorithms were chosen for evaluation. Primarily, algorithms
 utilized within standard library implementations are of particular interest,
@@ -369,10 +373,49 @@ optimizations discovered as a result of this evaluation to existing standard
 libraries, so any non-comparison based sorting algorithm, such as Radix sort or
 Bucket sort, were excluded. Other hybridization combinations were also included,
 such as combining Mergesort with just insertion sort, to serve as a comparison.
+To evaluate the algorithms, each is timed while sorting the same data $1,000$
+times. Finally the mean is calculated for each algorithm. This is done to
+minimize noise (time inaccuracy, other processes on the test system, etc.)
+during data collection. To illustrate the relationship between the threshold at
+which hybridized methods switch algorithms, various threshold values are tested
+against the same input data. Several input data sequences were chosen to
+represent real-world sorting scenarios, such as already sorted (ascending),
+reverse sorted (descending), a repeated single number, pipe organ (ex. 1, 2, 3,
+4, 3, 2, 1) and entirely random.
 
 \section{RESULTS}
 
 \todo
+
+\begin{figure}[H]
+	\centering
+	\makebox[\columnwidth]{\includegraphics[width=\columnwidth]{random}}
+	\label{fig:random}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\columnwidth]{pipe_organ}
+	% \caption{pipe_organ}
+	\label{fig:pipe_organ}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\makebox[\columnwidth]{\includegraphics[width=\columnwidth]{ascending}}
+	% \caption{ascending}
+	\label{fig:ascending}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\makebox[\columnwidth]{\includegraphics[width=\columnwidth]{descending}}
+	% \caption{descending}
+	\label{fig:descending}
+\end{figure}
+\begin{figure}[H]
+	\centering
+	\makebox[\columnwidth]{\includegraphics[width=\columnwidth]{single_num}}
+	% \caption{single_num}
+	\label{fig:single_num}
+\end{figure}
 
 \section{CONCLUSION}
 
