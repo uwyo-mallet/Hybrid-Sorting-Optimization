@@ -1,9 +1,10 @@
 ---
 - name: Hybrid Sorting Optimization Fetch Results
   hosts: all
+  user: jarulsam
 
   vars:
-    base_path: /HSO
+    base_path: "{{ ansible_env.HOME }}/HSO"
     hso_path: "{{ base_path }}/Hybrid-Sorting-Optimization"
     results_path: "{{ hso_path }}/results"
 

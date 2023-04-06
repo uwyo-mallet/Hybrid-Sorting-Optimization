@@ -1,9 +1,10 @@
 ---
 - name: Hybrid Sorting Optimization Deploy
   hosts: all
+  user: jarulsam
 
   vars:
-    base_path: /HSO
+    base_path: "{{ ansible_env.HOME }}/HSO"
     virtualenv_path: "{{ base_path }}/env"
     virtualenv_py_path: "{{ virtualenv_path }}/bin/python"
     hso_path: "{{ base_path }}/Hybrid-Sorting-Optimization"
@@ -14,9 +15,9 @@
     job_parameters_list:
       - "{{ hso_path }}/src/c/HSO-c"
       - "{{ data_path }}"
-      - "--methods qsort,msort_heap,msort_heap_with_old_ins,msort_heap_with_basic_ins,msort_with_network"
+      - "--methods qsort,msort_heap_with_fast_ins,msort_heap_with_network,quicksort_with_ins,msort_heap,quicksort_with_fast_ins"
       - "--threshold 1,20,1"
-      - "--runs 100"
+      - "--runs 1000"
     job_parameters: "{{ job_parameters_list | join(' ') }}"
 
   tasks:
@@ -47,7 +48,6 @@
         owner: "{{ ansible_real_user_id }}"
         group: "{{ ansible_real_group_id }}"
       when: base_path_stat.isdir is not defined or base_path_stat.stat.isdir == False
-      become: true
 
     - name: Clone Project
       git:
