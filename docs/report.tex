@@ -201,7 +201,7 @@ help pick an algorithm. Since such comparisons are so cheap, they can be
 repeated during recursive calls of other algorithms. The proposed algorithm is
 an optimized version of Mergesort (Algorithm \ref{alg:merge_sort}) which checks
 the size of each subarray during each recursive call. If the subarray's length
-is less than a threshold value insertion sort (Algorithm
+is less than a threshold value, insertion sort (Algorithm
 \ref{alg:insertion_sort}) is used instead. In instances where a subarray
 contains less than 5 elements, a comparison-optimal network sorting algorithm
 (Algorithm \ref{alg:network_sort}) is used instead of insertion sort. Utilizing
@@ -385,35 +385,46 @@ reverse sorted (descending), a repeated single number, pipe organ (ex. 1, 2, 3,
 
 \section{RESULTS}
 
+The proposed algorithm outperforms the existing implementation of \verb|qsort()|
+in most circumstances. The threshold value does affect the runtime of these
+algorithms substantially, typically offering best performance around 3 to 12.
+When picking a suitable threshold value, it is important to consider how the
+algorithm will perform in the general case. Based on Fig. \ref{ascending} it may
+look appealing to choose a threshold value above 12, since already sorted data
+benefits the most from repeated use of low-overhead algorithms (such as
+insertion-sort). However, for reverse sorted data, threshold values above 6 have
+nearly no performance gain over the existing implementation.
+
 \todo
 
 \begin{figure}[H]
 	\centering
 	\makebox[\columnwidth]{\includegraphics[width=\columnwidth]{random}}
+	\caption{Random}
 	\label{fig:random}
 \end{figure}
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=\columnwidth]{pipe_organ}
-	% \caption{pipe_organ}
+	\caption{Pipe Organ}
 	\label{fig:pipe_organ}
 \end{figure}
 \begin{figure}[H]
 	\centering
 	\makebox[\columnwidth]{\includegraphics[width=\columnwidth]{ascending}}
-	% \caption{ascending}
+	\caption{Ascending}
 	\label{fig:ascending}
 \end{figure}
 \begin{figure}[H]
 	\centering
 	\makebox[\columnwidth]{\includegraphics[width=\columnwidth]{descending}}
-	% \caption{descending}
+	\caption{Descending}
 	\label{fig:descending}
 \end{figure}
 \begin{figure}[H]
 	\centering
 	\makebox[\columnwidth]{\includegraphics[width=\columnwidth]{single_num}}
-	% \caption{single_num}
+	\caption{Single Num}
 	\label{fig:single_num}
 \end{figure}
 
