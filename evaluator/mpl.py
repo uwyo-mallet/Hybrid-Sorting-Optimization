@@ -20,7 +20,6 @@ pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
 
-pprint(mpl.rcParams.keys())
 plt.style.use(["science", "ieee"])
 plt.style.use("seaborn-v0_8-paper")
 mpl.rcParams["font.size"] = 14
