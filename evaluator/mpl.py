@@ -14,16 +14,27 @@ import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 import scienceplots
+from matplotlib.ticker import FormatStrFormatter
 
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
 
+pprint(mpl.rcParams.keys())
 plt.style.use(["science", "ieee"])
 plt.style.use("seaborn-v0_8-paper")
+mpl.rcParams["font.size"] = 14
+mpl.rcParams["figure.titlesize"] = 14
+mpl.rcParams["axes.titlesize"] = 14
+mpl.rcParams["axes.labelsize"] = 14
+mpl.rcParams["xtick.labelsize"] = 12
+mpl.rcParams["ytick.labelsize"] = 12
+mpl.rcParams["legend.fontsize"] = 10
+
 # plt.rcParams.update({"figure.dpi": "100"})
 mpl.rcParams["errorbar.capsize"] = 3
 mpl.rcParams["lines.linewidth"] = 1
+mpl.rcParams["lines.markersize"] = 5
 
 
 def get_latest_subdir(path: Path) -> Path:
@@ -289,11 +300,14 @@ class Result:
                 relative = num / den
                 df["wall_nsecs_relative"] = relative.values
 
+                title = f"""Threshold vs. Runtime Relative to GNU glibc's {baseline_method}
+                (Input size=${size:,}$)
+                {type_.title()}"""
                 df.plot.line(
                     x="threshold",
                     y="wall_nsecs_relative",
                     marker="o",
-                    title=type_.title(),
+                    title=title,
                     ax=ax,
                     label=method,
                 )
@@ -306,42 +320,24 @@ class Result:
                 relative = val / den
                 ax.plot([0, max_threshold], [relative, relative], "--", label=label)
 
-            ax.legend(
-                title="Method",
-                bbox_to_anchor=(0.96, -0.03),
-                bbox_transform=fig.transFigure,
-                loc="lower right",
-                ncol=1,
+            ax.get_legend().remove()
+            fig.legend(
+                bbox_to_anchor=(0.5, -0.10),
+                ncols=2,
+                loc="lower center",
                 fancybox=True,
             )
-            fig.tight_layout(pad=5)
+            ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 
-            t = f"""CPU: {self.job_details['CPU Info']['brand_raw'].split("@")[0]}
-            CPU Count: {self.job_details['CPU Info']['count']}
-            CPU Frequency: {self.job_details['CPU Info']['hz_actual_friendly']}
-            Arch: {self.job_details['CPU Info']['arch_string_raw']}
-            Compiler: gcc 12.2.1
-            CFlags: -O3
-            """
-            fig.text(
-                0.1,
-                0,
-                t,
-                # transform=fig.transFigure,
-            )
             ax.set_xlabel("Threshold")
             # Escape % since it is the comment char of latex
             ax.set_ylabel(f"\% of {baseline_method} runtime")
             ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
-            fig.suptitle(
-                f"""Threshold vs. Runtime Relative to GNU glibc's {baseline_method}
-                (Input size=${size:,}$)""",
-            )
             fig.tight_layout()
 
 
-def get_fig_size(width=440, fraction=1):
+def get_fig_size(width=117, fraction=1):
     """Set figure dimensions to avoid scaling in LaTeX.
 
     Source: https://jwalton.info/Embed-Publication-Matplotlib-Latex/
@@ -368,14 +364,14 @@ def get_fig_size(width=440, fraction=1):
 def gen_report_plots(result: Result):
     """Generate publication quality plots."""
     rename_methods_map = {
-        "msort_heap_with_old_ins": "Mergesort with Primitive InsSort",
-        "msort_heap_with_basic_ins": "Mergesort with Basic InsSort",
-        "msort_heap_with_shell": "Mergesort with ShellSort",
-        "msort_heap_with_fast_ins": "Mergesort with Fast InsSort",
-        "msort_heap_with_network": "Mergesort with Fast InsSort and Network",
-        "msort_with_network": "Mergesort with Fast InsSort and Network",
-        "quicksort_with_ins": "Quicksort with InsSort",
-        "quicksort_with_fast_ins": "Quicksort with Fast InsSort",
+        "msort_heap_with_old_ins": "Mergesort w/ Primitive InsSort",
+        "msort_heap_with_basic_ins": "Mergesort w/ Basic InsSort",
+        "msort_heap_with_shell": "Mergesort w/ ShellSort",
+        "msort_heap_with_fast_ins": "Mergesort w/ Fast InsSort",
+        "msort_heap_with_network": "Mergesort w/ Fast InsSort \& Network",
+        "msort_with_network": "Mergesort w/ Fast InsSort \& Network",
+        "quicksort_with_ins": "Quicksort w/ InsSort",
+        "quicksort_with_fast_ins": "Quicksort w/ Fast InsSort",
         "fast_ins": "Fast InsSort",
     }
     rename_standard_methods_map = {
