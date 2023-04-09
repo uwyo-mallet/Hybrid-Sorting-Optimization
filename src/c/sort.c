@@ -7,8 +7,10 @@
 #include <limits.h>
 #include <string.h>
 
+// Don't inline comparators, since they cannot possibly be inline in the std
+// library.
 #ifdef SORT_LARGE_STRUCTS
-inline int sort_t_compare(const void *a, const void *b)
+int __attribute__((noinline)) sort_t_compare(const void *a, const void *b)
 {
   sort_t *A = (sort_t *)a;
   sort_t *B = (sort_t *)b;
@@ -17,7 +19,7 @@ inline int sort_t_compare(const void *a, const void *b)
   return 0;
 }
 #else
-inline int sort_t_compare(const void *a, const void *b)
+int __attribute__((noinline)) sort_t_compare(const void *a, const void *b)
 {
   int64_t *A = (int64_t *)a;
   int64_t *B = (int64_t *)b;
