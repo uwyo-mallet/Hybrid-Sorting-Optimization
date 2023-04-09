@@ -7,7 +7,8 @@
 all: HSO-c
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Wno-missing-field-initializers -pedantic -O3 -DNDEBUG
+CFLAGS += -O3
+CFLAGS += -Wall -Wextra -Wno-missing-field-initializers -pedantic -DNDEBUG
 # CFLAGS += -DSORT_LARGE_STRUCTS
 # DEBUGFLAGS = -ggdb -fsanitize=address,undefined,leak -Og
 # DEBUGFLAGS = -ggdb -O3
@@ -61,6 +62,6 @@ glibc: check-glibc-var
         msort_opt.c -lz
 
 clean:
-	rm -f HSO-c $(OBJS)
+	rm -f HSO-c $(OBJS) main.o
 
 # end
