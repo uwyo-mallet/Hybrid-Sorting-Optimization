@@ -10,7 +10,7 @@
     hso_path: "{{ base_path }}/Hybrid-Sorting-Optimization"
 
     data_path: "{{ hso_path }}/data"
-    data_size: "50_000"
+    data_size: "100_000"
 
     job_parameters_list:
       - "{{ hso_path }}/src/c/HSO-c"
@@ -54,11 +54,17 @@
         repo: git@github.com:uwyo-mallet/Hybrid-Sorting-Optimization
         dest: "{{ hso_path }}"
         clone: yes
+        update: yes
+        accept_newhostkey: yes
+
+    - name: Remove old Builds
+      make:
+        chdir: "{{ hso_path }}/src/c"
+        target: clean
 
     - name: Build C frontend
       make:
         chdir: "{{ hso_path }}/src/c"
-        params: CC=clang
         target: all
 
     - name: Query virtual env
