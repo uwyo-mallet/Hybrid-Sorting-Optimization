@@ -389,8 +389,8 @@ def gen_report_plots(result: Result):
     plots_dir = result.path / "plots"
     plots_dir.mkdir(exist_ok=True)
 
-    # result.plot_threshold_v_runtime()
-    # result.plot_size_v_runtime()
+    result.plot_threshold_v_runtime()
+    result.plot_size_v_runtime()
     result.plot_relative_difference("qsort")
 
     figs = [plt.figure(n) for n in plt.get_fignums()]
