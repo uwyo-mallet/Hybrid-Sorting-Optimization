@@ -297,7 +297,7 @@ class Result:
             for method, df in sub_df.items():
                 num = df[("mean", "wall_nsecs")].reset_index(drop=True)
                 relative = num / den
-                df["wall_nsecs_relative"] = relative.values
+                df["wall_nsecs_relative"] = relative.values * 100
 
                 title = f"""Threshold vs. Runtime Relative to GNU glibc's {baseline_method}
                 (Input size=${size:,}$)
@@ -310,13 +310,14 @@ class Result:
                     ax=ax,
                     label=method,
                 )
-            ax.plot([0, max_threshold], [1, 1], "--", label=baseline_method)
+            ax.plot([0, max_threshold], [100, 100], "--", label=baseline_method)
             for v in other_baselines[type_].values():
                 row = v.iloc[0]
                 val = row[("mean", "wall_nsecs")]
                 # I have no idea why this is a series, there's a bug somewhere
                 label = row["method"].values[0]
                 relative = val / den
+                relative *= 100
                 ax.plot([0, max_threshold], [relative, relative], "--", label=label)
 
             ax.get_legend().remove()
