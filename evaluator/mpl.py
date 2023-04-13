@@ -30,7 +30,7 @@ mpl.rcParams["xtick.labelsize"] = 12
 mpl.rcParams["ytick.labelsize"] = 12
 mpl.rcParams["legend.fontsize"] = 10
 
-# plt.rcParams.update({"figure.dpi": "100"})
+plt.rcParams.update({"figure.dpi": "100"})
 mpl.rcParams["errorbar.capsize"] = 3
 mpl.rcParams["lines.linewidth"] = 1
 mpl.rcParams["lines.markersize"] = 5
@@ -62,7 +62,6 @@ def get_avg_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-@dataclass
 class Result:
     """TODO."""
 
@@ -85,7 +84,6 @@ class Result:
         self._threshold_methods = []
 
         self._load_from_disk()
-        pprint(self.job_details)
 
     def _load_from_disk(self):
         """Load all the necessary data from disk."""
@@ -130,7 +128,10 @@ class Result:
         else:
             logging.info("'%s' does not exist.", str(partition_path))
 
-    def _gen_sub_dfs(self, df):
+    def gen_sub_dfs(self, df=None):
+        if df is None:
+            df = self.df
+
         types = sorted(df["description"].unique())
         methods = sorted(df["method"].unique())
         dfs = defaultdict(dict)
@@ -228,8 +229,8 @@ class Result:
 
         standard_data = standard_data[standard_data["size"] == size]
         threshold_data = threshold_data[threshold_data["size"] == size]
-        standard_dfs = self._gen_sub_dfs(standard_data)
-        threshold_dfs = self._gen_sub_dfs(threshold_data)
+        standard_dfs = self.gen_sub_dfs(standard_data)
+        threshold_dfs = self.gen_sub_dfs(threshold_data)
 
         fig, axes = self._plot_threshold_v_runtime(
             threshold_dfs,
@@ -257,7 +258,7 @@ class Result:
             threshold = thresholds[0]
             df = df[(df["threshold"] == threshold) | (df["threshold"] == 0)]
 
-        dfs = self._gen_sub_dfs(df)
+        dfs = self.gen_sub_dfs(df)
 
         fig, axes = self._plot_size_v_runtime(dfs)
         fig.suptitle("Size vs. Runtime", fontsize=16)
@@ -269,7 +270,7 @@ class Result:
         df = baseline_df.query("method in @self._threshold_methods").copy()
 
         other_baselines = baseline_df.query("method in @self._standard_methods").copy()
-        other_baselines = self._gen_sub_dfs(other_baselines)
+        other_baselines = self.gen_sub_dfs(other_baselines)
 
         min_threshold = df["threshold"].min()
         max_threshold = df["threshold"].max()
@@ -283,7 +284,7 @@ class Result:
         else:
             size = sizes[0]
         df = df[df["size"] == size]
-        dfs = self._gen_sub_dfs(df)
+        dfs = self.gen_sub_dfs(df)
 
         for type_, sub_df in dfs.items():
             fig = plt.figure()
@@ -424,11 +425,6 @@ def main():
         result = Result(last_result_path)
 
     gen_report_plots(result)
-    # result.plot_threshold_v_runtime()
-    # result.plot_size_v_runtime()
-    # result.plot_relative_difference("qsort")
-
-    # plt.show()
 
 
 if __name__ == "__main__":
