@@ -1,0 +1,13 @@
+---
+- name: Hybrid Sorting Optimization Cleanup
+  hosts: all
+  user: jarulsam
+
+  vars:
+    base_path: "{{ ansible_env.HOME }}/HSO"
+
+  tasks:
+    - name: Delete Project Directory
+      ansible.builtin.file:
+        state: absent
+        path: "{{ base_path }}"
