@@ -28,13 +28,16 @@ static inline void sort2(const struct msort_param *p, void *a, void *b)
   const size_t s = p->s;
   char *const tmp = p->t;
 
-  void *const min = min_cmp(a, b, cmp);
-  void *const max = a == min ? b : a;
+  void *min = min_cmp(a, b, cmp);
+  void *max = a == min ? b : a;
+  if (min == a && p->var != PTR)
+  {
+    return;
+  }
 
   switch (p->var)
   {
     case UINT32:
-      // 32-bit
       *(uint32_t *)tmp = *(uint32_t *)min;
       *(uint32_t *)b = *(uint32_t *)max;
       *(uint32_t *)a = *(uint32_t *)tmp;
