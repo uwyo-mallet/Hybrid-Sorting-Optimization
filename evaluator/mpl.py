@@ -30,7 +30,6 @@ mpl.rcParams["xtick.labelsize"] = 12
 mpl.rcParams["ytick.labelsize"] = 12
 mpl.rcParams["legend.fontsize"] = 10
 
-plt.rcParams.update({"figure.dpi": "100"})
 mpl.rcParams["errorbar.capsize"] = 3
 mpl.rcParams["lines.linewidth"] = 1
 mpl.rcParams["lines.markersize"] = 5
@@ -300,8 +299,8 @@ class Result:
                 relative = num / den
                 df["wall_nsecs_relative"] = relative.values * 100
 
-                title = f"""Threshold vs. Runtime Relative to GNU glibc's {baseline_method}
-                (Input size=${size:,}$)
+                title = f"""Threshold vs. Runtime Relative to GNU glibc's \\texttt{{{baseline_method}}}
+                Input size = ${size:,}$
                 {type_.title()}"""
                 df.plot.line(
                     x="threshold",
@@ -332,7 +331,7 @@ class Result:
 
             ax.set_xlabel("Threshold")
             # Escape % since it is the comment char of latex
-            ax.set_ylabel(f"\% of {baseline_method} runtime")
+            ax.set_ylabel(f"\% of \\texttt{{{baseline_method}}} runtime")
             ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
             fig.tight_layout()

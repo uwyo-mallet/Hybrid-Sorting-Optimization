@@ -131,7 +131,7 @@ def generate_boxplots(paths: list[Path], output_dir: Path):
         type_df = most_improved[most_improved["description"] == i]
         type_ = i.title()
 
-        title = f"""Runtime Relative to GNU glibc's qsort() Across Various Platforms
+        title = f"""Runtime Relative to GNU glibc's \\texttt{{qsort}} Across Various Platforms
         Input size = {size:,}
         {type_}"""
 
@@ -146,7 +146,7 @@ def generate_boxplots(paths: list[Path], output_dir: Path):
         ax.get_figure().suptitle("")
 
         # Seet rest of deatils
-        ax.set_ylabel("\% of qsort runtime")
+        ax.set_ylabel("\% of \\texttt{qsort} runtime")
         ax.set_title(title)
         ax.get_figure().tight_layout()
 

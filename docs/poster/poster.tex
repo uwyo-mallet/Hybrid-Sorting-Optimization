@@ -39,7 +39,6 @@
 \newcommand{\separatorcolumn}{\begin{column}{\sepwidth}\end{column}}
 \renewcommand*{\bibfont}{\footnotesize}
 
-\nocite{ARCC}
 
 % ====================
 % Title
@@ -205,14 +204,14 @@
 			\vspace{10mm}
 
 			\begin{block}{}
-				To ensure the proposed algorithms is performant in a wide variety
+				To ensure the proposed algorithm is performant in a wide variety
 				of hardware configurations, tests are repeated on various
 				different platforms with differing CPU and memory setups. The best
 				configurations are compared with each other to determine how well
 				each algorithm generalizes across many platforms. Some platforms
 				see little improvement with the additional hybridization of
-				networking sorting. This indicates an area in need of further
-				investigation.
+				networking sorting, while others see significant performance
+				gain. This indicates an area in need of further investigation.
 				\begin{figure}[h]
 					\centering
 					\makebox[\colwidth]{\includegraphics[width=\colwidth]{boxplots/4.gen}}
@@ -227,6 +226,7 @@
 				\end{figure}
 			\end{block}
 
+			\nocite{ARCC}
 			\begin{block}{References}
 				\footnotesize{\printbibliography}
 			\end{block}
