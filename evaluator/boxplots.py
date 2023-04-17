@@ -24,7 +24,7 @@ mpl.rcParams["font.size"] = 14
 mpl.rcParams["figure.titlesize"] = 14
 mpl.rcParams["axes.titlesize"] = 14
 mpl.rcParams["axes.labelsize"] = 14
-mpl.rcParams["xtick.labelsize"] = 6
+mpl.rcParams["xtick.labelsize"] = 8
 mpl.rcParams["ytick.labelsize"] = 12
 mpl.rcParams["legend.fontsize"] = 10
 
