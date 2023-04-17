@@ -15,7 +15,7 @@
     job_parameters_list:
       - "{{ hso_path }}/src/c/HSO-c"
       - "{{ data_path_remote }}"
-      - "--methods qsort,msort_heap_with_fast_ins,msort_heap_with_network,quicksort_with_ins,msort_heap,quicksort_with_fast_ins"
+      - "--methods qsort,msort_heap_with_fast_ins,msort_with_network,quicksort_with_ins,msort_heap,quicksort_with_fast_ins"
       - "--threshold 1,20,1"
       - "--runs 1000"
     job_parameters: "{{ job_parameters_list | join(' ') }}"
