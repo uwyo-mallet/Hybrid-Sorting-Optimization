@@ -37,9 +37,9 @@
 \setlength{\colwidth}{0.3\paperwidth}
 
 \newcommand{\separatorcolumn}{\begin{column}{\sepwidth}\end{column}}
-\newcommand\mycalc[1]{\directlua{tex.sprint(#1)}}
+\renewcommand*{\bibfont}{\footnotesize}
 
-
+\nocite{ARCC}
 
 % ====================
 % Title
@@ -112,7 +112,7 @@
 					\item Substantial effort has been spent on the analysis of
 					      sorting algorithms. Typically, two major characteristics
 					      are considered when studying sorting algorithms; space
-					      and time complexity.
+					      and time complexity\parencite{Bentley1993EngineeringAS}.
 					\item Existing analysis of popular sorting algorithms, such as Quicksort
 					      and Mergesort, place substantial emphasis on their excellent
 					      asymptotic complexity in the average case\parencite{glibc}.
@@ -201,20 +201,28 @@
 		\separatorcolumn
 
 		\begin{column}{\colwidth}
-			\begin{block}{Results}
-				To ensure the proposed algorithms is performant in a wide variety of
-				hardware configurations, tests are repeated on various different
-				platforms with differing CPU and memory setups. The best
-				configurations are compared with each other to determine how well each
-				algorithm generalizes across many platforms.
+
+			\vspace{10mm}
+
+			\begin{block}{}
+				To ensure the proposed algorithms is performant in a wide variety
+				of hardware configurations, tests are repeated on various
+				different platforms with differing CPU and memory setups. The best
+				configurations are compared with each other to determine how well
+				each algorithm generalizes across many platforms. Some platforms
+				see little improvement with the additional hybridization of
+				networking sorting. This indicates an area in need of further
+				investigation.
 				\begin{figure}[h]
 					\centering
 					\makebox[\colwidth]{\includegraphics[width=\colwidth]{boxplots/4.gen}}
+					\caption{Best Runtime By Method Across Various Platforms on Random Input Data}
 					\label{fig:randomvariance}
 				\end{figure}
 				\begin{figure}[h]
 					\centering
 					\makebox[\colwidth]{\includegraphics[width=\colwidth]{boxplots/0.gen}}
+					\caption{Best Runtime By Method Across Various Platforms on Pipe Organ Input Data}
 					\label{fig:pipeorganvariance}
 				\end{figure}
 			\end{block}
