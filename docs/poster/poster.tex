@@ -7,7 +7,7 @@
 \usepackage[T1]{fontenc}
  \usepackage[utf8]{luainputenc}
 \usepackage{lmodern}
-\usepackage[size=custom, width=120,height=72, scale=1.1]{beamerposter}
+\usepackage[size=custom, width=120,height=90, scale=1.2]{beamerposter}
 \usetheme{gemini}
 \usecolortheme{cam}
 \usepackage{graphicx}
@@ -68,7 +68,7 @@
 
 % use this to include logos on the left and/or right side of the header:
 % Left: institution
- \logoleft{\includegraphics[height=2.9cm]{logos/New_UWSignature_1_line_White_Web.png}}
+ \logoleft{\includegraphics[height=3.0cm]{logos/New_UWSignature_1_line_White_Web.png}}
 % Right: funding agencies and other affilations
 % \logoright{\includegraphics[height=2.5cm]{logos/WRSP/abbreviated/UWabbreviated_V_WRSP_white.png}}
 % ====================
@@ -77,8 +77,8 @@
 
 \begin{document}
 
-% \addtobeamertemplate{block begin}{\vskip -\bigskipamount}{}
-% \addtobeamertemplate{block end}{}{\vskip -\bigskipamount}
+\addtobeamertemplate{block begin}{\vskip -\bigskipamount}{}
+\addtobeamertemplate{block end}{}{\vskip -\bigskipamount}
 
 \begin{frame}[t]
 	\begin{columns}[t]
@@ -101,8 +101,9 @@
 					      determine optimal parameter configurations for hybrid sorting
 					      algorithms.
 					\item This research also proposes a new performant standard
-					      sorting implementation for GNU's C standard library leveraging
-					      Mergesort, insertion sort, and sorting networks.
+					      sorting implementation for GNU's C standard library
+					      leveraging, Mergesort, insertion sort, and sorting
+					      networks.
 				\end{itemize}
 			\end{block}
 
@@ -134,31 +135,25 @@
 					\item In instances where a subarray contains less than 5
 					      elements, a comparison-optimal network sorting algorithm
 					      is used instead.
-					\item In practice, this offers significant performance gains,
-					      as the maximum recursion depth of Mergesort is limited.
 				\end{itemize}
 			\end{block}
-		\end{column}
-
-		\separatorcolumn
-
-		\begin{column}{\colwidth}
 
 			\begin{block}{Experimental Setup}
 
-				A small subset of algorithms were chosen for evaluation.
-				Primarily, algorithms utilized within standard library
-				implementations are of particular interest, since they are
-				typically highly performant in the general case. Other
-				complementary algorithms which perform exceptionally well in
-				specific scenarios were also evaluated. Since this analysis is
-				focused on analyzing and improving existing implementations,
-				general purpose sorting function were taken from various standard
-				libraries, such as GNU's libc\parencite{glibc} and musl
-				libc\parencite{musl_libc}.
+				A small subset of algorithms is chosen for evaluation. Primarily,
+				algorithms utilized within standard library implementations are of
+				particular interest, since they are typically highly performant in
+				the general case. Other complementary algorithms which perform
+				exceptionally well in specific scenarios are also evaluated. Since
+				this analysis is focused on analyzing and improving existing
+				implementations, general purpose sorting function are taken from
+				various standard libraries, such as GNU's libc\parencite{glibc}
+				and musl libc\parencite{musl_libc}.
 
 				\begin{enumerate}
-					\item \textbf{Each algorithm is timed while sorting the same data using a variety of threshold values.} This is repeated 1,000 times. The mean is calculated for each
+					\item \textbf{Each algorithm is timed while sorting the same
+						      data using a variety of threshold values.} This is
+					      repeated 1,000 times. The mean is calculated for each
 					      algorithm. This is done to minimize noise (time
 					      inaccuracy, other processes on the test system, etc.)
 					      during data collection.
@@ -167,153 +162,61 @@
 					      algorithms perform well across a variety of
 					      architectures, each test is repeated on different,
 					      commonly used systems.
-					\item \textbf{Results are analyzed}. The performance
-					      difference from the standard built-in sorting function
-					      \texttt{qsort} is calculated and plotted. This function
-					      serves as a baseline to compare performance against. The
-					      variance of improvement from system to system is also
-					      plotted.
+					\item \textbf{Results are examined}. The performance
+					      differences from the standard built-in sorting function
+					      \texttt{qsort} are calculated and plotted. This function
+					      serves as a baseline to compare performance against.
 				\end{enumerate}
 			\end{block}
-
-			\begin{block}{Results}
-
-				Et rutrum ex euismod vel. Pellentesque ultricies, velit in fermentum
-				vestibulum, lectus nisi pretium nibh, sit amet aliquam lectus augue vel
-				velit. Suspendisse rhoncus massa porttitor augue feugiat molestie. Sed
-				molestie ut orci nec malesuada. Sed ultricies feugiat est fringilla
-				posuere.
-
-				\begin{figure}[h]
-					\centering
-					\makebox[0.75\columnwidth]{\includegraphics[width=0.75\columnwidth]{random}}
-					\caption{Random}
-					\label{fig:random}
-				\end{figure}
-				% \begin{figure}[h]
-				% 	\centering
-				% 	\makebox[0.75\columnwidth]{\includegraphics[width=0.75\columnwidth]{pipe_organ}}
-				% 	\caption{Pipe Organ}
-				% 	\label{fig:pipe_organ}
-				% \end{figure}
-				% \begin{figure}[h]
-				% 	\centering
-				% 	\makebox[0.75\columnwidth]{\includegraphics[width=0.75\columnwidth]{ascending}}
-				% 	\caption{Ascending}
-				% 	\label{fig:ascending}
-				% \end{figure}
-				% \begin{figure}[h]
-				% 	\centering
-				% 	\makebox[0.75\columnwidth]{\includegraphics[width=0.75\columnwidth]{descending}}
-				% 	\caption{Descending}
-				% 	\label{fig:descending}
-				% \end{figure}
-				% \begin{figure}[h]
-				% 	\centering
-				% 	\makebox[0.75\columnwidth]{\includegraphics[width=0.75\columnwidth]{single_num}}
-				% 	\caption{Single Num}
-				% 	\label{fig:single_num}
-				% \end{figure}
-
-			\end{block}
-
-			% \begin{block}{Nam cursus consequat egestas}
-
-			% 	Nulla eget sem quam. Ut aliquam volutpat nisi vestibulum convallis. Nunc a
-			% 	lectus et eros facilisis hendrerit eu non urna. Interdum et malesuada fames
-			% 	ac ante \textit{ipsum primis} in faucibus. Etiam sit amet velit eget sem
-			% 	euismod tristique. Praesent enim erat, porta vel mattis sed, pharetra sed
-			% 	ipsum. Morbi commodo condimentum massa, \textit{tempus venenatis} massa
-			% 	hendrerit quis. Maecenas sed porta est. Praesent mollis interdum lectus,
-			% 	sit amet sollicitudin risus tincidunt non.
-
-			% 	Etiam sit amet tempus lorem, aliquet condimentum velit. Donec et nibh
-			% 	consequat, sagittis ex eget, dictum orci. Etiam quis semper ante. Ut eu
-			% 	mauris purus. Proin nec consectetur ligula. Mauris pretium molestie
-			% 	ullamcorper. Integer nisi neque, aliquet et odio non, sagittis porta justo.
-
-			% 	\begin{itemize}
-			% 		\item \textbf{Sed consequat} id ante vel efficitur. Praesent congue massa
-			% 		      sed est scelerisque, elementum mollis augue iaculis.
-			% 		      \begin{itemize}
-			% 			      \item In sed est finibus, vulputate
-			% 			            nunc gravida, pulvinar lorem. In maximus nunc dolor, sed auctor eros
-			% 			            porttitor quis.
-			% 			      \item Fusce ornare dignissim nisi. Nam sit amet risus vel lacus
-			% 			            tempor tincidunt eu a arcu.
-			% 			      \item Donec rhoncus vestibulum erat, quis aliquam leo
-			% 			            gravida egestas.
-			% 		      \end{itemize}
-			% 		\item \textbf{Sed luctus, elit sit amet} dictum maximus, diam dolor
-			% 		      faucibus purus, sed lobortis justo erat id turpis.
-			% 		\item \textbf{Pellentesque facilisis dolor in leo} bibendum congue.
-			% 		      Maecenas congue finibus justo, vitae eleifend urna facilisis at.
-			% 	\end{itemize}
-
-			% \end{block}
-
 		\end{column}
 
 		\separatorcolumn
 
 		\begin{column}{\colwidth}
 
-			\begin{exampleblock}{A highlighted block containing some math}
+			\begin{block}{Results}
+				The proposed algorithm (Mergesort w/ Fast InsSort \& Network)
+				outperforms all other evaluated algorithms in most scenarios. Most
+				notably, entirely random data (Fig. \ref{fig:random}) see's an
+				upward of 15\% runtime reduction. Pipe organ data (Ex. 1, 2, 3, 4,
+				3, 2, 1) (Fig. \ref{fig:pipeorgan}) saw significant improvement in
+				performance as well at nearly a quarter the runtime of the
+				existing \texttt{qsort} implementation.
 
-				A different kind of highlighted block.
-
-				$$
-					\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
-				$$
-
-				Interdum et malesuada fames $\{1, 4, 9, \ldots\}$ ac ante ipsum primis in
-				faucibus. Cras eleifend dolor eu nulla suscipit suscipit. Sed lobortis non
-				felis id vulputate.
-
-				\heading{A heading inside a block}
-
-				Praesent consectetur mi $x^2 + y^2$ metus, nec vestibulum justo viverra
-				nec. Proin eget nulla pretium, egestas magna aliquam, mollis neque. Vivamus
-				dictum $\mathbf{u}^\intercal\mathbf{v}$ sagittis odio, vel porta erat
-				congue sed. Maecenas ut dolor quis arcu auctor porttitor.
-
-				\heading{Another heading inside a block}
-
-				Sed augue erat, scelerisque a purus ultricies, placerat porttitor neque.
-				Donec $P(y \mid x)$ fermentum consectetur $\nabla_x P(y \mid x)$ sapien
-				sagittis egestas. Duis eget leo euismod nunc viverra imperdiet nec id
-				justo.
-
-			\end{exampleblock}
-
-			\begin{block}{Nullam vel erat at velit convallis laoreet}
-
-				Class aptent taciti sociosqu ad litora torquent per conubia nostra, per
-				inceptos himenaeos. Phasellus libero enim, gravida sed erat sit amet,
-				scelerisque congue diam. Fusce dapibus dui ut augue pulvinar iaculis.
-
-				\begin{table}
+				\begin{figure}[h]
 					\centering
-					\begin{tabular}{l r r c}
-						\toprule
-						\textbf{First column} & \textbf{Second column} & \textbf{Third column} & \textbf{Fourth} \\
-						\midrule
-						Foo                   & 13.37                  & 384,394               & $\alpha$        \\
-						Bar                   & 2.17                   & 1,392                 & $\beta$         \\
-						Baz                   & 3.14                   & 83,742                & $\delta$        \\
-						Qux                   & 7.59                   & 974                   & $\gamma$        \\
-						\bottomrule
-					\end{tabular}
-					\caption{A table caption.}
-				\end{table}
+					\makebox[\colwidth]{\includegraphics[width=\colwidth]{random}}
+					\caption{Runtime vs. Threshold on Random Input Data}
+					\label{fig:random}
+				\end{figure}
+				\begin{figure}[h]
+					\centering
+					\makebox[\colwidth]{\includegraphics[width=\colwidth]{pipe_organ}}
+					\caption{Runtime vs. Threshold on Pipe Organ Input Data}
+					\label{fig:pipeorgan}
+				\end{figure}
+			\end{block}
+		\end{column}
 
-				Donec quis posuere ligula. Nunc feugiat elit a mi malesuada consequat. Sed
-				imperdiet augue ac nibh aliquet tristique. Aenean eu tortor vulputate,
-				eleifend lorem in, dictum urna. Proin auctor ante in augue tincidunt
-				tempor. Proin pellentesque vulputate odio, ac gravida nulla posuere
-				efficitur. Aenean at velit vel dolor blandit molestie. Mauris laoreet
-				commodo quam, non luctus nibh ullamcorper in. Class aptent taciti sociosqu
-				ad litora torquent per conubia nostra, per inceptos himenaeos.
+		\separatorcolumn
+
+		\begin{column}{\colwidth}
+			\begin{block}{Results}
+				To ensure the proposed algorithms is performant in a wide variety of
+				hardware configurations, tests are repeated on various different
+				platforms with differing CPU and memory setups. The best
+				configurations are compared with each other to determine how well each
+				algorithm generalizes across many platforms.
+				\begin{figure}[h]
+					\centering
+					\makebox[\colwidth]{\includegraphics[width=\colwidth]{boxplots/4.gen}}
+					\label{fig:randomvariance}
+				\end{figure}
+				\begin{figure}[h]
+					\centering
+					\makebox[\colwidth]{\includegraphics[width=\colwidth]{boxplots/0.gen}}
+					\label{fig:pipeorganvariance}
+				\end{figure}
 			\end{block}
 
 			\begin{block}{References}
