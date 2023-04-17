@@ -24,7 +24,7 @@ mpl.rcParams["font.size"] = 14
 mpl.rcParams["figure.titlesize"] = 14
 mpl.rcParams["axes.titlesize"] = 14
 mpl.rcParams["axes.labelsize"] = 14
-mpl.rcParams["xtick.labelsize"] = 12
+mpl.rcParams["xtick.labelsize"] = 6
 mpl.rcParams["ytick.labelsize"] = 12
 mpl.rcParams["legend.fontsize"] = 10
 
@@ -96,8 +96,8 @@ def generate_boxplots(paths: list[Path], output_dir: Path):
 
         host = r.job_details.get("Node")
         df = r.df
-        # df = df[df["method"] != "Quicksort w/ Fast InsSort"]
-        # df = df[df["method"] != "Quicksort w/ InsSort"]
+        df = df[df["method"] != "Quicksort w/ Fast InsSort"]
+        df = df[df["method"] != "Quicksort w/ InsSort"]
 
         baseline_df = df[df["method"] == "qsort"]
         df = df[df["method"] != "qsort"]
@@ -127,19 +127,20 @@ def generate_boxplots(paths: list[Path], output_dir: Path):
 
     size = df["size"].unique()[0]
     types = sorted(most_improved["description"].unique())
-    print(most_improved)
     for i in types:
         type_df = most_improved[most_improved["description"] == i]
         type_ = i.title()
 
         title = f"""Runtime Relative to GNU glibc's qsort() Across Various Platforms
-        (Input size={size})
+        Input size = {size:,}
         {type_}"""
+
         ax = type_df.boxplot(
             by=["method"],
             grid=False,
-            rot=15,
         )
+        ax.axhline(100, color="red", linestyle="--")
+
         # Remove default stuff from pandas
         ax.set_xlabel("")
         ax.get_figure().suptitle("")
