@@ -21,6 +21,30 @@
 \usepackage{algpseudocode}
 \usepackage[backend=biber,style=ieee]{biblatex}
 
+% \directlua{ require("drawboxes")}
+% \AtBeginShipout {\directlua{drawboxes.visual_debug()}}
+
+\usetikzlibrary{shapes,arrows,positioning,calc}
+\tikzset{block/.style={
+        font=\sffamily,
+        draw=black,
+        thin,
+        fill=pink!50,
+        rectangle split,
+        rectangle split horizontal,
+        rectangle split parts=#1,
+        outer sep=0pt},
+        %
+        gblock/.style={
+            block,
+            rectangle split parts=#1,
+            fill=green!30},
+        yblock/.style={
+            block,
+            rectangle split parts=#1,
+            fill=yellow!30}
+        }
+
 \addbibresource{references.bib}
 
 \graphicspath{{../figures/}}
@@ -133,22 +157,63 @@
 					\item In instances where a subarray contains less than 5 elements, a
 					      comparison-optimal network sorting algorithm is used instead.
 				\end{itemize}
+				\vspace{-8mm}
+
+				\def\lvld{3.0}                  % Choose level distance
+				\pgfmathsetmacro\shft{-4*\lvld} % Calculate the yshift for the green tree
 				\begin{figure}[h]
-					\centering
-					\squeezeup
-					\makebox[\colwidth]{\includegraphics[width=\colwidth]{SimpleSortingNetworkFullOperation}}
-					\squeezeup
-					\caption{Simple Sorting Network}
-					\label{fig:sortingnetwork}
+
+					\begin{minipage}{0.45\textwidth}
+						\centering
+						\begin{tikzpicture}[level distance=\lvld cm,
+								level 1/.style={sibling distance=6cm},
+								level 2/.style={sibling distance=3cm},
+								edgedown/.style={edge from parent/.style={draw=red,thick,-latex}},
+								edgeup/.style={edge from parent/.style={draw=green!50!black,thick,latex-}}
+							]
+
+							% GREEN TREE (drawn first to let the middle line filled in pink)
+							\node[gblock=4,yshift=\shft cm] (A') {1 \nodepart{two} 2 \nodepart{three} 3 \nodepart{four} 4}
+							[grow=up,edgeup]
+							child {node[gblock=2] (B2') {1 \nodepart{two} 4}
+									child {node[yblock=1] (D6') {1}}
+									child {node[yblock=1] (D5') {4}}
+								}
+							child {node[gblock=2] (B1') {2 \nodepart{two} 3}
+									child {node[yblock=1] (D2') {2}}
+									child {node[yblock=1] (D1') {3}}
+								};
+
+							% PINK TREE
+							\node[block=4] (A) {3 \nodepart{two} 2 \nodepart{three} 4 \nodepart{four} 1} [grow=down,edgedown]
+							child {node[block=2] (B1) {3 \nodepart{two} 2 \nodepart{three}}
+									child {node[yblock=1] (D1) {3}}
+									child {node[yblock=1] (D2) {2}}
+								}
+							child {node[block=2] (B2) {4 \nodepart{two} 1}
+									child {node[yblock=1] (D5) {4}}
+									child {node[yblock=1] (D6) {1}}
+								};
+						\end{tikzpicture}
+						\centering
+						\label{fig:mergesort}
+						\caption{Mergesort, 8 comparisons}
+					\end{minipage}\hfill
+					\begin{minipage}{0.50\textwidth}
+						\centering
+						\includegraphics[trim={21cm 0 0 0},clip,width=\textwidth]{SimpleSortingNetworkFullOperation}
+						\vspace{10mm}
+						\caption{Sorting network, 5 comparisons}
+						\label{fig:sortingnetwork}
+					\end{minipage}\hfill
 				\end{figure}
-				\vspace{-15.0mm}
+
+				\vspace{-8mm}
 				\begin{itemize}
 					\item Sorting networks deterministically sort small quantities of
-					      items extremely efficiently (Fig. \ref{fig:sortingnetwork}).
-					\item These networks have very low overhead and are easy to implement.
-					\item Comparison optimal sorting networks have been
-					      calculated\parencite{knuth_networks} for small input sizes.
-					      These networks minimize the number of comparisons and swaps.
+								items extremely efficiently. In this example, a sorting network
+								(Fig. \ref{fig:sortingnetwork}) avoids three unnecessary
+								comparisons made by Mergesort (Fig. \ref{fig:mergesort}).
 				\end{itemize}
 			\end{block}
 
