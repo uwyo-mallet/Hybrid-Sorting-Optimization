@@ -60,7 +60,19 @@ University of Wyoming\\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
-	\todo
+  Sorting items according to some comparator is a common task in modern
+  computing. Most modern applications require data of varying sizes to be sorted
+  in a performant manner. Such widespread need for fast, generic, sorting
+  functions has resulted in all modern programming languages including a sorting
+  function within their respective standard libraries. In the case of the C
+  programming language, Quicksort and Mergesort are typically implemented, since
+  these algorithms perform very well in the general case. However, combining
+  these algorithms with other tertiary sorting algorithms, such as insertion
+  sort, can offer sizeable performance gains in real-world scenarios. This
+  research investigates the impact sorting algorithm hybridization has on
+  performance on a wide variety of system configurations, and proposes a new
+  \texttt{qsort} implementation for glibc which outperforms the current
+  implementation by upwards of 15\%.
 
 \end{abstract}
 
