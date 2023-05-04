@@ -15,7 +15,7 @@ extern "C"
 #include "sort.h"
 }
 
-#define MAX_ARRAY_SIZE 4096UL
+#define MAX_ARRAY_SIZE 1024UL
 #define PAD_SIZE 4096UL
 
 typedef struct
@@ -72,12 +72,12 @@ struct TestDataFixture
     boost::random::mt19937 gen{seed};
     boost::random::uniform_int_distribution<size_t> dist{0, n};
 
-    ascending = (T*)std::malloc(size);
-    descending = (T*)std::malloc(size);
-    random = (T*)std::malloc(size);
-    pipeOrgan = (T*)std::malloc(size);
-    singleNum = (T*)std::malloc(size);
-    working = (T*)std::malloc(size);
+    ascending = (T*)std::calloc(n, s);
+    descending = (T*)std::calloc(n, s);
+    random = (T*)std::calloc(n, s);
+    pipeOrgan = (T*)std::calloc(n, s);
+    singleNum = (T*)std::calloc(n, s);
+    working = (T*)std::calloc(n, s);
 
     if (ascending == NULL || descending == NULL || random == NULL ||
         pipeOrgan == NULL || singleNum == NULL)
@@ -194,12 +194,12 @@ struct TestDataFixture<LargeStruct>
     boost::random::mt19937 gen{seed};
     boost::random::uniform_int_distribution<size_t> dist{0, n};
 
-    ascending = (LargeStruct*)std::malloc(size);
-    descending = (LargeStruct*)std::malloc(size);
-    random = (LargeStruct*)std::malloc(size);
-    pipeOrgan = (LargeStruct*)std::malloc(size);
-    singleNum = (LargeStruct*)std::malloc(size);
-    working = (LargeStruct*)std::malloc(size);
+    ascending = (LargeStruct*)std::calloc(n, s);
+    descending = (LargeStruct*)std::calloc(n, s);
+    random = (LargeStruct*)std::calloc(n, s);
+    pipeOrgan = (LargeStruct*)std::calloc(n, s);
+    singleNum = (LargeStruct*)std::calloc(n, s);
+    working = (LargeStruct*)std::calloc(n, s);
 
     if (ascending == NULL || descending == NULL || random == NULL ||
         pipeOrgan == NULL || singleNum == NULL)

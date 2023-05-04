@@ -127,6 +127,7 @@ static const threshold_sort_fn_t thresholdSortFns[] = {
     BOOST_CHECK(is_sorted(SINGLENUM));                                      \
   }
 
+typedef unsigned long unsigned_long;
 typedef long double long_double;
 
 SORT_TEST_CASE(char);
@@ -134,6 +135,7 @@ SORT_TEST_CASE(uint8_t);
 SORT_TEST_CASE(uint16_t);
 SORT_TEST_CASE(uint32_t);
 SORT_TEST_CASE(uint64_t);
+SORT_TEST_CASE(unsigned_long);
 SORT_TEST_CASE(uintmax_t);
 SORT_TEST_CASE(int8_t);
 SORT_TEST_CASE(int16_t);
@@ -151,6 +153,7 @@ THRESHOLD_SORT_TEST_CASE(uint8_t);
 THRESHOLD_SORT_TEST_CASE(uint16_t);
 THRESHOLD_SORT_TEST_CASE(uint32_t);
 THRESHOLD_SORT_TEST_CASE(uint64_t);
+THRESHOLD_SORT_TEST_CASE(unsigned_long);
 THRESHOLD_SORT_TEST_CASE(uintmax_t);
 THRESHOLD_SORT_TEST_CASE(int8_t);
 THRESHOLD_SORT_TEST_CASE(int16_t);
