@@ -1,41 +1,54 @@
 ##
-# C Frontend for HSO
+# C Frontend for Hybrid Sorting Optimization
 #
-# @file
-# @version 0.1
 
 all: HSO-c
 
+WARNFLAGS = -Wall -Wextra -pedantic
+
 CC = gcc
 CFLAGS += -O3
-CFLAGS += -Wall -Wextra -Wno-missing-field-initializers -pedantic -DNDEBUG
+CFLAGS += $(WARNFLAGS)
 # CFLAGS += -DSORT_LARGE_STRUCTS
-# DEBUGFLAGS = -ggdb -fsanitize=address,undefined,leak -Og
-# DEBUGFLAGS = -ggdb -O3
-TESTFLAGS = -Wno-unused-function -Wno-unused-const-variable
+
+CXX = g++
+CXXFLAGS += $(CFLAGS)
+THIS_FILE := $(lastword $(MAKEFILE_LIST))
 
 OBJS = benchmark.o platform.o sort.o msort_opt.o
 
 HSO-c: $(OBJS) main.o
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) -o HSO-c main.o $(OBJS) -lz
+	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) -lz
 
 main.o: main.c platform.h
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) main.c -c
+	$(CC) $(CFLAGS) main.c -c
 
 platform.o: platform.c platform.h
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) platform.c -c
+	$(CC) $(CFLAGS) platform.c -c
 
 benchmark.o: benchmark.c benchmark.h
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) benchmark.c -c
+	$(CC) $(CFLAGS) benchmark.c -c
 
 sort.o: sort.c sort.h
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) sort.c -c
+	$(CC) $(CFLAGS) sort.c -c
 
 msort_opt.o: msort_opt.c sort.h
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) msort_opt.c -c
+	$(CC) $(CFLAGS) msort_opt.c -c
 
-check: HSO-c tests.c
-	$(CC) $(CFLAGS) $(DEBUGFLAGS) $(TESTFLAGS) -o tests tests.c $(OBJS) -lcmocka
+debug: CFLAGS = -Og -g3 $(WARNFLAGS)
+debug: $(OBJS)
+
+tests: CFLAGS = -Og -g3 $(WARNFLAGS)
+tests: CXXFLAGS += --coverage
+tests: $(OBJS) tests.cpp tests.hpp
+	$(MAKE) -f $(THIS_FILE) clean
+	$(MAKE) -f $(THIS_FILE) debug
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(TESTFLAGS) -o tests tests.cpp $(OBJS) \
+        -Wl,-Bstatic -lboost_unit_test_framework \
+        -Wl,-Bdynamic
+
+check: tests
+	./tests
 
 check-glibc-var:
 ifndef GLIBC
@@ -62,6 +75,7 @@ glibc: check-glibc-var
         msort_opt.c -lz
 
 clean:
-	rm -f HSO-c $(OBJS) main.o
+	rm -f HSO-c tests $(OBJS) main.o
 
+# Frogbert has blessed this place.
 # end
