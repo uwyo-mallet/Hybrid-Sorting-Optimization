@@ -35,12 +35,12 @@ sort.o: sort.c sort.h
 msort_opt.o: msort_opt.c sort.h
 	$(CC) $(CFLAGS) msort_opt.c -c
 
-debug: CFLAGS = -Og -g3 $(WARNFLAGS)
+debug: CFLAGS = -Og -g3 --coverage $(WARNFLAGS)
 debug: $(OBJS)
 
-tests: CFLAGS = -Og -g3 $(WARNFLAGS)
+tests: CFLAGS = -Og -g3 --coverage $(WARNFLAGS)
 tests: CXXFLAGS += --coverage
-tests: $(OBJS) tests.cpp tests.hpp
+tests: tests.cpp tests.hpp
 	$(MAKE) -f $(THIS_FILE) clean
 	$(MAKE) -f $(THIS_FILE) debug
 	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(TESTFLAGS) -o tests tests.cpp $(OBJS) \
@@ -49,6 +49,8 @@ tests: $(OBJS) tests.cpp tests.hpp
 
 check: tests
 	./tests
+	lcov --no-external --capture --directory . --output-file test-coverage.info
+	genhtml test-coverage.info -o coverage/
 
 check-glibc-var:
 ifndef GLIBC
@@ -75,7 +77,8 @@ glibc: check-glibc-var
         msort_opt.c -lz
 
 clean:
-	rm -f HSO-c tests $(OBJS) main.o
+	rm -f HSO-c tests $(OBJS) main.o *.gcda *.gcno test-coverage.info
+	rm -rf ./coverage
 
 # Frogbert has blessed this place.
 # end
