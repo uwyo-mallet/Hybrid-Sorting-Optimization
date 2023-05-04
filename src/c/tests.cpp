@@ -73,23 +73,23 @@ static const threshold_sort_fn_t thresholdSortFns[] = {
   {                                                                       \
     (void)fnName;                                                         \
                                                                           \
-    memcpy(ascending, working, size);                                     \
+    memcpy(working, ascending, size);                                     \
     (*fn)(working, n, sizeof(type), cmp);                                 \
     BOOST_CHECK(is_sorted(ASCENDING));                                    \
                                                                           \
-    memcpy(descending, working, size);                                    \
+    memcpy(working, descending, size);                                    \
     (*fn)(working, n, sizeof(type), cmp);                                 \
     BOOST_CHECK(is_sorted(DESCENDING));                                   \
                                                                           \
-    memcpy(random, working, size);                                        \
+    memcpy(working, random, size);                                        \
     (*fn)(working, n, sizeof(type), cmp);                                 \
     BOOST_CHECK(is_sorted(RANDOM));                                       \
                                                                           \
-    memcpy(pipeOrgan, working, size);                                     \
+    memcpy(working, pipeOrgan, size);                                     \
     (*fn)(working, n, sizeof(type), cmp);                                 \
     BOOST_CHECK(is_sorted(PIPEORGAN));                                    \
                                                                           \
-    memcpy(singleNum, working, size);                                     \
+    memcpy(working, singleNum, size);                                     \
     (*fn)(working, n, sizeof(type), cmp);                                 \
     BOOST_CHECK(is_sorted(SINGLENUM));                                    \
   }
@@ -106,23 +106,23 @@ static const threshold_sort_fn_t thresholdSortFns[] = {
   {                                                                         \
     (void)fnName;                                                           \
                                                                             \
-    memcpy(ascending, working, size);                                       \
+    memcpy(working, ascending, size);                                       \
     (*fn)(working, n, sizeof(type), cmp, threshold);                        \
     BOOST_CHECK(is_sorted(ASCENDING));                                      \
                                                                             \
-    memcpy(descending, working, size);                                      \
+    memcpy(working, descending, size);                                      \
     (*fn)(working, n, sizeof(type), cmp, threshold);                        \
     BOOST_CHECK(is_sorted(DESCENDING));                                     \
                                                                             \
-    memcpy(random, working, size);                                          \
+    memcpy(working, random, size);                                          \
     (*fn)(working, n, sizeof(type), cmp, threshold);                        \
     BOOST_CHECK(is_sorted(RANDOM));                                         \
                                                                             \
-    memcpy(pipeOrgan, working, size);                                       \
+    memcpy(working, pipeOrgan, size);                                       \
     (*fn)(working, n, sizeof(type), cmp, threshold);                        \
     BOOST_CHECK(is_sorted(PIPEORGAN));                                      \
                                                                             \
-    memcpy(singleNum, working, size);                                       \
+    memcpy(working, singleNum, size);                                       \
     (*fn)(working, n, sizeof(type), cmp, threshold);                        \
     BOOST_CHECK(is_sorted(SINGLENUM));                                      \
   }

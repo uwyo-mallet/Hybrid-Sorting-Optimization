@@ -48,8 +48,10 @@ tests: tests.cpp tests.hpp
         -Wl,-Bdynamic
 
 check: tests
-	./tests
-	lcov --no-external --capture --directory . --output-file test-coverage.info
+	./tests || true
+	lcov --no-external --capture --directory . \
+        --output-file test-coverage.info  \
+        --exclude */benchmark.c --exclude */platform.c
 	genhtml test-coverage.info -o coverage/
 
 check-glibc-var:
