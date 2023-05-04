@@ -11,6 +11,12 @@ src/c/HSO-c
 src/c/tests
 experiment/
 
+# Profile - lcov
+coverage/
+*.gcda
+*.gcno
+*.info
+
 # Jupyter notebook
 .ipynb_checkpoints/
 
