@@ -60,19 +60,19 @@ University of Wyoming\\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
-  Sorting items according to some comparator is a common task in modern
-  computing. Most modern applications require data of varying sizes to be sorted
-  in a performant manner. Such widespread need for fast, generic, sorting
-  functions has resulted in all modern programming languages including a sorting
-  function within their respective standard libraries. In the case of the C
-  programming language, Quicksort and Mergesort are typically implemented, since
-  these algorithms perform very well in the general case. However, combining
-  these algorithms with other tertiary sorting algorithms, such as insertion
-  sort, can offer sizeable performance gains in real-world scenarios. This
-  research investigates the impact sorting algorithm hybridization has on
-  performance on a wide variety of system configurations, and proposes a new
-  \texttt{qsort} implementation for glibc which outperforms the current
-  implementation by upwards of 15\%.
+	Sorting items according to some comparator is a common task in modern
+	computing. Most modern applications require data of varying sizes to be sorted
+	in a performant manner. Such widespread need for fast, generic, sorting
+	functions has resulted in all modern programming languages including a sorting
+	function within their respective standard libraries. In the case of the C
+	programming language, Quicksort and Mergesort are typically implemented since
+	these algorithms perform very well in the general case. However, combining
+	these algorithms with other tertiary sorting algorithms, such as insertion
+	sort, can offer sizeable performance gains in real-world scenarios. This
+	research investigates the impact sorting algorithm hybridization has on
+	performance on a wide variety of system configurations, and proposes a new
+	\texttt{qsort} implementation for glibc which outperforms the current
+	implementation by upwards of 15\%.
 
 \end{abstract}
 
@@ -144,19 +144,19 @@ presently exist, marking an area in obvious need of further investigation.
 \subsection{General Purpose Algorithms}
 
 Of the well known sorting algorithms, several are used for general sorting
-tasks, such as Quicksort, Mergesort, Heapsort, and Introsort. Quicksort has been
+tasks, namely Quicksort, Mergesort, Heapsort, and Introsort. Quicksort has been
 a staple algorithm for decades. It is well known to be easy to implement and
 works well for a variety of input data. Quicksort requires a constant amount of
 extra memory independent of the size of the input, making it an obvious choice
 in resource constrained environments. However, in the advent of modern computing
-where using auxiliary memory to improve performance is much more common,
-Quicksort tends to fall behind other algorithms. Quicksort's performance is also
-primarily dictated by the selection of a suitable pivot value. Poor pivot
-selections can lead to worse performance. Simple implementations usually choose
-the left-most value of the input as the pivot, however this offers poor
-performance in many circumstances, for example, if the input is reverse sorted.
-So most implementations use a slightly more complex and costly pivot selection
-process such as \textit{median-of-three}\parencite{Bentley1993EngineeringAS}.
+where using auxiliary memory to improve performance is much more common, it
+tends to fall behind other algorithms. Quicksort's performance is also primarily
+dictated by the selection of a suitable pivot value. Poor pivot selections can
+lead to worse performance. Simple implementations usually choose the left-most
+value of the input as the pivot, however this offers poor performance in many
+circumstances, for example, if the input is reverse sorted. So most
+implementations use a slightly more complex and costly pivot selection process
+such as \textit{median-of-three}\parencite{Bentley1993EngineeringAS}.
 
 The increased memory availability of modern systems and the difficulty of good
 pivot selection within Quicksort has motivated many standard libraries -- such
