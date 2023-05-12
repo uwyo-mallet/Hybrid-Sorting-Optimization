@@ -1,0 +1,273 @@
+\documentclass[13pt]{beamer}
+
+\usetheme{CambridgeUS}
+\usepackage{nth}
+\usepackage{pgfplots}
+\usepackage{csvsimple}
+\usepackage{graphicx}
+
+\usepackage[backend=biber,style=ieee]{biblatex}
+% \addbibresource{references.bib}
+
+\title{Practical Analysis of Hybrid Sorting Algorithms}
+\subtitle{Engineering a Faster Standard Sorting Implementation}
+\author{Joshua Arulsamy}
+\date{May 18, 2023}
+
+\makeatletter
+\defbeamertemplate*{footline}{Dan P theme}
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.3\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor\expandafter\beamer@ifempty\expandafter{\beamer@shortinstitute}{}{~~(\insertshortinstitute)}
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.4\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.3\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+    \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
+\insertframenumber{} / \inserttotalframenumber\hspace*{2ex}
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+\makeatother
+
+\begin{document}
+
+% Remove logo
+\logo{}
+\nocite{*}
+
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\section{}
+\subsection{}
+\begin{frame}{Outline}
+	\tableofcontents
+\end{frame}
+
+\section{Introduction}
+\begin{frame}{Introduction}
+	TODO
+\end{frame}
+
+\section{Motivation}
+\subsection{What's the Deal with Sorting?}
+\begin{frame}{What's the Deal with Sorting?}
+	TODO
+\end{frame}
+
+\subsection{Commonly Used Algorithms}
+\begin{frame}{Quicksort}
+	\begin{itemize}
+		\item Fundamentally easy to implement and analyze.
+		\item Fast in the average case.
+		\item Performs well with (almost) sorted data.
+		\item Generally cache friendly.
+		\item Good balance between comparisons and swaps.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Mergesort}
+	TODO
+\end{frame}
+
+\begin{frame}{Insertion Sort}
+	TODO
+\end{frame}
+
+\section{Exploring Existing Implementations}
+\subsection{GNU libc}
+\begin{frame}{GNU libc}
+	TODO
+\end{frame}
+
+\begin{frame}{Wait, \texttt{qsort} doesn't use quicksort?}
+	TODO
+\end{frame}
+
+
+% \subsection{Why India?}
+% \begin{frame}{Why India?}
+% 	\begin{itemize}
+% 		\item Ranks second in terms of population worldwide, accounts for 17\% of
+% 		      the world's people.
+% 		\item Ranks highly in the Renewable Energy Country Attractiveness Index
+% 		      (RECAI).
+% 		\item Has one of the fastest growing economies in the world.
+% 	\end{itemize}
+% 	\centering
+% % 	\includegraphics[width=7.5cm,keepaspectratio=true]{assets/population.png}
+% \end{frame}
+
+% \subsection{Global Comparison}
+% \begin{frame}{Global Comparison}
+% 	\begin{itemize}
+% 		\item Currently the world's \nth{3} largest renewable energy producer.
+% 		\item 40\% of energy capacity installed in 2022 comes from renewable
+% 		      sources.
+% 	\end{itemize}
+% 	\centering
+% 	% \includegraphics[width=7.5cm,keepaspectratio=true]{assets/global_energy_chart.png}
+% \end{frame}
+
+% \subsection{Current Energy Mix}
+% \begin{frame}{Current Energy Mix - Overall}
+% 	\centering
+% 	% \includegraphics[height=7.5cm, keepaspectratio=true]{assets/energy-consumption-india-overall.png}
+% \end{frame}
+
+% \begin{frame}{Current Energy Mix - Renewables}
+% 	\centering
+% 	% \includegraphics[height=7.5cm, keepaspectratio=true]{assets/energy-consumption-india-renewable.png}
+% \end{frame}
+
+% \subsection{RECAI}
+% \begin{frame}{Renewable Energy Country Attractiveness Index (RECAI)}
+% 	\begin{itemize}
+% 		\item RECAI ranks the world's top 40 markets on the attractiveness of
+% 		      their renewable energy investment and deployment opportunities\cite{owidenergy}.
+% 	\end{itemize}
+
+% 	\begin{table}
+% 		\begin{tabular}{|c|c|c|}
+% 			\hline
+% 			Country & Score & RECAI Rank \\
+% 			\hline
+% 			USA     & 70.7  & 1          \\
+% 			China   & 68.2  & 2          \\
+% 			India   & 66.2  & 3          \\
+% 			\hline
+% 		\end{tabular}
+% 		\begin{tabular}{|c|c|c|c|}
+% 			\hline
+% 			Technology       & India & USA  & China \\
+% 			\hline
+% 			Solar PV         & 62.7  & 57.6 & 60.3  \\
+% 			Solar CSP        & 09.2  & 46.2 & 54.3  \\
+% 			Hydroelectricity & 46.4  & 57.6 & 60.3  \\
+% 			Biofuels         & 47.4  & 45.3 & 52.8  \\
+% 			Onshore Wind     & 54.2  & 58.1 & 55.7  \\
+% 			Offshore Wind    & 28.6  & 55.6 & 60.6  \\
+% 			Geothermal       & 23.2  & 46.0 & 31.7  \\
+% 			\hline
+% 		\end{tabular}
+% 	\end{table}
+% \end{frame}
+
+% \section{}
+% \subsection{}
+% \begin{frame}{Outline}
+% 	\tableofcontents
+% \end{frame}
+
+% \section{Solar Energy}
+
+% \subsection{Current Development}
+% \begin{frame}{Current Development}
+% 	\begin{itemize}
+% 		\item Solar power generation in India ranks \nth{4} globally in 2021.
+% 		\item Rooftop solar accounts for 2.1 GW in 2018.
+% 		\item Off-grid solar power for local energy needs is currently under
+% 		      development.
+% 	\end{itemize}
+% 	\centering
+% 	% \includegraphics[width=7.5cm,keepaspectratio=true]{assets/rooftop-solar.jpg}
+% \end{frame}
+
+% \begin{frame}{}
+% 	\begin{itemize}
+% 		\item The Indian Government had an initial target of 20 GW of solar
+% 		      capacity for 2022, but that was achieved four years ahead of
+% 		      schedule.
+% 		\item A new goal of 100 GW has been set for 2022, targeting an investment
+% 		      of ~\$100 billion.
+% 	\end{itemize}
+% 	\centering
+% 	% \includegraphics[width=7.5cm,keepaspectratio=true]{assets/installed-solar-PV-capacity.png}
+% \end{frame}
+
+% \subsection{Solar Potential}
+% \begin{frame}{Solar Potential}
+% 	\begin{itemize}
+% 		\item Approximately 300 clear and sunny days in a year.
+% 		\item Daily average solar-power-plant generation capacity in India is 0.30
+% 		      kWh per $\textnormal{m}^{2}$.
+% 	\end{itemize}
+% 	\centering
+% 	% \includegraphics[trim=0 10 0 50, clip]{assets/India-PVOut.png}
+% \end{frame}
+
+% \subsection{Advantages}
+% \begin{frame}{Advantages}
+% 	\begin{itemize}
+% 		\item Solar products have increasingly helped meet rural demands.
+% 		      \begin{itemize}
+% 			      \item Substantially reduces dependence on kerosene.
+% 		      \end{itemize}
+% 		\item Development of inexpensive solar technology could provide a network
+% 		      of decentralized local-grid clusters.
+% 		      \begin{itemize}
+% 			      \item Bypasses expensive, long-distance, power delivery systems.
+% 		      \end{itemize}
+% 		\item Expansive networks can be built all over India, unlike hydroelectric
+% 					power and wind farms.
+% 	\end{itemize}
+% \end{frame}
+
+% \begin{frame}{Agricultural Support}
+% 	\begin{itemize}
+% 		\item Photovoltaic water pumping systems
+% 		      \begin{itemize}
+% 			      \item During hot sunny daytime, increased water demand can be
+% 			            met using solar energy.
+% 		      \end{itemize}
+% 	\end{itemize}
+% 	\centering
+% 	% \includegraphics[width=7.5cm,keepaspectratio=true]{assets/pv-water-pumping.png}
+% \end{frame}
+
+% % TODO
+% \subsection{Challenges}
+% \begin{frame}{Challenges}
+% 	\begin{itemize}
+% 		\item Land price is costly. Dedication of land for solar arrays must
+% 		      compete with other needs.
+% 		\item Production and transport of photovoltaic cells can incur a large
+% 		      upfront cost.
+% 		      \begin{itemize}
+% 			      \item Lack of domestic manufacturing.
+% 			      \item Increases dependency on China for PV components.
+% 		      \end{itemize}
+% 		\item Distribution Losses.
+% 	\end{itemize}
+% \end{frame}
+
+% \section{Conclusion}
+% \begin{frame}{Conclusion}
+% 	\begin{itemize}
+% 		\item India is a prominent player in the modern energy world.
+% 		\item Continued investments in renewable energy sources have been largely
+% 		      beneficial for India.
+% 		\item Solar energy generation is already gaining attention.
+% 		\item Most challenges with solar energy are also faced by other renewable
+% 		      sources.
+% 	\end{itemize}
+% \end{frame}
+
+% \subsection*{Thank You}
+% \begin{frame}{}
+% 	\centering
+% 	\Huge Questions?
+% \end{frame}
+
+% \section*{}
+% \subsection*{}
+% \begin{frame}[allowframebreaks]{References}
+% 	\printbibliography
+% \end{frame}
+
+\end{document}
