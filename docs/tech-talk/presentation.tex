@@ -5,6 +5,8 @@
 \usepackage{pgfplots}
 \usepackage{csvsimple}
 \usepackage{graphicx}
+\usepackage{minted}
+\usepackage{csquotes}
 
 \usepackage[backend=biber,style=ieee]{biblatex}
 % \addbibresource{references.bib}
@@ -50,224 +52,126 @@
 \end{frame}
 
 \section{Introduction}
-\begin{frame}{Introduction}
-	TODO
+\subsection{About Me}
+\begin{frame}{About Me}
+	\begin{itemize}
+		\item TODO
+	\end{itemize}
 \end{frame}
 
 \section{Motivation}
 \subsection{What's the Deal with Sorting?}
 \begin{frame}{What's the Deal with Sorting?}
-	TODO
-\end{frame}
-
-\subsection{Commonly Used Algorithms}
-\begin{frame}{Quicksort}
 	\begin{itemize}
-		\item Fundamentally easy to implement and analyze.
-		\item Fast in the average case.
-		\item Performs well with (almost) sorted data.
-		\item Generally cache friendly.
-		\item Good balance between comparisons and swaps.
+		\item Arguably one of the most researched CS problems.
+		\item Many common tasks require sorting somewhere as a step.
+		\item Pretty much every programming class covers sorting.
+		\item Every programmer must implement sort.
+		\item We need fast, standard, type-generic sorting functions in C.
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Mergesort}
-	TODO
+\subsection{The Existing Solution}
+\begin{frame}[c]{The Existing Solution}
+	\begin{center}
+		\begin{minipage}{0.8\textwidth}
+			\inputminted{c}{include.c}
+		\end{minipage}
+
+		\pause
+		\vspace{0.3cm}
+		\begin{displayquote}
+			``The \texttt{qsort()} function sorts an array with \texttt{nmemb}
+			elements of \texttt{size} size. The \texttt{base} argument points to the
+			start of the array.
+
+			The contents of the array are sorted in ascending order according to a
+			comparison function pointed to by \texttt{cmp}, which is called with two
+			arguments that point to the objects being compared.''
+		\end{displayquote}
+
+		\pause
+		\textit{Usually} \texttt{qsort()} is implemented using quicksort internally.
+	\end{center}
 \end{frame}
 
-\begin{frame}{Insertion Sort}
-	TODO
+\section{Vision}
+\subsection{What Did I Plan To Do?}
+\begin{frame}{Making a Faster Version of \texttt{qsort()}}
+	\begin{enumerate}
+		\item\pause Find some fast implementation of quicksort.
+		\item\pause Combine it with insertion sort or some other secondary
+		algorithms.
+		\item\pause Determine a suitable threshold value to switch to insertion sort
+		internally through copious amounts of testing.
+		\item\pause Handle a copious amount of edge-cases.
+		\item\pause Propose this new implementation to the glibc community.
+	\end{enumerate}
 \end{frame}
 
-\section{Exploring Existing Implementations}
-\subsection{GNU libc}
-\begin{frame}{GNU libc}
-	TODO
+\section{Analyzing Existing Implementations}
+\subsection{Quicksort}
+\begin{frame}{Why is Quicksort So Popular?}
+	\begin{itemize}
+		\item\pause Runs in-place, requires only a constant amount of extra memory.
+		\item\pause Fundamentally easy to code and analyze.
+		\item\pause Can optimize for corner cases relatively easily.
+		\item\pause Fast on average.
+		\item\pause Little work on (nearly) sorted data.
+		\item\pause Cache friendly.
+		\item\pause Maintains a good balance between comparisons and swaps.
+	\end{itemize}
 \end{frame}
 
-\begin{frame}{Wait, \texttt{qsort} doesn't use quicksort?}
-	TODO
+\begin{frame}{Challenges}
+	\begin{itemize}
+		\item\pause Quicksort's performance is primarily dictated by good
+		pivot selection.
+		\item\pause Poor pivot selection can adversely affect performance.
+		\item\pause Worst case $O(n^{2})$ runtime.
+		\item\pause Somewhat limited in performance compared to other algorithms
+		which use more memory.
+	\end{itemize}
 \end{frame}
 
+\begin{frame}{When \texttt{qsort} isn't Quicksort}
+	\begin{itemize}
+		\item\pause Although the name implies it, \texttt{qsort()} doesn't
+		\textit{have} to use Quicksort internally.
+		\item\pause In fact, the C standard imposes no restriction on what
+		algorithms are used internally at all.
+		\item\pause Many standard libraries, such as GNU's libc, don't use quicksort
+		all the time anymore.
+	\end{itemize}
+\end{frame}
 
-% \subsection{Why India?}
-% \begin{frame}{Why India?}
+% \subsection{Commonly Used Algorithms}
+% \begin{frame}{Quicksort}
 % 	\begin{itemize}
-% 		\item Ranks second in terms of population worldwide, accounts for 17\% of
-% 		      the world's people.
-% 		\item Ranks highly in the Renewable Energy Country Attractiveness Index
-% 		      (RECAI).
-% 		\item Has one of the fastest growing economies in the world.
-% 	\end{itemize}
-% 	\centering
-% % 	\includegraphics[width=7.5cm,keepaspectratio=true]{assets/population.png}
-% \end{frame}
-
-% \subsection{Global Comparison}
-% \begin{frame}{Global Comparison}
-% 	\begin{itemize}
-% 		\item Currently the world's \nth{3} largest renewable energy producer.
-% 		\item 40\% of energy capacity installed in 2022 comes from renewable
-% 		      sources.
-% 	\end{itemize}
-% 	\centering
-% 	% \includegraphics[width=7.5cm,keepaspectratio=true]{assets/global_energy_chart.png}
-% \end{frame}
-
-% \subsection{Current Energy Mix}
-% \begin{frame}{Current Energy Mix - Overall}
-% 	\centering
-% 	% \includegraphics[height=7.5cm, keepaspectratio=true]{assets/energy-consumption-india-overall.png}
-% \end{frame}
-
-% \begin{frame}{Current Energy Mix - Renewables}
-% 	\centering
-% 	% \includegraphics[height=7.5cm, keepaspectratio=true]{assets/energy-consumption-india-renewable.png}
-% \end{frame}
-
-% \subsection{RECAI}
-% \begin{frame}{Renewable Energy Country Attractiveness Index (RECAI)}
-% 	\begin{itemize}
-% 		\item RECAI ranks the world's top 40 markets on the attractiveness of
-% 		      their renewable energy investment and deployment opportunities\cite{owidenergy}.
-% 	\end{itemize}
-
-% 	\begin{table}
-% 		\begin{tabular}{|c|c|c|}
-% 			\hline
-% 			Country & Score & RECAI Rank \\
-% 			\hline
-% 			USA     & 70.7  & 1          \\
-% 			China   & 68.2  & 2          \\
-% 			India   & 66.2  & 3          \\
-% 			\hline
-% 		\end{tabular}
-% 		\begin{tabular}{|c|c|c|c|}
-% 			\hline
-% 			Technology       & India & USA  & China \\
-% 			\hline
-% 			Solar PV         & 62.7  & 57.6 & 60.3  \\
-% 			Solar CSP        & 09.2  & 46.2 & 54.3  \\
-% 			Hydroelectricity & 46.4  & 57.6 & 60.3  \\
-% 			Biofuels         & 47.4  & 45.3 & 52.8  \\
-% 			Onshore Wind     & 54.2  & 58.1 & 55.7  \\
-% 			Offshore Wind    & 28.6  & 55.6 & 60.6  \\
-% 			Geothermal       & 23.2  & 46.0 & 31.7  \\
-% 			\hline
-% 		\end{tabular}
-% 	\end{table}
-% \end{frame}
-
-% \section{}
-% \subsection{}
-% \begin{frame}{Outline}
-% 	\tableofcontents
-% \end{frame}
-
-% \section{Solar Energy}
-
-% \subsection{Current Development}
-% \begin{frame}{Current Development}
-% 	\begin{itemize}
-% 		\item Solar power generation in India ranks \nth{4} globally in 2021.
-% 		\item Rooftop solar accounts for 2.1 GW in 2018.
-% 		\item Off-grid solar power for local energy needs is currently under
-% 		      development.
-% 	\end{itemize}
-% 	\centering
-% 	% \includegraphics[width=7.5cm,keepaspectratio=true]{assets/rooftop-solar.jpg}
-% \end{frame}
-
-% \begin{frame}{}
-% 	\begin{itemize}
-% 		\item The Indian Government had an initial target of 20 GW of solar
-% 		      capacity for 2022, but that was achieved four years ahead of
-% 		      schedule.
-% 		\item A new goal of 100 GW has been set for 2022, targeting an investment
-% 		      of ~\$100 billion.
-% 	\end{itemize}
-% 	\centering
-% 	% \includegraphics[width=7.5cm,keepaspectratio=true]{assets/installed-solar-PV-capacity.png}
-% \end{frame}
-
-% \subsection{Solar Potential}
-% \begin{frame}{Solar Potential}
-% 	\begin{itemize}
-% 		\item Approximately 300 clear and sunny days in a year.
-% 		\item Daily average solar-power-plant generation capacity in India is 0.30
-% 		      kWh per $\textnormal{m}^{2}$.
-% 	\end{itemize}
-% 	\centering
-% 	% \includegraphics[trim=0 10 0 50, clip]{assets/India-PVOut.png}
-% \end{frame}
-
-% \subsection{Advantages}
-% \begin{frame}{Advantages}
-% 	\begin{itemize}
-% 		\item Solar products have increasingly helped meet rural demands.
-% 		      \begin{itemize}
-% 			      \item Substantially reduces dependence on kerosene.
-% 		      \end{itemize}
-% 		\item Development of inexpensive solar technology could provide a network
-% 		      of decentralized local-grid clusters.
-% 		      \begin{itemize}
-% 			      \item Bypasses expensive, long-distance, power delivery systems.
-% 		      \end{itemize}
-% 		\item Expansive networks can be built all over India, unlike hydroelectric
-% 					power and wind farms.
+% 		\item Fundamentally easy to implement and analyze.
+% 		\item Fast in the average case.
+% 		\item Performs well with (almost) sorted data.
+% 		\item Generally cache friendly.
+% 		\item Good balance between comparisons and swaps.
 % 	\end{itemize}
 % \end{frame}
 
-% \begin{frame}{Agricultural Support}
-% 	\begin{itemize}
-% 		\item Photovoltaic water pumping systems
-% 		      \begin{itemize}
-% 			      \item During hot sunny daytime, increased water demand can be
-% 			            met using solar energy.
-% 		      \end{itemize}
-% 	\end{itemize}
-% 	\centering
-% 	% \includegraphics[width=7.5cm,keepaspectratio=true]{assets/pv-water-pumping.png}
+% \begin{frame}{Mergesort}
+% 	TODO
 % \end{frame}
 
-% % TODO
-% \subsection{Challenges}
-% \begin{frame}{Challenges}
-% 	\begin{itemize}
-% 		\item Land price is costly. Dedication of land for solar arrays must
-% 		      compete with other needs.
-% 		\item Production and transport of photovoltaic cells can incur a large
-% 		      upfront cost.
-% 		      \begin{itemize}
-% 			      \item Lack of domestic manufacturing.
-% 			      \item Increases dependency on China for PV components.
-% 		      \end{itemize}
-% 		\item Distribution Losses.
-% 	\end{itemize}
+% \begin{frame}{Insertion Sort}
+% 	TODO
 % \end{frame}
 
-% \section{Conclusion}
-% \begin{frame}{Conclusion}
-% 	\begin{itemize}
-% 		\item India is a prominent player in the modern energy world.
-% 		\item Continued investments in renewable energy sources have been largely
-% 		      beneficial for India.
-% 		\item Solar energy generation is already gaining attention.
-% 		\item Most challenges with solar energy are also faced by other renewable
-% 		      sources.
-% 	\end{itemize}
+% \section{Exploring Existing Implementations}
+% \subsection{GNU libc}
+% \begin{frame}{GNU libc}
+% 	TODO
 % \end{frame}
 
-% \subsection*{Thank You}
-% \begin{frame}{}
-% 	\centering
-% 	\Huge Questions?
-% \end{frame}
-
-% \section*{}
-% \subsection*{}
-% \begin{frame}[allowframebreaks]{References}
-% 	\printbibliography
+% \begin{frame}{Wait, \texttt{qsort} doesn't use quicksort?}
+% 	TODO
 % \end{frame}
 
 \end{document}
