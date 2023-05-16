@@ -62,7 +62,8 @@
 \section{Motivation}
 \subsection{What's the Deal with Sorting?}
 \begin{frame}{What's the Deal with Sorting?}
-	\begin{itemize}
+	\pause
+	\begin{itemize}[<+->]
 		\item Arguably one of the most researched CS problems.
 		\item Many common tasks require sorting somewhere as a step.
 		\item Pretty much every programming class covers sorting.
@@ -97,81 +98,103 @@
 
 \section{Vision}
 \subsection{What Did I Plan To Do?}
-\begin{frame}{Making a Faster Version of \texttt{qsort()}}
-	\begin{enumerate}
-		\item\pause Find some fast implementation of quicksort.
-		\item\pause Combine it with insertion sort or some other secondary
-		algorithms.
-		\item\pause Determine a suitable threshold value to switch to insertion sort
-		internally through copious amounts of testing.
-		\item\pause Handle a copious amount of edge-cases.
-		\item\pause Propose this new implementation to the glibc community.
+\begin{frame}{Engineering a Faster Version of \texttt{qsort()}}
+	\pause
+	\begin{enumerate}[<+->]
+		\item Find some fast implementation of quicksort.
+		\item Combine it with insertion sort or some other secondary
+		      algorithms.
+		\item Determine a suitable threshold value to switch to insertion sort
+		      internally through copious amounts of testing.
+		\item Propose this new implementation to the glibc community.
 	\end{enumerate}
+
+	\pause
+	\vspace{0.3cm}
+	By using a simple algorithm for small arrays, we can avoid some of the
+	overhead of more complicated algorithms.
 \end{frame}
+\begin{frame}{Engineering a Faster Version of \texttt{qsort()}}
+	\begin{enumerate}
+		\item Find some fast implementation of quicksort.
+		\item Combine it with insertion sort or some other secondary
+		      algorithms.
+		\item \color{red}Determine a suitable threshold value to switch to insertion sort
+		      internally through copious amounts of testing.\normalcolor
+		\item Propose this new implementation to the glibc community.
+	\end{enumerate}
+
+	\vspace{0.3cm}
+	By using a simple algorithm for small arrays, we can avoid some of the
+	overhead of more complicated algorithms.
+\end{frame}
+
 
 \section{Analyzing Existing Implementations}
 \subsection{Quicksort}
 \begin{frame}{Why is Quicksort So Popular?}
-	\begin{itemize}
-		\item\pause Runs in-place, requires only a constant amount of extra memory.
-		\item\pause Fundamentally easy to code and analyze.
-		\item\pause Can optimize for corner cases relatively easily.
-		\item\pause Fast on average.
-		\item\pause Little work on (nearly) sorted data.
-		\item\pause Cache friendly.
-		\item\pause Maintains a good balance between comparisons and swaps.
+	\pause
+	\begin{itemize}[<+->]
+		\item Runs in-place, requires only a constant amount of extra memory.
+		\item Fundamentally easy to code and analyze.
+		\item Can optimize for corner cases relatively easily.
+		\item Fast on average.
+		\item Little work on (nearly) sorted data.
+		\item Cache friendly.
+		\item Maintains a good balance between comparisons and swaps.
 	\end{itemize}
 \end{frame}
 
 \begin{frame}{Challenges}
-	\begin{itemize}
-		\item\pause Quicksort's performance is primarily dictated by good
-		pivot selection.
-		\item\pause Poor pivot selection can adversely affect performance.
-		\item\pause Worst case $O(n^{2})$ runtime.
-		\item\pause Somewhat limited in performance compared to other algorithms
-		which use more memory.
+	\pause
+	\begin{itemize}[<+->]
+		\item Quicksort's performance is primarily dictated by good
+		      pivot selection.
+		\item Poor pivot selection can adversely affect performance.
+		\item Worst case $O(n^{2})$ runtime.
+		\item Somewhat limited in performance compared to other algorithms
+		      which use more memory.
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{When \texttt{qsort} isn't Quicksort}
-	\begin{itemize}
-		\item\pause Although the name implies it, \texttt{qsort()} doesn't
-		\textit{have} to use Quicksort internally.
-		\item\pause In fact, the C standard imposes no restriction on what
-		algorithms are used internally at all.
-		\item\pause Many standard libraries, such as GNU's libc, don't use quicksort
-		all the time anymore.
+\subsection{Glibc}
+\begin{frame}{When \texttt{qsort()} isn't Quicksort}
+	\begin{itemize}[<+->]
+		\item Although the name implies it, \texttt{qsort()} doesn't
+		      \textit{have} to use Quicksort internally.
+		\item In fact, the C standard imposes no restriction on what
+		      algorithms are used internally at all.
+		\item Many standard libraries, such as glibc, don't use quicksort
+		      all the time anymore.
+		\item So, what does glibc use?
 	\end{itemize}
 \end{frame}
 
-% \subsection{Commonly Used Algorithms}
-% \begin{frame}{Quicksort}
-% 	\begin{itemize}
-% 		\item Fundamentally easy to implement and analyze.
-% 		\item Fast in the average case.
-% 		\item Performs well with (almost) sorted data.
-% 		\item Generally cache friendly.
-% 		\item Good balance between comparisons and swaps.
-% 	\end{itemize}
-% \end{frame}
+\begin{frame}{Wait, \texttt{qsort()} is Mergesort?}
+	\pause
+	\begin{itemize}[<+->]
+		\item The current \texttt{qsort()} implementation in glibc is recursive
+		      Mergesort, which automatically falls-back to quicksort if memory is
+		      limited.
+		\item We can leverage memory availability for better performance.
+		\item No real downside, we can still operate in memory constrained environments.
+	\end{itemize}
+\end{frame}
 
-% \begin{frame}{Mergesort}
-% 	TODO
-% \end{frame}
+\subsection{Mergesort}
+\begin{frame}{Why use mergesort over quicksort?}
+	\pause
+	\begin{itemize}[<+->]
+		\item Generally easy to implement and reason about.
+		\item Worst case $O(n\log{n})$
+		\item Uses approximately 30\% less comparisons than quicksort.
+		\item Parallelizes well.
+		\item Stable.
+	\end{itemize}
+\end{frame}
 
-% \begin{frame}{Insertion Sort}
-% 	TODO
-% \end{frame}
-
-% \section{Exploring Existing Implementations}
-% \subsection{GNU libc}
-% \begin{frame}{GNU libc}
-% 	TODO
-% \end{frame}
-
-% \begin{frame}{Wait, \texttt{qsort} doesn't use quicksort?}
-% 	TODO
-% \end{frame}
+\begin{frame}{So how can we make it faster?}
+  TODO
+\end{frame}
 
 \end{document}
