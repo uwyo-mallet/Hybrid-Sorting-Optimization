@@ -7,6 +7,8 @@
 \usepackage{graphicx}
 \usepackage{minted}
 \usepackage{csquotes}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \usepackage[backend=biber,style=ieee]{biblatex}
 % \addbibresource{references.bib}
@@ -148,17 +150,17 @@
 \begin{frame}{Challenges}
 	\pause
 	\begin{itemize}[<+->]
+		\item Worst case $O(n^{2})$ runtime.
 		\item Quicksort's performance is primarily dictated by good
 		      pivot selection.
 		\item Poor pivot selection can adversely affect performance.
-		\item Worst case $O(n^{2})$ runtime.
 		\item Somewhat limited in performance compared to other algorithms
 		      which use more memory.
 	\end{itemize}
 \end{frame}
 
 \subsection{Glibc}
-\begin{frame}{When \texttt{qsort()} isn't Quicksort}
+\begin{frame}{When \texttt{qsort()} Isn't Quicksort}
 	\begin{itemize}[<+->]
 		\item Although the name implies it, \texttt{qsort()} doesn't
 		      \textit{have} to use Quicksort internally.
@@ -174,7 +176,7 @@
 	\pause
 	\begin{itemize}[<+->]
 		\item The current \texttt{qsort()} implementation in glibc is recursive
-		      Mergesort, which automatically falls-back to quicksort if memory is
+		      mergesort, which automatically falls back to quicksort if memory is
 		      limited.
 		\item We can leverage memory availability for better performance.
 		\item No real downside, we can still operate in memory constrained environments.
@@ -182,7 +184,7 @@
 \end{frame}
 
 \subsection{Mergesort}
-\begin{frame}{Why use mergesort over quicksort?}
+\begin{frame}{Why Use Mergesort Over Quicksort?}
 	\pause
 	\begin{itemize}[<+->]
 		\item Generally easy to implement and reason about.
@@ -193,8 +195,168 @@
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{So how can we make it faster?}
-  TODO
+\section{Performance Optimization}
+\subsection{Simple Hybridization}
+\begin{frame}{How Can We Make Mergesort Faster?}
+	\begin{enumerate}
+		\item\pause Reduce recursive overhead and/or number of comparisons
+		\begin{itemize}
+			\item Apply the same hybridization techniques as with quicksort.
+			\item Add an extra tertiary sorting algorithm for even better performance.
+		\end{itemize}
+		\item\pause Make individual comparisons and swaps faster
+		\begin{itemize}[]
+			\item Do some alignment trickery.
+		\end{itemize}
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{How Does Mergesort Work?}
+	\begin{algorithmic}
+		\Procedure{Mergesort}{$a$}
+		\State $n \gets \textnormal{len}(a)$
+		\If {$n \le 2$}
+
+		\State sort2(a[0], a[1])
+
+		\Return
+
+		\EndIf
+		\State half \gets $\frac{n}{2}$
+		\State $lhs \gets a[\textnormal{half}:]$
+		\State $rhs \gets a[:\textnormal{half}]$
+
+		\State Mergesort(lhs)
+
+		\State Mergesort(rhs)
+
+		\State Merge(lhs, rhs)
+		\EndProcedure
+	\end{algorithmic}
+\end{frame}
+
+\begin{frame}{How Does Mergesort Work?}
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\begin{algorithmic}
+				\Procedure{Mergesort}{$a$}
+				\State $n \gets \textnormal{len}(a)$
+				\color{red}
+				\If {$n \le 2$}
+
+				\State sort2(a[0], a[1])
+
+				\Return
+
+				\EndIf
+				\normalcolor
+				\State half \gets $\frac{n}{2}$
+				\State $lhs \gets a[\textnormal{half}:]$
+				\State $rhs \gets a[:\textnormal{half}]$
+
+				\State Mergesort(lhs)
+
+				\State Mergesort(rhs)
+
+				\State Merge(lhs, rhs)
+				\EndProcedure
+			\end{algorithmic}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\pause
+			\begin{itemize}[<+->]
+				\item Use a secondary algorithm here to limit recursion depth.
+				\item Should offer significant performance benefits.
+				\item Picking a secondary algorithm is tricky.
+			\end{itemize}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}{Investigating Insertion Sort}
+	\begin{itemize}
+		\item Anecdotally the best algorithm for this task.
+		\item Generally performs very well for small inputs.
+		      \item\pause Starting from the left:
+		      \begin{itemize}
+			      \item Linear search (going backwards) position of current value in sorted subarray on the left.
+			      \item Insert there.
+		      \end{itemize}
+		      \item\pause Worst case: $C(n) = S(n) = \frac{n(n - 1)}{2} \implies O(n^{2})$
+		      \item\pause Average case: $C_{a}(n) = S_{a}(n) = \frac{n(n - 1)}{4} \implies O(n^{2})$
+		      \item\pause $C_{a}(32) = S_{a}(32) = 248$
+		      \item\pause Usually outperforms mergesort for small inputs due to the lack
+		      of recursive overhead.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	\centering
+	\makebox[0.7\columnwidth]{\includegraphics[width=0.7\columnwidth]{./insertionsort.png}}
+\end{frame}
+
+\begin{frame}{Why Not Binary Insertion Sort?}
+	\pause
+	\begin{itemize}[<+->]
+		\item Same as normal insertion sort but generally fewer comparisons.
+		\item Same number of swaps ($S(n)$)
+		\item $C(n) = \sum_{i = 1}^{n - 1}{\lceil \log_{2}{i} \rceil}$
+		\item $C(32) = 155$ (compared to 248)
+		\item Less work for the same result!
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Some Microbenchmarks}
+	\begin{itemize}[<+->]
+		\item Test on 1M random \texttt{doubles}, threshold 32.
+		\item Insertion sort: 25.33M comparisons.
+		\item Binary Insertion Sort: 22.14M comparisons.
+		\item Same number of swaps (13.79M)
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Oops...}
+	\begin{itemize}[<+->]
+		\item Insertion Sort: 60.75 ms.
+		\item Binary Insertion Sort 68.58 ms.
+		\item 13\%... slower?
+		\item Increasing THRESHOLD only yields worse performance.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Modern Branch Prediction is to Blame}
+	\begin{displayquote}
+		``Digital circuit that tries to guess which way a branch (e.g., an
+		if–then–else structure) will go before this is known definitively.''
+	\end{displayquote}
+
+	\begin{itemize}
+		\item\pause Linear searches are highly predictable.
+		\begin{itemize}
+			\item Literally only one fail can occur per search.
+			\item Average success rate: $R(n) = \frac{n - 4}{n}$\\
+			      R(32) = 87.5\%
+			\item Branch prediction works swimmingly.
+		\end{itemize}
+		\item\pause Binary searches frequently switch which conditional path is taken.
+		\begin{itemize}
+			\item Each iteration extracts 1 bit of information.
+			\item Average success: $R(n) = 50\%$
+			\item Branch prediction is ineffective.
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\subsection{Realization}
+\begin{frame}{Realization}
+	\begin{itemize}[<+->]
+		\item Existing research suggesting minimizing comparisons while provide
+		      optimal performance.
+		\item As we've seen, this isn't necessarily true.
+		\item Extracting max info per comparison is the primary goal.
+		\item External factors, like branch predictors, can adversely affect
+		      performance.
+	\end{itemize}
 \end{frame}
 
 \end{document}
