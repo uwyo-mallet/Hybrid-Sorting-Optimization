@@ -1,14 +1,16 @@
 \documentclass[13pt]{beamer}
 
 \usetheme{CambridgeUS}
-\usepackage{nth}
-\usepackage{pgfplots}
-\usepackage{csvsimple}
-\usepackage{graphicx}
-\usepackage{minted}
-\usepackage{csquotes}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+\usepackage{csquotes}
+\usepackage{csvsimple}
+\usepackage{fontawesome5}
+\usepackage{graphicx}
+\usepackage{minted}
+\usepackage{multicol}
+\usepackage{nth}
+\usepackage{pgfplots}
 
 \usepackage[backend=biber,style=ieee]{biblatex}
 % \addbibresource{references.bib}
@@ -50,15 +52,29 @@
 \section{}
 \subsection{}
 \begin{frame}{Outline}
-	\tableofcontents
+	\tableofcontents[hideallsubsections]
 \end{frame}
 
 \section{Introduction}
 \subsection{About Me}
 \begin{frame}{About Me}
-	\begin{itemize}
-		\item TODO
-	\end{itemize}
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\centering
+			\makebox[0.7\textwidth]{\includegraphics[width=0.7\textwidth,keepaspectratio=true]{./me.jpg}}
+		\end{column}
+
+		\begin{column}{0.5\textwidth}
+			\begin{itemize}
+				\item Graduated Spring 2023 with Bachelors in Computer Science from
+				      UW.
+				\item Conducted undergraduate research in Dr. Lars Kotthoff's MALLET
+				      lab.
+				\item Performance optimization, embedded systems, Linux
+				      development, system administration.
+			\end{itemize}
+		\end{column}
+	\end{columns}
 \end{frame}
 
 \section{Motivation}
@@ -99,10 +115,9 @@
 \end{frame}
 
 \section{Vision}
-\subsection{What Did I Plan To Do?}
 \begin{frame}{Engineering a Faster Version of \texttt{qsort()}}
 	\pause
-	\begin{enumerate}[<+->]
+	\begin{enumerate}
 		\item Find some fast implementation of quicksort.
 		\item Combine it with insertion sort or some other secondary
 		      algorithms.
@@ -190,7 +205,7 @@
 		\item Generally easy to implement and reason about.
 		\item Worst case $O(n\log{n})$
 		\item Uses approximately 30\% less comparisons than quicksort.
-		\item Parallelizes well.
+		\item Parallelize well.
 		\item Stable.
 	\end{itemize}
 \end{frame}
@@ -275,18 +290,18 @@
 
 \begin{frame}{Investigating Insertion Sort}
 	\begin{itemize}
-		\item Anecdotally the best algorithm for this task.
-		\item Generally performs very well for small inputs.
-		      \item\pause Starting from the left:
-		      \begin{itemize}
-			      \item Linear search (going backwards) position of current value in sorted subarray on the left.
-			      \item Insert there.
-		      \end{itemize}
-		      \item\pause Worst case: $C(n) = S(n) = \frac{n(n - 1)}{2} \implies O(n^{2})$
-		      \item\pause Average case: $C_{a}(n) = S_{a}(n) = \frac{n(n - 1)}{4} \implies O(n^{2})$
-		      \item\pause $C_{a}(32) = S_{a}(32) = 248$
-		      \item\pause Usually outperforms mergesort for small inputs due to the lack
-		      of recursive overhead.
+		\item\pause Anecdotally the best algorithm for this task.
+		\item\pause Generally performs very well for small inputs.
+		\item\pause Starting from the left:
+		\begin{itemize}
+			\item Linear search (going backwards) position of current value in sorted subarray on the left.
+			\item Insert there.
+		\end{itemize}
+		\item\pause Worst case: $C(n) = S(n) = \frac{n(n - 1)}{2} \implies O(n^{2})$
+		\item\pause Average case: $C_{a}(n) = S_{a}(n) = \frac{n(n - 1)}{4} \implies O(n^{2})$
+		\item\pause $C_{a}(32) = S_{a}(32) = 248$
+		\item\pause Usually outperforms mergesort for small inputs due to the lack
+		of recursive overhead.
 	\end{itemize}
 \end{frame}
 
@@ -307,7 +322,7 @@
 \end{frame}
 
 \begin{frame}{Some Microbenchmarks}
-	\begin{itemize}[<+->]
+	\begin{itemize}
 		\item Test on 1M random \texttt{doubles}, threshold 32.
 		\item Insertion sort: 25.33M comparisons.
 		\item Binary Insertion Sort: 22.14M comparisons.
@@ -320,7 +335,7 @@
 		\item Insertion Sort: 60.75 ms.
 		\item Binary Insertion Sort 68.58 ms.
 		\item 13\%... slower?
-		\item Increasing THRESHOLD only yields worse performance.
+		\item Increasing threshold only yields worse performance.
 	\end{itemize}
 \end{frame}
 
@@ -357,6 +372,164 @@
 		\item External factors, like branch predictors, can adversely affect
 		      performance.
 	\end{itemize}
+\end{frame}
+
+\begin{frame}{Realization}
+	\centering
+	\Huge The only way to be sure is to test, test, and test some more!
+\end{frame}
+
+\subsection{Testing Secondary Algorithms}
+\begin{frame}{Testing Secondary Algorithms}
+	\begin{itemize}
+		\item A small selection of algorithms were chosen to test with mergesort
+		      and quicksort hybridization:
+		      \begin{itemize}
+			      \item Insertion sort
+			      \item Binary insertion sort
+			      \item Shell sort
+			      \item Sorting Networks
+			      \item Bubble Sort
+			      \item Heapsort
+		      \end{itemize}
+		      \item\pause Many of these were immediately discarded for a variety of reasons.
+		      \item\pause Various threshold values were evaluated to find the best
+		      algorithm configuration.
+		      \item\pause Tests were on various types of data and repeated on several
+		      platforms.
+		      \item\pause Of these algorithms, insertion sort paired with sorting
+		      networks generally performed the best.
+	\end{itemize}
+\end{frame}
+
+\subsection{Sorting Networks}
+\begin{frame}{What Are Sorting Networks?}
+	\begin{itemize}
+		\item Consists of two items, comparators and wires.
+		\item Wires run left to right.
+		\item When a pair of values encounter a comparator, the comparator swaps the
+		      values if the top wire value is greater than or equal to the bottom
+		      wire's value.
+	\end{itemize}
+
+	\centering
+	\includegraphics[width=0.8\columnwidth]{simplesortingnetwork.png}
+\end{frame}
+
+\begin{frame}{What Makes Sorting Networks So Fast?}
+	\pause
+	\begin{itemize}[<+->]
+		\item Unlike conventional sorting algorithms, sorting networks can only
+		      sort a fixed number of items.
+		\item Depth and comparison optimal sorting networks have been
+		      mathematically proven for small input sizes ($n \le 13$).
+		\item Comparison optimal networks save expensive function calls to
+		      comparator functions.
+		\item Networks are very branch and cache friendly, and even parallelize
+		      well.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{What Do We Have So Far?}
+	\begin{enumerate}
+		\item Use recursive mergesort instead of quicksort.
+		\item Use sorting networks for very small subarrays.
+		\item Use insertion sorting for medium-sized subarrays.
+	\end{enumerate}
+\end{frame}
+
+
+\subsection{Alignment Trickery}
+\begin{frame}{The Final Step - Alignment Trickery}
+	\begin{itemize}[<+->]
+		\item Using some \texttt{gcc} macro magic, we can determine the alignment
+		      of the input data \textit{at runtime} very cheaply.
+		\item Paired with the size of each element we can mimic primitives during
+		      the sorting process.
+		\item We can avoid \textit{many} system calls!
+		\item This has a significant performance impact.
+		\item We can fallback to the generic system call solution for any
+		      nonprimitive.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Why is This Faster?}
+	\begin{displayquote}
+		``If it is aligned like an \texttt{int} and sized like an \texttt{int}
+		it is an \texttt{int}.''
+	\end{displayquote}
+	\begin{center}
+		\begin{minipage}{0.7\textwidth}
+			\inputminted[fontsize=\scriptsize]{c}{alignmenttricks.c}
+		\end{minipage}
+	\end{center}
+\end{frame}
+
+\section{The New Algorithm}
+\begin{frame}{The New Algorithm}
+	\pause
+	\begin{itemize}[<+->]
+		\item Highly optimized, cache friendly, recursive merge sort.
+		\item Use sorting networks for inputs smaller than $n = 4$.
+		\item Use insertion sort for inputs around size 16, depending on the
+		      platform.
+		\item Use alignment trickery for optimized swapping.
+	\end{itemize}
+\end{frame}
+
+\subsection{Results}
+\begin{frame}{Results - Random Data}
+	\begin{multicols}{2}
+		\includegraphics[width=\columnwidth]{../figures/random.png}
+		\includegraphics[width=\columnwidth]{../figures/boxplots/4.gen.png}
+	\end{multicols}
+\end{frame}
+
+\begin{frame}{Results - Ascending Data}
+	\begin{multicols}{2}
+		\includegraphics[width=\columnwidth]{../figures/ascending.png}
+		\includegraphics[width=\columnwidth]{../figures/boxplots/2.gen.png}
+	\end{multicols}
+\end{frame}
+
+\begin{frame}{Results - Descending Data}
+	\begin{multicols}{2}
+		\includegraphics[width=\columnwidth]{../figures/descending.png}
+		\includegraphics[width=\columnwidth]{../figures/boxplots/3.gen.png}
+	\end{multicols}
+\end{frame}
+
+\begin{frame}{Results - Repeated Single Num Data}
+	\begin{multicols}{2}
+		\includegraphics[width=\columnwidth]{../figures/single_num.png}
+		\includegraphics[width=\columnwidth]{../figures/boxplots/1.gen.png}
+	\end{multicols}
+\end{frame}
+
+\section{Conclusion}
+\begin{frame}{Conclusion}
+	\begin{itemize}
+		\item There is some more performance to be gained.
+		\item GNU libc will hopefully adopt these changes.
+		\item Repeating testing like this every few years is important, since
+		      hardware changes so much.
+		\item Trying silly configurations may lead to finding something amazing.
+		\item If you really need super high-performance sorting, implement some
+		      hand-tailored algorithm instead of relying on glibc.
+	\end{itemize}
+\end{frame}
+
+\subsection*{Thank You}
+\begin{frame}{}
+	\centering
+	\Huge Questions?
+
+	\vspace{0.3cm}
+	\normalsize
+
+	\faEnvelope\texttt{jarulsam@uwyo.edu}
+
+	\faGithub\texttt{jarulsamy}
 \end{frame}
 
 \end{document}
