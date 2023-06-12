@@ -21,8 +21,8 @@ int __attribute__((noinline)) sort_t_compare(const void *a, const void *b)
 #else
 int __attribute__((noinline)) sort_t_compare(const void *a, const void *b)
 {
-  int64_t *A = (int64_t *)a;
-  int64_t *B = (int64_t *)b;
+  int *A = (int *)a;
+  int *B = (int *)b;
   if (*A < *B) return -1;
   if (*A > *B) return 1;
   return 0;

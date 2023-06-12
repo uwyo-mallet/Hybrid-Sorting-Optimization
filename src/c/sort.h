@@ -10,10 +10,10 @@ typedef struct
 {
   // Volatile to prevent optimizer from removing this altogether.
   volatile char c[PAD_SIZE];
-  int64_t val;
+  int val;
 } sort_t;
 #else
-typedef int64_t sort_t;
+typedef int sort_t;
 #endif  // SORT_LARGE_STRUCTS
 
 extern const char* METHODS[];
@@ -24,7 +24,19 @@ enum METHOD_TOK
   BASIC_INS,
   FAST_INS,
   SHELL,
-  EMPTY,
+  /* Alpha Dev Methods */
+  SORT3_ALPHADEV,
+  SORT4_ALPHADEV,
+  SORT5_ALPHADEV,
+  SORT6_ALPHADEV,
+  SORT7_ALPHADEV,
+  SORT8_ALPHADEV,
+  VARSORT3_ALPHADEV,
+  VARSORT4_ALPHADEV,
+  VARSORT5_ALPHADEV,
+
+  EMPTY,  // Separate standard and threshold methods
+
   MSORT_HEAP_WITH_OLD_INS,
   MSORT_HEAP_WITH_BASIC_INS,
   MSORT_HEAP_WITH_SHELL,

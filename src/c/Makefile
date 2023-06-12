@@ -15,7 +15,7 @@ CXX = g++
 CXXFLAGS += $(CFLAGS)
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
 
-OBJS = benchmark.o platform.o sort.o msort_opt.o
+OBJS = benchmark.o platform.o sort.o msort_opt.o alphadev.o
 
 HSO-c: $(OBJS) main.o
 	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) -lz
@@ -34,6 +34,9 @@ sort.o: sort.c sort.h
 
 msort_opt.o: msort_opt.c sort.h
 	$(CC) $(CFLAGS) msort_opt.c -c
+
+alphadev.o: alphadev.c alphadev.h
+	clang $(CFLAGS) alphadev.c -c
 
 debug: CFLAGS = -Og -g3 --coverage $(WARNFLAGS)
 debug: $(OBJS)

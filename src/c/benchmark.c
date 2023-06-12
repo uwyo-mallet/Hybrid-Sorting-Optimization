@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "alphadev.h"
 #include "platform.h"
 #include "sort.h"
 
@@ -34,6 +35,88 @@ struct times measure_sort_time(int method, sort_t* data, const size_t n,
       start = get_times();
       shell_sort(data, n, sizeof(sort_t), sort_t_compare);
       break;
+    case SORT3_ALPHADEV:
+      if (n != 3)
+      {
+        fprintf(stderr, "Sort3AlphaDev only supports input size of 3");
+        abort();
+      }
+      start = get_times();
+      Sort3AlphaDev((int*)data);
+      break;
+    case SORT4_ALPHADEV:
+      if (n != 4)
+      {
+        fprintf(stderr, "Sort4AlphaDev only supports input size of 4");
+        abort();
+      }
+      start = get_times();
+      Sort4AlphaDev((int*)data);
+      break;
+    case SORT5_ALPHADEV:
+      if (n != 5)
+      {
+        fprintf(stderr, "Sort5AlphaDev only supports input size of 5");
+        abort();
+      }
+      start = get_times();
+      Sort5AlphaDev((int*)data);
+      break;
+    case SORT6_ALPHADEV:
+      if (n != 6)
+      {
+        fprintf(stderr, "Sort6AlphaDev only supports input size of 6");
+        abort();
+      }
+      start = get_times();
+      Sort6AlphaDev((int*)data);
+      break;
+    case SORT7_ALPHADEV:
+      if (n != 7)
+      {
+        fprintf(stderr, "Sort7AlphaDev only supports input size of 7");
+        abort();
+      }
+      start = get_times();
+      Sort7AlphaDev((int*)data);
+      break;
+    case SORT8_ALPHADEV:
+      if (n != 8)
+      {
+        fprintf(stderr, "Sort8AlphaDev only supports input size of 8");
+        abort();
+      }
+      start = get_times();
+      Sort8AlphaDev((int*)data);
+      break;
+    case VARSORT3_ALPHADEV:
+      if (n > 3)
+      {
+        fprintf(stderr, "VarSort3AlphaDev only supports input size <= 3");
+        abort();
+      }
+      start = get_times();
+      VarSort3AlphaDev((int*)data);
+      break;
+    case VARSORT4_ALPHADEV:
+      if (n > 4)
+      {
+        fprintf(stderr, "VarSort4AlphaDev only supports input size <= 4");
+        abort();
+      }
+      start = get_times();
+      VarSort4AlphaDev((int*)data);
+      break;
+    case VARSORT5_ALPHADEV:
+      if (n > 5)
+      {
+        fprintf(stderr, "VarSort5AlphaDev only supports input size <= 5");
+        abort();
+      }
+      start = get_times();
+      VarSort5AlphaDev((int*)data);
+      break;
+
     /* Hybrid Methods ------------------------------------------------------- */
     case MSORT_HEAP_WITH_OLD_INS:
       start = get_times();
