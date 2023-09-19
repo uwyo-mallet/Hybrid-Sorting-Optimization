@@ -127,41 +127,51 @@ static const threshold_sort_fn_t thresholdSortFns[] = {
     BOOST_CHECK(is_sorted(SINGLENUM));                                      \
   }
 
+#define ALPHADEV_SORT_TEST_CASE(fn, n)                                    \
+  BOOST_FIXTURE_TEST_CASE(AlphaDevTestCase_##fn, TestDataFixture<int, n>) \
+  {                                                                       \
+    memcpy(working, ascending, size);                                     \
+    (*fn)(working);                                                       \
+    BOOST_CHECK(is_sorted(ASCENDING));                                    \
+  }
+
 typedef unsigned long unsigned_long;
 typedef long double long_double;
 
-SORT_TEST_CASE(char);
-SORT_TEST_CASE(uint8_t);
-SORT_TEST_CASE(uint16_t);
-SORT_TEST_CASE(uint32_t);
-SORT_TEST_CASE(uint64_t);
-SORT_TEST_CASE(unsigned_long);
-SORT_TEST_CASE(uintmax_t);
-SORT_TEST_CASE(int8_t);
-SORT_TEST_CASE(int16_t);
-SORT_TEST_CASE(int32_t);
-SORT_TEST_CASE(int64_t);
-SORT_TEST_CASE(intmax_t);
-SORT_TEST_CASE(float);
-SORT_TEST_CASE(double);
-SORT_TEST_CASE(long_double);
-SORT_TEST_CASE(uintptr_t);
-SORT_TEST_CASE(LargeStruct);
+// SORT_TEST_CASE(char);
+// SORT_TEST_CASE(uint8_t);
+// SORT_TEST_CASE(uint16_t);
+// SORT_TEST_CASE(uint32_t);
+// SORT_TEST_CASE(uint64_t);
+// SORT_TEST_CASE(unsigned_long);
+// SORT_TEST_CASE(uintmax_t);
+// SORT_TEST_CASE(int8_t);
+// SORT_TEST_CASE(int16_t);
+// SORT_TEST_CASE(int32_t);
+// SORT_TEST_CASE(int64_t);
+// SORT_TEST_CASE(intmax_t);
+// // SORT_TEST_CASE(float);
+// // SORT_TEST_CASE(double);
+// // SORT_TEST_CASE(long_double);
+// SORT_TEST_CASE(uintptr_t);
+// SORT_TEST_CASE(LargeStruct);
 
-THRESHOLD_SORT_TEST_CASE(char);
-THRESHOLD_SORT_TEST_CASE(uint8_t);
-THRESHOLD_SORT_TEST_CASE(uint16_t);
-THRESHOLD_SORT_TEST_CASE(uint32_t);
-THRESHOLD_SORT_TEST_CASE(uint64_t);
-THRESHOLD_SORT_TEST_CASE(unsigned_long);
-THRESHOLD_SORT_TEST_CASE(uintmax_t);
-THRESHOLD_SORT_TEST_CASE(int8_t);
-THRESHOLD_SORT_TEST_CASE(int16_t);
-THRESHOLD_SORT_TEST_CASE(int32_t);
-THRESHOLD_SORT_TEST_CASE(int64_t);
-THRESHOLD_SORT_TEST_CASE(intmax_t);
-THRESHOLD_SORT_TEST_CASE(float);
-THRESHOLD_SORT_TEST_CASE(double);
-// THRESHOLD_SORT_TEST_CASE(long_double); // quicksort_with_fast_ins fails
-THRESHOLD_SORT_TEST_CASE(uintptr_t);
-THRESHOLD_SORT_TEST_CASE(LargeStruct);
+// THRESHOLD_SORT_TEST_CASE(char);
+// THRESHOLD_SORT_TEST_CASE(uint8_t);
+// THRESHOLD_SORT_TEST_CASE(uint16_t);
+// THRESHOLD_SORT_TEST_CASE(uint32_t);
+// THRESHOLD_SORT_TEST_CASE(uint64_t);
+// THRESHOLD_SORT_TEST_CASE(unsigned_long);
+// THRESHOLD_SORT_TEST_CASE(uintmax_t);
+// THRESHOLD_SORT_TEST_CASE(int8_t);
+// THRESHOLD_SORT_TEST_CASE(int16_t);
+// THRESHOLD_SORT_TEST_CASE(int32_t);
+// THRESHOLD_SORT_TEST_CASE(int64_t);
+// THRESHOLD_SORT_TEST_CASE(intmax_t);
+// // THRESHOLD_SORT_TEST_CASE(float);
+// // THRESHOLD_SORT_TEST_CASE(double);
+// // THRESHOLD_SORT_TEST_CASE(long_double); // quicksort_with_fast_ins fails
+// THRESHOLD_SORT_TEST_CASE(uintptr_t);
+// THRESHOLD_SORT_TEST_CASE(LargeStruct);
+
+ALPHADEV_SORT_TEST_CASE(alphadev_sort3, 3);

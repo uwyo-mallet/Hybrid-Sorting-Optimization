@@ -72,6 +72,61 @@ struct times measure_sort_time(int method, sort_t* data, const size_t n,
       quicksort_with_fast_ins(
           data, n, sizeof(sort_t), sort_t_compare, threshold);
       break;
+/* Alpha Dev Methods ---------------------------------------------------- */
+#ifdef SORT_INTS
+    case ALPHA_DEV_SORT3:
+      start = get_times();
+      alphadev_sort3(data);
+      break;
+    case ALPHA_DEV_SORT4:
+      start = get_times();
+      alphadev_sort4(data);
+      break;
+    case ALPHA_DEV_SORT5:
+      start = get_times();
+      alphadev_sort5(data);
+      break;
+    case ALPHA_DEV_SORT6:
+      start = get_times();
+      alphadev_sort6(data);
+      break;
+    case ALPHA_DEV_SORT7:
+      start = get_times();
+      alphadev_sort7(data);
+      break;
+    case ALPHA_DEV_SORT8:
+      start = get_times();
+      alphadev_sort8(data);
+      break;
+    case ALPHA_DEV_SORT3_VAR:
+      start = get_times();
+      printf("%s:%d: Not implemented\n", __FILE__, __LINE__);
+      abort();
+      break;
+    case ALPHA_DEV_SORT4_VAR:
+      start = get_times();
+      printf("%s:%d: Not implemented\n", __FILE__, __LINE__);
+      abort();
+      break;
+    case ALPHA_DEV_SORT5_VAR:
+      start = get_times();
+      printf("%s:%d: Not implemented\n", __FILE__, __LINE__);
+      abort();
+      break;
+#else
+    case ALPHA_DEV_SORT3:
+    case ALPHA_DEV_SORT4:
+    case ALPHA_DEV_SORT5:
+    case ALPHA_DEV_SORT6:
+    case ALPHA_DEV_SORT7:
+    case ALPHA_DEV_SORT8:
+    case ALPHA_DEV_SORT3_VAR:
+    case ALPHA_DEV_SORT4_VAR:
+    case ALPHA_DEV_SORT5_VAR:
+      printf("Compiled without support for these methods. Use -DSORT_INTS\n");
+      abort();
+      break;
+#endif  // SORT_INTS
     default:
       // How tf did you end up here?
       break;

@@ -44,7 +44,7 @@ def get_supported_methods(exec_path: Path):
     """Call the process and parse the currently supported methods."""
     valid_methods = (
         subprocess.run(
-            (str(exec_path), "--show-methods=nonthreshold"),
+            (str(exec_path), "--show-methods"),
             capture_output=True,
             check=True,
         )

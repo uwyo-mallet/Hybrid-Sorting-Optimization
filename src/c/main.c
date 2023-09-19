@@ -21,7 +21,7 @@
 #define BILLION 1000000000
 
 // Argument Parsing
-const char* argp_program_version = "1.1.0";
+const char* argp_program_version = "1.2.0";
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 static const char doc[] =
     "Evaluating sorting algorithms with homebrew methods.";
@@ -46,6 +46,19 @@ static struct argp_option options[] = {
 };
 // clang-format on
 
+enum SORT_METHOD_TYPE
+{
+  STANDARD_TYPE = 0,
+  THRESHOLD_TYPE,
+  ALPHADEV_TYPE,
+};
+
+struct method_constraints
+{
+  size_t min_len;
+  size_t max_len;
+};
+
 struct arguments
 {
   char* in_file;
@@ -57,16 +70,20 @@ struct arguments
   char* vals;
 
   size_t in_file_len;
-  bool is_threshold_method;
+  enum SORT_METHOD_TYPE method_type;
   bool print_standard_methods;
   bool print_threshold_methods;
   bool dump_sorted;
+
+  /* Alpha Dev Stuff */
+  struct method_constraints constraints;
 };
 
 static error_t parse_opt(int key, char* arg, struct argp_state* state);
 static struct argp argp = {options, parse_opt, args_doc, doc};
 
-ssize_t is_method(char* m, bool* is_threshold_method);
+ssize_t is_method(char* m, enum SORT_METHOD_TYPE* method_type,
+                  struct method_constraints* constraints);
 int read_txt(FILE* fp, sort_t** dst, size_t* n);
 int read_zip(FILE* fp, sort_t** dst, size_t* n);
 int write_results(const struct arguments* args, const struct times* results,
@@ -75,10 +92,11 @@ bool is_sorted(sort_t* data, const size_t n);
 
 typedef enum
 {
-  SUCCESS,       /* OK */
-  FAIL,          /* An error occured, and was already reported with perror(). */
-  PARSE_ERROR,   /* strtoll() parse error. */
-  UNKNOWN_ERROR, /* Take a guess... */
+  SUCCESS,     /* OK */
+  FAIL,        /* An error occured, and was already reported with perror(). */
+  PARSE_ERROR, /* strtoll() parse error. */
+  DATA_INPUT_RANGE_ERROR, /* strtoll() parse error. */
+  UNKNOWN_ERROR,          /* Take a guess... */
 } STATUS;
 
 // Not being able to keep this with the methods enum is a little unfortunate...
@@ -97,6 +115,16 @@ const char* METHODS[] = {
     "msort_with_network",
     "quicksort_with_ins",
     "quicksort_with_fast_ins",
+    NULL, /* Methods from this point forward are AlphaDev related. */
+    "sort3_alphadev",
+    "sort4_alphadev",
+    "sort5_alphadev",
+    "sort6_alphadev",
+    "sort7_alphadev",
+    "sort8_alphadev",
+    "sort_3_var_alphadev",
+    "sort_4_var_alphadev",
+    "sort_5_var_alphadev",
     NULL,
 };
 
@@ -112,11 +140,23 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
+  if (arguments.print_standard_methods && arguments.print_threshold_methods)
+  {
+    for (size_t i = 0; i < ARRAY_SIZE(METHODS) - 1; ++i)
+    {
+      if (METHODS[i] != NULL)
+      {
+        printf("%s\n", METHODS[i]);
+      }
+    }
+    return EXIT_SUCCESS;
+  }
+
   if (arguments.print_standard_methods || arguments.print_threshold_methods)
   {
-    const char** std_ptr = METHODS;
     if (arguments.print_standard_methods)
     {
+      const char** std_ptr = METHODS;
       while (*std_ptr)
       {
         printf("%s\n", *std_ptr);
@@ -191,16 +231,33 @@ int main(int argc, char** argv)
   sort_t* to_sort_buffer = malloc(sizeof(sort_t) * n);
   if (to_sort_buffer == NULL)
   {
-    free(data);
     perror("malloc");
     return EXIT_FAILURE;
+  }
+
+  if (arguments.constraints.min_len > 0 || arguments.constraints.max_len > 0)
+  {
+    if (n < arguments.constraints.min_len)
+    {
+      printf("Invalid input data length: %lu, minimum supported by %s is %lu\n",
+             n,
+             METHODS[arguments.method],
+             arguments.constraints.min_len);
+      return DATA_INPUT_RANGE_ERROR;
+    }
+    else if (n > arguments.constraints.max_len)
+    {
+      printf("Invalid input data length: %lu, maximum supported by %s is %lu\n",
+             n,
+             METHODS[arguments.method],
+             arguments.constraints.min_len);
+      return DATA_INPUT_RANGE_ERROR;
+    }
   }
 
   struct times* results = calloc(sizeof(struct times), arguments.runs);
   if (results == NULL)
   {
-    free(data);
-    free(to_sort_buffer);
     perror("calloc");
     return EXIT_FAILURE;
   }
@@ -220,15 +277,14 @@ int main(int argc, char** argv)
         fprintf(stderr, "Array was not sorted correctly!\n");
         for (size_t j = 0; j < n; ++j)
         {
-#ifdef SORT_LARGE_STRUCTS
+#if defined(SORT_LARGE_STRUCTS)
           fprintf(stderr, "%li\n", to_sort_buffer[j].val);
+#elif defined(SORT_INTS)
+          fprintf(stderr, "%d\n", to_sort_buffer[j]);
 #else
           fprintf(stderr, "%li\n", to_sort_buffer[j]);
 #endif  // SORT_LARGE_STRUCTS
         }
-        free(data);
-        free(to_sort_buffer);
-        free(results);
         return EXIT_FAILURE;
       }
     }
@@ -245,8 +301,10 @@ int main(int argc, char** argv)
     }
     for (size_t i = 0; i < n; ++i)
     {
-#ifdef SORT_LARGE_STRUCTS
+#if defined(SORT_LARGE_STRUCTS)
       fprintf(dump_fp, "%li\n", to_sort_buffer[i].val);
+#elif defined(SORT_INTS)
+      fprintf(dump_fp, "%d\n", to_sort_buffer[i]);
 #else
       fprintf(dump_fp, "%li\n", to_sort_buffer[i]);
 #endif  // SORT_LARGE_STRUCTS
@@ -257,16 +315,10 @@ int main(int argc, char** argv)
   if (write_results(&arguments, results, arguments.runs) != SUCCESS)
   {
     // Cleanup after thy self.
-    free(data);
-    free(to_sort_buffer);
-    free(results);
     return EXIT_FAILURE;
   }
 
   // Cleanup after thy self.
-  free(data);
-  free(to_sort_buffer);
-  free(results);
   return EXIT_SUCCESS;
 }
 
@@ -280,9 +332,11 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
       args->out_file = arg;
       break;
     case 'm':
-      if ((args->method = is_method(arg, &args->is_threshold_method)) < 0)
+      if ((args->method =
+               is_method(arg, &args->method_type, &args->constraints)) < 0)
       {
         printf("Invalid method selected: '%s'\n", arg);
+        printf("%s\n", arg);
         return ARGP_ERR_UNKNOWN;
       }
       break;
@@ -349,24 +403,69 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
   return 0;
 }
 
-ssize_t is_method(char* m, bool* is_threshold_method)
+ssize_t is_method(char* m, enum SORT_METHOD_TYPE* method_type,
+                  struct method_constraints* constraints)
 {
+  constraints->min_len = 0;
+  constraints->max_len = 0;
+
   // Lowercase the method name
   for (size_t i = 0; m[i]; ++i)
   {
     m[i] = tolower(m[i]);
   }
 
-  for (size_t i = 0; i < ARRAY_SIZE(METHODS); ++i)
+  *method_type = 0;
+
+  for (size_t i = 0; i < ARRAY_SIZE(METHODS) - 1; ++i)
   {
     if (METHODS[i] == NULL)
     {
-      *is_threshold_method = true;
+      *method_type += 1;
       continue;
     }
 
     if (strcmp(m, METHODS[i]) == 0)
     {
+      switch (i)
+      {
+        case ALPHA_DEV_SORT3:
+          constraints->min_len = 3;
+          constraints->max_len = 3;
+          break;
+        case ALPHA_DEV_SORT4:
+          constraints->min_len = 4;
+          constraints->max_len = 4;
+          break;
+        case ALPHA_DEV_SORT5:
+          constraints->min_len = 5;
+          constraints->max_len = 5;
+          break;
+        case ALPHA_DEV_SORT6:
+          constraints->min_len = 6;
+          constraints->max_len = 6;
+          break;
+        case ALPHA_DEV_SORT7:
+          constraints->min_len = 7;
+          constraints->max_len = 7;
+          break;
+        case ALPHA_DEV_SORT8:
+          constraints->min_len = 8;
+          constraints->max_len = 8;
+          break;
+        case ALPHA_DEV_SORT3_VAR:
+          constraints->max_len = 3;
+          break;
+        case ALPHA_DEV_SORT4_VAR:
+          constraints->max_len = 4;
+          break;
+        case ALPHA_DEV_SORT5_VAR:
+          constraints->max_len = 5;
+          break;
+        default:
+          break;
+      };
+
       return i;
     }
   }
@@ -650,7 +749,7 @@ int write_results(const struct arguments* args, const struct times* results,
             METHODS[args->method],
             args->in_file,
             args->in_file_len,
-            args->is_threshold_method ? args->threshold : 0,
+            args->method_type == THRESHOLD_TYPE ? args->threshold : 0,
             wall,
             r.user,
             r.system);

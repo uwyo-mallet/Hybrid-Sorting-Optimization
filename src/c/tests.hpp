@@ -48,7 +48,7 @@ enum DTYPE
   SINGLENUM,
 };
 
-template <typename T>
+template <typename T, const size_t N = MAX_ARRAY_SIZE>
 struct TestDataFixture
 {
   T* ascending;
@@ -63,7 +63,7 @@ struct TestDataFixture
   compar_d_fn_t cmp;
 
   TestDataFixture()
-      : n(std::min(MAX_ARRAY_SIZE, (size_t)std::numeric_limits<T>::max())),
+      : n(std::min(N, (size_t)std::numeric_limits<T>::max())),
         s(sizeof(T)),
         size(n * sizeof(T)),
         cmp((compar_d_fn_t)compare<T>)

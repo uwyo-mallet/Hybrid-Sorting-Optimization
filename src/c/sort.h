@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef SORT_LARGE_STRUCTS
+#if defined(SORT_LARGE_STRUCTS)
 #define PAD_SIZE 4 * 1024
 typedef struct
 {
@@ -12,6 +12,8 @@ typedef struct
   volatile char c[PAD_SIZE];
   int64_t val;
 } sort_t;
+#elif defined(SORT_INTS)
+typedef int sort_t;
 #else
 typedef int64_t sort_t;
 #endif  // SORT_LARGE_STRUCTS
@@ -24,7 +26,7 @@ enum METHOD_TOK
   BASIC_INS,
   FAST_INS,
   SHELL,
-  EMPTY,
+  DUMMY1, /* Methods from this point support a threshold value. */
   MSORT_HEAP_WITH_OLD_INS,
   MSORT_HEAP_WITH_BASIC_INS,
   MSORT_HEAP_WITH_SHELL,
@@ -33,6 +35,16 @@ enum METHOD_TOK
   MSORT_WITH_NETWORK,
   QUICKSORT_WITH_INS,
   QUICKSORT_WITH_FAST_INS,
+  DUMMY2, /* Methods from this point forward are AlphaDev related. */
+  ALPHA_DEV_SORT3,
+  ALPHA_DEV_SORT4,
+  ALPHA_DEV_SORT5,
+  ALPHA_DEV_SORT6,
+  ALPHA_DEV_SORT7,
+  ALPHA_DEV_SORT8,
+  ALPHA_DEV_SORT3_VAR,
+  ALPHA_DEV_SORT4_VAR,
+  ALPHA_DEV_SORT5_VAR,
 };
 
 #define UINT32 0
@@ -75,5 +87,16 @@ void quicksort_with_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                         const size_t threshold);
 void quicksort_with_fast_ins(void* b, size_t n, size_t s, compar_d_fn_t cmp,
                              const size_t threshold);
+
+void alphadev_sort3(int* b);
+void alphadev_sort4(int* b);
+void alphadev_sort5(int* b);
+void alphadev_sort6(int* b);
+void alphadev_sort7(int* b);
+void alphadev_sort8(int* b);
+
+void alphadev_sort3_var(int* b);
+void alphadev_sort4_var(int* b);
+void alphadev_sort5_var(int* b);
 
 #endif  // SORT_H_

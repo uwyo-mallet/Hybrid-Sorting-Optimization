@@ -4,14 +4,16 @@
 
 all: HSO-c
 
-WARNFLAGS = -Wall -Wextra -pedantic
+WARNFLAGS = -Wall -Wextra -pedantic # -fsanitize=address
 
-CC = gcc
+# CC = gcc
+CC = clang
 CFLAGS += -O3
 CFLAGS += $(WARNFLAGS)
+CFLAGS += -DSORT_INTS
 # CFLAGS += -DSORT_LARGE_STRUCTS
 
-CXX = g++
+CXX = clang++
 CXXFLAGS += $(CFLAGS)
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
 
@@ -35,10 +37,10 @@ sort.o: sort.c sort.h
 msort_opt.o: msort_opt.c sort.h
 	$(CC) $(CFLAGS) msort_opt.c -c
 
-debug: CFLAGS = -Og -g3 --coverage $(WARNFLAGS)
+debug: CFLAGS = -Og -g --coverage $(WARNFLAGS)
 debug: $(OBJS)
 
-tests: CFLAGS = -Og -g3 --coverage $(WARNFLAGS)
+tests: CFLAGS = -Og -g --coverage $(WARNFLAGS)
 tests: CXXFLAGS += --coverage
 tests: tests.cpp tests.hpp
 	$(MAKE) -f $(THIS_FILE) clean
