@@ -35,7 +35,6 @@ static const char args_doc[] = "INFILE";
 // clang-format off
 static struct argp_option options[] = {
     {"output",       'o',      "FILE",   0, "Output to FILE instead of STDOUT"                 },
-    {"perf-output",  'p',      "FILE",   0, "Output location of performance data"              },
     {"method",       'm',      "METHOD", 0, "Sorting method to use."                           },
     {"runs",         'r',      "N",      0, "Number of times to repeatedly sort the same data."},
     {"threshold",    't',      "THRESH", 0, "Threshold to switch sorting methods."             },
@@ -51,7 +50,6 @@ struct arguments
 {
   char* in_file;
   char* out_file;
-  char* perf_out_file;
   ssize_t method;
   int64_t runs;
   int64_t threshold;
@@ -213,15 +211,6 @@ int main(int argc, char** argv)
   struct perf_fds perf;
   perf_event_open(&perf);
 
-  FILE* perf_out_file;
-  bool write_header = access(arguments.perf_out_file, F_OK) != 0;
-  perf_out_file = fopen(arguments.perf_out_file, "a");
-  if (perf_out_file == NULL)
-  {
-    perror(arguments.perf_out_file);
-    return EXIT_FAILURE;
-  }
-
   bool checked = false;
   for (int64_t i = 0; i < arguments.runs; ++i)
   {
@@ -229,8 +218,6 @@ int main(int argc, char** argv)
 
     results[i] = measure_sort_time(
         arguments.method, to_sort_buffer, n, arguments.threshold, &perf);
-    perf_dump_to_csv(perf_out_file, write_header, &perf);
-    write_header = false;
 
     if (!checked)
     {
@@ -301,9 +288,6 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
   {
     case 'o':
       args->out_file = arg;
-      break;
-    case 'p':
-      args->perf_out_file = arg;
       break;
     case 'm':
       if ((args->method = is_method(arg, &args->is_threshold_method)) < 0)
@@ -659,7 +643,25 @@ int write_results(const struct arguments* args, const struct times* results,
   if (write_header)
   {
     fprintf(out_file,
-            "method,input,size,threshold,wall_nsecs,user_nsecs,system_nsecs");
+            "method,"
+            "input,"
+            "size,"
+            "threshold,"
+            "wall_nsecs,"
+            "user_nsecs,"
+            "system_nsecs,"
+            "hw_cpu_cycles,"
+            "hw_instructions,"
+            "hw_cache_references,"
+            "hw_cache_misses,"
+            "hw_branch_instructions,"
+            "hw_branch_misses,"
+            "hw_bus_cycles,"
+            "sw_cpu_clock,"
+            "sw_task_clock,"
+            "sw_page_faults,"
+            "sw_context_switches,"
+            "sw_cpu_migrations");
     if (args->vals != NULL)
     {
       fprintf(out_file, ",%s", args->cols);
@@ -671,15 +673,47 @@ int write_results(const struct arguments* args, const struct times* results,
   {
     const struct times r = results[i];
     const intmax_t wall = (r.wall_secs * BILLION) + r.wall_nsecs;
+    // clang-format off
     fprintf(out_file,
-            "%s,%s,%lu,%lu,%li,%lu,%lu",
+            "%s,"
+            "%s,"
+            "%lu,"
+            "%lu,"
+            "%li,"
+            "%lu,"
+            "%lu,"
+            "%" PRIu64 ","
+            "%" PRIu64 ","
+            "%" PRIu64 ","
+            "%" PRIu64 ","
+            "%" PRIu64 ","
+            "%" PRIu64 ","
+            "%" PRIu64 ","
+            "%" PRIu64 ","
+            "%" PRIu64 ","
+            "%" PRIu64 ","
+            "%" PRIu64 ","
+            "%" PRIu64,
             METHODS[args->method],
             args->in_file,
             args->in_file_len,
             args->is_threshold_method ? args->threshold : 0,
             wall,
             r.user,
-            r.system);
+            r.system,
+            r.perf.count_hw_cpu_cycles,
+            r.perf.count_hw_instructions,
+            r.perf.count_hw_cache_references,
+            r.perf.count_hw_cache_misses,
+            r.perf.count_hw_branch_instructions,
+            r.perf.count_hw_branch_misses,
+            r.perf.count_hw_bus_cycles,
+            r.perf.count_sw_cpu_clock,
+            r.perf.count_sw_task_clock,
+            r.perf.count_sw_page_faults,
+            r.perf.count_sw_context_switches,
+            r.perf.count_sw_cpu_migrations);
+    // clang-format on
 
     if (args->vals != NULL)
     {

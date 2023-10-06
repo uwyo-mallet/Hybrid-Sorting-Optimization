@@ -177,50 +177,53 @@ void perf_stop(struct perf_fds* fds)
   ioctl(fds->count_sw_cpu_migrations, PERF_EVENT_IOC_DISABLE, 0);
 }
 
-void perf_dump_to_csv(FILE* fp, int write_header, struct perf_fds* fds)
+void perf_dump(struct perf_data* data, struct perf_fds* fds)
 {
-  if (write_header)
-  {
-    fprintf(
-        fp,
-        "hw_cpu_cycles,hw_instructions,hw_cache_references,hw_cache_misses,"
-        "hw_branch_instructions,hw_branch_misses,sw_cpu_clock,sw_task_clock,"
-        "sw_page_faults,sw_context_switches,sw_cpu_migrations\n");
-  }
+  // clang-format off
+  read(fds->count_hw_cpu_cycles,
+       &data->count_hw_cpu_cycles,
+       sizeof(uint64_t));
 
-  uint64_t buffer;
-  read(fds->count_hw_cpu_cycles, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 ",", buffer);
+  read(fds->count_hw_instructions,
+       &data->count_hw_instructions,
+       sizeof(uint64_t));
 
-  read(fds->count_hw_instructions, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 ",", buffer);
+  read(fds->count_hw_cache_references,
+       &data->count_hw_cache_references,
+       sizeof(uint64_t));
 
-  read(fds->count_hw_cache_references, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 ",", buffer);
+  read(fds->count_hw_cache_misses,
+       &data->count_hw_cache_misses,
+       sizeof(uint64_t));
 
-  read(fds->count_hw_cache_misses, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 ",", buffer);
+  read(fds->count_hw_branch_instructions,
+       &data->count_hw_branch_instructions,
+       sizeof(uint64_t));
 
-  read(fds->count_hw_branch_instructions, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 ",", buffer);
+  read(fds->count_hw_branch_misses,
+       &data->count_hw_branch_misses,
+       sizeof(uint64_t));
 
-  read(fds->count_hw_branch_misses, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 ",", buffer);
+  read(fds->count_sw_cpu_clock,
+       &data->count_sw_cpu_clock,
+       sizeof(uint64_t));
 
-  read(fds->count_sw_cpu_clock, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 ",", buffer);
+  read(fds->count_sw_task_clock,
+       &data->count_sw_task_clock,
+       sizeof(uint64_t));
 
-  read(fds->count_sw_task_clock, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 ",", buffer);
+  read(fds->count_sw_page_faults,
+       &data->count_sw_page_faults,
+       sizeof(uint64_t));
 
-  read(fds->count_sw_page_faults, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 ",", buffer);
+  read(fds->count_sw_context_switches,
+       &data->count_sw_context_switches,
+       sizeof(uint64_t));
 
-  read(fds->count_sw_context_switches, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 ",", buffer);
-
-  read(fds->count_sw_cpu_migrations, &buffer, sizeof(uint64_t));
-  fprintf(fp, "%" PRIu64 "\n", buffer);
+  read(fds->count_sw_cpu_migrations,
+       &data->count_sw_cpu_migrations,
+       sizeof(uint64_t));
+  // clang-format on
 }
 
 struct times get_times(int start, struct perf_fds* fds)
@@ -252,14 +255,18 @@ struct times get_times(int start, struct perf_fds* fds)
   return result;
 }
 
-struct times elapsed(struct times* start, struct times* end)
+struct times elapsed(struct times* start, struct times* end,
+                     struct perf_fds* perf)
 {
   struct times result = {
       .user = end->user - start->user,
       .system = end->system - start->system,
       .wall_secs = end->wall_secs - start->wall_secs,
       .wall_nsecs = end->wall_nsecs - start->wall_nsecs,
+      .perf = {0},
   };
+
+  perf_dump(&result.perf, perf);
 
   return result;
 }

@@ -80,5 +80,5 @@ struct times measure_sort_time(int method, sort_t* data, const size_t n,
       break;
   }
   end = END_TIME();
-  return elapsed(&start, &end);
+  return elapsed(&start, &end, perf);
 }

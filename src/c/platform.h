@@ -12,12 +12,23 @@
 #include <time.h>
 #include <unistd.h>
 
-struct times
+struct perf_data
 {
-  clock_t user;
-  clock_t system;
-  time_t wall_secs;
-  intmax_t wall_nsecs;
+  /* HW Counters */
+  uint64_t count_hw_cpu_cycles;
+  uint64_t count_hw_instructions;
+  uint64_t count_hw_cache_references;
+  uint64_t count_hw_cache_misses;
+  uint64_t count_hw_branch_instructions;
+  uint64_t count_hw_branch_misses;
+  uint64_t count_hw_bus_cycles;
+
+  /* SW Counters */
+  uint64_t count_sw_cpu_clock;
+  uint64_t count_sw_task_clock;
+  uint64_t count_sw_page_faults;
+  uint64_t count_sw_context_switches;
+  uint64_t count_sw_cpu_migrations;
 };
 
 struct perf_fds
@@ -39,15 +50,25 @@ struct perf_fds
   int count_sw_cpu_migrations;
 };
 
+struct times
+{
+  clock_t user;
+  clock_t system;
+  time_t wall_secs;
+  intmax_t wall_nsecs;
+
+  struct perf_data perf;
+};
+
 void perf_event_open(struct perf_fds* perf);
 void perf_start(struct perf_fds* perf);
 void perf_stop(struct perf_fds* perf);
 void perf_reset(struct perf_fds* perf);
 void perf_event_close(struct perf_fds* perf);
-void perf_dump_to_csv(FILE* fp, int write_header, struct perf_fds* fds);
+void perf_dump(struct perf_data* data, struct perf_fds* fds);
 
 struct times get_times(int start, struct perf_fds* fds);
-struct times elapsed(struct times* start, struct times* end);
+struct times elapsed(struct times* start, struct times* end, struct perf_fds*);
 
 #else
 #error "Unsupported system type."
