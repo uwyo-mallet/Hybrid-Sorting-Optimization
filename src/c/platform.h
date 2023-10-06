@@ -20,8 +20,35 @@ struct times
   intmax_t wall_nsecs;
 };
 
-struct times get_times();
+struct perf_fds
+{
+  /* HW Counters */
+  int count_hw_cpu_cycles;
+  int count_hw_instructions;
+  int count_hw_cache_references;
+  int count_hw_cache_misses;
+  int count_hw_branch_instructions;
+  int count_hw_branch_misses;
+  int count_hw_bus_cycles;
+
+  /* SW Counters */
+  int count_sw_cpu_clock;
+  int count_sw_task_clock;
+  int count_sw_page_faults;
+  int count_sw_context_switches;
+  int count_sw_cpu_migrations;
+};
+
+void perf_event_open(struct perf_fds* perf);
+void perf_start(struct perf_fds* perf);
+void perf_stop(struct perf_fds* perf);
+void perf_reset(struct perf_fds* perf);
+void perf_event_close(struct perf_fds* perf);
+void perf_dump_to_csv(FILE* fp, int write_header, struct perf_fds* fds);
+
+struct times get_times(int start, struct perf_fds* fds);
 struct times elapsed(struct times* start, struct times* end);
+
 #else
 #error "Unsupported system type."
 #endif  // linux

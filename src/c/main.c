@@ -35,6 +35,7 @@ static const char args_doc[] = "INFILE";
 // clang-format off
 static struct argp_option options[] = {
     {"output",       'o',      "FILE",   0, "Output to FILE instead of STDOUT"                 },
+    {"perf-output",  'p',      "FILE",   0, "Output location of performance data"              },
     {"method",       'm',      "METHOD", 0, "Sorting method to use."                           },
     {"runs",         'r',      "N",      0, "Number of times to repeatedly sort the same data."},
     {"threshold",    't',      "THRESH", 0, "Threshold to switch sorting methods."             },
@@ -50,6 +51,7 @@ struct arguments
 {
   char* in_file;
   char* out_file;
+  char* perf_out_file;
   ssize_t method;
   int64_t runs;
   int64_t threshold;
@@ -112,6 +114,7 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
+  // Handle printing
   if (arguments.print_standard_methods || arguments.print_threshold_methods)
   {
     const char** std_ptr = METHODS;
@@ -196,6 +199,7 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
+  // Set up timer objects
   struct times* results = calloc(sizeof(struct times), arguments.runs);
   if (results == NULL)
   {
@@ -205,13 +209,29 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
+  // Set up performance counters
+  struct perf_fds perf;
+  perf_event_open(&perf);
+
+  FILE* perf_out_file;
+  bool write_header = access(arguments.perf_out_file, F_OK) != 0;
+  perf_out_file = fopen(arguments.perf_out_file, "a");
+  if (perf_out_file == NULL)
+  {
+    perror(arguments.perf_out_file);
+    return EXIT_FAILURE;
+  }
+
   bool checked = false;
   for (int64_t i = 0; i < arguments.runs; ++i)
   {
     memcpy(to_sort_buffer, data, n * sizeof(sort_t));
 
     results[i] = measure_sort_time(
-        arguments.method, to_sort_buffer, n, arguments.threshold);
+        arguments.method, to_sort_buffer, n, arguments.threshold, &perf);
+    perf_dump_to_csv(perf_out_file, write_header, &perf);
+    write_header = false;
+
     if (!checked)
     {
       checked = true;
@@ -229,6 +249,7 @@ int main(int argc, char** argv)
         free(data);
         free(to_sort_buffer);
         free(results);
+        perf_event_close(&perf);
         return EXIT_FAILURE;
       }
     }
@@ -260,6 +281,7 @@ int main(int argc, char** argv)
     free(data);
     free(to_sort_buffer);
     free(results);
+    perf_event_close(&perf);
     return EXIT_FAILURE;
   }
 
@@ -267,6 +289,7 @@ int main(int argc, char** argv)
   free(data);
   free(to_sort_buffer);
   free(results);
+  perf_event_close(&perf);
   return EXIT_SUCCESS;
 }
 
@@ -278,6 +301,9 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
   {
     case 'o':
       args->out_file = arg;
+      break;
+    case 'p':
+      args->perf_out_file = arg;
       break;
     case 'm':
       if ((args->method = is_method(arg, &args->is_threshold_method)) < 0)
