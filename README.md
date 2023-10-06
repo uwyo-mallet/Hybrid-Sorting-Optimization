@@ -10,6 +10,23 @@ algorithms is often hard-coded by some developer. This project evaluates various
 candidate implementations for standard libraries at many different threshold
 values. Specifically, `qsort()` from GNU's libc is evaluated extensively.
 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [Hybrid Sorting Optimization](#hybrid-sorting-optimization)
+- [TODO](#todo)
+- [Setup](#setup)
+- [Methods](#methods)
+- [Sources](#sources)
+
+<!-- markdown-toc end -->
+
+## TODO
+
+- [ ] Create grafana / postgres visualizer.
+- [ ] Alphadev methods
+- [ ] paper
+
 ## Setup
 
 Refer to the instructions provided for each language in their corresponding
@@ -18,6 +35,8 @@ subdirectory within [`src/`](./src/).
 ## Methods
 
 TODO
+
+
 
 ## Sources
 
