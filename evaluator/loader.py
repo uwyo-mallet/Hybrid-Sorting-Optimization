@@ -15,7 +15,6 @@ from .generics import CACHEGRIND_COLS
 def load_cachegrind(df, valgrind_dir: Optional[Path]):
     """TODO."""
     # TODO: Handle a different method name in CSV vs C source code.
-    #
     cachegrind_df = None
     if valgrind_dir is None:
         return None

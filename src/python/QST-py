@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """
-TODO
-
 Mostly just for example
 """
 
@@ -50,21 +48,18 @@ def benchmark(func):
 
 @benchmark
 def builtin_sort(l: list[int]):
-    """TODO."""
     l.sort()
     return l
 
 
 @benchmark
 def np_sort(l: list[int]):
-    """TODO."""
     arr = np.asarray(l)
     arr = arr.sort()
     return arr
 
 
 def load(infile: Path):
-    """TODO."""
     if not infile.is_file():
         raise FileNotFoundError(infile)
 

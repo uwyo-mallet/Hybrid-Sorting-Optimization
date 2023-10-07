@@ -15,7 +15,7 @@ CXX = g++
 CXXFLAGS += $(CFLAGS)
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
 
-OBJS = benchmark.o platform.o sort.o msort_opt.o
+OBJS = benchmark.o platform.o sort.o msort_opt.o data.o
 
 HSO-c: $(OBJS) main.o
 	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) -lz
@@ -31,6 +31,9 @@ benchmark.o: benchmark.c benchmark.h
 
 sort.o: sort.c sort.h
 	$(CC) $(CFLAGS) sort.c -c
+
+data.o: data.c data.h
+	$(CC) $(CFLAGS) data.c -c
 
 msort_opt.o: msort_opt.c sort.h
 	$(CC) $(CFLAGS) msort_opt.c -c

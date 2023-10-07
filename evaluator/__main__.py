@@ -125,7 +125,7 @@ def df_from_json(json_df):
 
 
 def update_threshold_slider(json_df):
-    """TODO."""
+    """Update the bounds for the threshold slider."""
     df = df_from_json(json_df)
     marks = {int(i): "" for i in sorted(df["threshold"].unique())}
     return (
@@ -136,7 +136,7 @@ def update_threshold_slider(json_df):
 
 
 def update_size_slider(json_df):
-    """TODO."""
+    """Update the bounds for the size slider."""
     df = df_from_json(json_df)
     marks = {int(i): "" for i in sorted(df["size"].unique())}
     return (
@@ -147,7 +147,7 @@ def update_size_slider(json_df):
 
 
 def get_avg_df(df: pd.DataFrame) -> pd.DataFrame:
-    """TODO."""
+    """Compute a pivot'ed dataframe and the aggregated features."""
     pivot_columns = [
         "method",
         "description",
@@ -165,7 +165,7 @@ def get_avg_df(df: pd.DataFrame) -> pd.DataFrame:
 
 @dataclass
 class Result:
-    """TODO."""
+    """Represent a single 'result' from HSO-c."""
 
     path: Path
     df: pd.DataFrame
@@ -176,7 +176,7 @@ class Result:
     _threshold_methods: list[str]
 
     def __init__(self, p: Path) -> None:
-        """TODO."""
+        """Parse the output CSV and load into memory."""
         self.path = p
         self.df = pd.DataFrame()
         self.job_details = {}
@@ -318,12 +318,8 @@ class Result:
 
         return plots
 
-    def add_widgets(self):
-        """TODO."""
-        pass
-
     def plot(self, title=None):
-        """TODO."""
+        """Plot all the necessary plots."""
         result_path = self.path / "plot.html"
         template = """
         {% block postamble %}
@@ -398,7 +394,6 @@ def get_latest_subdir(path: Path) -> Path:
 
 
 def main():
-    """TODO."""
     # Setup the logger
     logger = logging.getLogger(__name__)
 

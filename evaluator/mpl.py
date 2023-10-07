@@ -45,7 +45,7 @@ def get_latest_subdir(path: Path) -> Path:
 
 
 def get_avg_df(df: pd.DataFrame) -> pd.DataFrame:
-    """TODO."""
+    """Compute a pivot'ed dataframe and the aggregated features."""
     pivot_columns = [
         "method",
         "description",
@@ -62,7 +62,7 @@ def get_avg_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 class Result:
-    """TODO."""
+    """Represent a single 'result' from HSO-c."""
 
     path: Path
     df: pd.DataFrame
@@ -73,7 +73,7 @@ class Result:
     _threshold_methods: list[str]
 
     def __init__(self, p: Path) -> None:
-        """TODO."""
+        """Parse the output CSV and load into memory."""
         self.path = p
         self.df = pd.DataFrame()
         self.job_details = {}
@@ -128,6 +128,7 @@ class Result:
             logging.info("'%s' does not exist.", str(partition_path))
 
     def gen_sub_dfs(self, df=None):
+        """Generate dfs by input data type and sorting method used."""
         if df is None:
             df = self.df
 
@@ -211,7 +212,7 @@ class Result:
         return picked
 
     def plot_threshold_v_col(self, col, interactive=False):
-        """TODO."""
+        """Plot threshold vs some other aggregated column within the dfs."""
         standard_data = self.df.query("method in @self._standard_methods")
         threshold_data = self.df.query("method in @self._threshold_methods")
 
@@ -248,7 +249,7 @@ class Result:
         fig.tight_layout()
 
     def plot_size_v_runtime(self, interactive=False):
-        """TODO."""
+        """Plot size vs wall_nsecs."""
         df = self.df
         thresholds = self.df["threshold"].unique()
         if len(thresholds) > 1:
@@ -268,6 +269,7 @@ class Result:
         fig.tight_layout()
 
     def plot_relative_difference(self, baseline_method, interactive=False):
+        """Plot % difference between custom methods and built-in qsort."""
         baseline_df = self.df[self.df["method"] == baseline_method]
         baseline_df = self.df[self.df["method"] != baseline_method]
         df = baseline_df.query("method in @self._threshold_methods").copy()
@@ -421,8 +423,6 @@ def gen_report_plots(result: Result):
 
 
 def main():
-    """TODO."""
-
     # Setup the logger
     logger = logging.getLogger(__name__)
 
