@@ -14,7 +14,7 @@
 #define ARRAY_SIZE(x) ((sizeof x) / (sizeof *x))
 
 // Argument Parsing
-const char* argp_program_version = "1.1.0";
+const char* argp_program_version = "2.0.0";
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
 static const char doc[] =
     "Evaluating sorting algorithms with homebrew methods.";
