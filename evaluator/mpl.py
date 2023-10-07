@@ -153,7 +153,7 @@ class Result:
         min_threshold=0,
         max_threshold=0,
     ):
-        fig, axes = plt.subplots(nrows=len(dfs), figsize=(16, 12))
+        fig, axes = plt.subplots(nrows=len(dfs), figsize=(10, 16))
         index = 0
         for type_, sub_df in dfs.items():
             for method, df in sub_df.items():
@@ -176,7 +176,21 @@ class Result:
                     logging.error(msg)
                     continue
                 y = df.iloc[0][("mean", col)]
-                axes[index].plot([0, max_threshold], [y, y], "--", label=method)
+                y_std = df.iloc[0][("std", col)]
+                axes[index].plot(
+                    [0, max_threshold],
+                    [y, y],
+                    "--",
+                    label=method,
+                    color="tab:green",
+                )
+                axes[index].fill_between(
+                    [0, max_threshold],
+                    y - y_std,
+                    y + y_std,
+                    alpha=0.2,
+                    color="tab:green",
+                )
 
             axes[index].legend(loc="upper right")
             axes[index].set_ylabel(col)
