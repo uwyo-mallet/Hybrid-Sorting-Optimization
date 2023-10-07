@@ -4,7 +4,7 @@
 
 all: HSO-c
 
-WARNFLAGS = -Wall -Wextra -pedantic
+WARNFLAGS = -Wall -Wextra -pedantic -Wno-missing-field-initializers
 
 CC = gcc
 CFLAGS += -O3
@@ -35,8 +35,8 @@ sort.o: sort.c sort.h
 msort_opt.o: msort_opt.c sort.h
 	$(CC) $(CFLAGS) msort_opt.c -c
 
-debug: CFLAGS = -Og -g3 --coverage $(WARNFLAGS)
-debug: $(OBJS)
+debug: CFLAGS = -Og -g3 --coverage $(WARNFLAGS) -fsanitize=address
+debug: $(OBJS) HSO-c
 
 tests: CFLAGS = -Og -g3 --coverage $(WARNFLAGS)
 tests: CXXFLAGS += --coverage

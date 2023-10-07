@@ -144,10 +144,11 @@ class Result:
         # Follow the following order for types
         return dfs
 
-    def _plot_threshold_v_runtime(
+    def _plot_threshold_v_col(
         self,
         dfs,
         baseline_dfs,
+        col,
         min_threshold=0,
         max_threshold=0,
     ):
@@ -155,10 +156,10 @@ class Result:
         index = 0
         for type_, sub_df in dfs.items():
             for method, df in sub_df.items():
-                yerr = list(df[("std", "wall_secs")])
+                yerr = list(df[("std", col)])
                 df.plot.line(
                     x="threshold",
-                    y=("mean", "wall_secs"),
+                    y=("mean", col),
                     marker="o",
                     yerr=yerr,
                     title=type_.capitalize(),
@@ -173,11 +174,11 @@ class Result:
                     msg = "Baseline df has no entries"
                     logging.error(msg)
                     continue
-                y = df.iloc[0][("mean", "wall_secs")]
+                y = df.iloc[0][("mean", col)]
                 axes[index].plot([0, max_threshold], [y, y], "--", label=method)
 
             axes[index].legend(loc="upper right")
-            axes[index].set_ylabel("Wall secs")
+            axes[index].set_ylabel(col)
             axes[index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
             index += 1
         plt.tight_layout()
@@ -209,7 +210,7 @@ class Result:
 
         return picked
 
-    def plot_threshold_v_runtime(self, interactive=False):
+    def plot_threshold_v_col(self, col, interactive=False):
         """TODO."""
         standard_data = self.df.query("method in @self._standard_methods")
         threshold_data = self.df.query("method in @self._threshold_methods")
@@ -231,14 +232,17 @@ class Result:
         standard_dfs = self.gen_sub_dfs(standard_data)
         threshold_dfs = self.gen_sub_dfs(threshold_data)
 
-        fig, axes = self._plot_threshold_v_runtime(
+        fig, axes = self._plot_threshold_v_col(
             threshold_dfs,
             standard_dfs,
+            col,
             min_threshold=min_threshold,
             max_threshold=max_threshold,
         )
         fig.suptitle(
-            f"Threshold vs. Runtime (size={size:,}, host={self.job_details['Node']}, arch={self.job_details['Machine']})",
+            f"Threshold vs. {col} (size={size:,}, "
+            f"host={self.job_details['Node']},"
+            f"arch={self.job_details['Machine']})",
             fontsize=16,
         )
         fig.tight_layout()
@@ -389,7 +393,24 @@ def gen_report_plots(result: Result):
     plots_dir = result.path / "plots"
     plots_dir.mkdir(exist_ok=True)
 
-    result.plot_threshold_v_runtime()
+    cols = [
+        "wall_nsecs",
+        "hw_cpu_cycles",
+        "hw_instructions",
+        "hw_cache_references",
+        "hw_cache_misses",
+        "hw_branch_instructions",
+        "hw_branch_misses",
+        "hw_bus_cycles",
+        "sw_cpu_clock",
+        "sw_task_clock",
+        "sw_page_faults",
+        "sw_context_switches",
+        "sw_cpu_migrations",
+    ]
+    for i in cols:
+        result.plot_threshold_v_col(i)
+
     result.plot_size_v_runtime()
     result.plot_relative_difference("qsort")
 
