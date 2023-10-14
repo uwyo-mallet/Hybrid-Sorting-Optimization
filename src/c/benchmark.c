@@ -37,7 +37,7 @@ struct times measure_sort_time(int method, sort_t* data, const size_t n,
       start = START_TIME();
       shell_sort(data, n, sizeof(sort_t), sort_t_compare);
       break;
-    /* Hybrid Methods ------------------------------------------------------- */
+    /* Threshold Methods ---------------------------------------------------- */
     case MSORT_HEAP_WITH_OLD_INS:
       start = START_TIME();
       msort_heap_with_old_ins(
@@ -75,8 +75,48 @@ struct times measure_sort_time(int method, sort_t* data, const size_t n,
       quicksort_with_fast_ins(
           data, n, sizeof(sort_t), sort_t_compare, threshold);
       break;
+/* AlphaDev Methods --------------------------------------------------- */
+#ifdef ALPHADEV
+    case SORT3_ALPHADEV:
+      start = START_TIME();
+      Sort3AlphaDev(data);
+      break;
+    case SORT4_ALPHADEV:
+      start = START_TIME();
+      Sort4AlphaDev(data);
+      break;
+    case SORT5_ALPHADEV:
+      start = START_TIME();
+      Sort5AlphaDev(data);
+      break;
+    case SORT6_ALPHADEV:
+      start = START_TIME();
+      Sort6AlphaDev(data);
+      break;
+    case SORT7_ALPHADEV:
+      start = START_TIME();
+      Sort7AlphaDev(data);
+      break;
+    case SORT8_ALPHADEV:
+      start = START_TIME();
+      Sort8AlphaDev(data);
+      break;
+    case VARSORT3_ALPHADEV:
+      start = START_TIME();
+      VarSort3AlphaDev(data);
+      break;
+    case VARSORT4_ALPHADEV:
+      start = START_TIME();
+      VarSort4AlphaDev(data);
+      break;
+    case VARSORT5_ALPHADEV:
+      start = START_TIME();
+      VarSort5AlphaDev(data);
+      break;
+#endif  // ALPHADEV
     default:
-      // How tf did you end up here?
+      fprintf(stderr, "[FATAL]: defaulted from method selection.\n");
+      exit(EXIT_FAILURE);
       break;
   }
   end = END_TIME();

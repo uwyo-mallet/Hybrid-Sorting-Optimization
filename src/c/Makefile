@@ -6,12 +6,10 @@ all: HSO-c
 
 WARNFLAGS = -Wall -Wextra -pedantic -Wno-missing-field-initializers
 
-CC = gcc
 CFLAGS += -O3
 CFLAGS += $(WARNFLAGS)
 # CFLAGS += -DSORT_LARGE_STRUCTS
 
-CXX = g++
 CXXFLAGS += $(CFLAGS)
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
 
@@ -19,6 +17,10 @@ OBJS = benchmark.o platform.o sort.o msort_opt.o data.o
 
 HSO-c: $(OBJS) main.o
 	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) -lz
+
+alphadev: $(OBJS) main.o asm_sort.c asm_sort.h
+	$(CC) $(CFLAGS) -Wno-language-extension-token asm_sort.c -c
+	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) asm_sort.o -lz
 
 main.o: main.c platform.h
 	$(CC) $(CFLAGS) main.c -c
@@ -82,7 +84,7 @@ glibc: check-glibc-var
         msort_opt.c -lz
 
 clean:
-	rm -f HSO-c tests $(OBJS) main.o *.gcda *.gcno test-coverage.info
+	rm -f HSO-c tests $(OBJS) main.o *.gcda *.gcno test-coverage.info asm_sort.o
 	rm -rf ./coverage
 
 # Frogbert has blessed this place.

@@ -71,6 +71,17 @@ const char* METHODS[] = {
     "basic_ins",
     "fast_ins",
     "shell",
+#ifdef ALPHADEV
+    "sort3_alphadev",
+    "sort4_alphadev",
+    "sort5_alphadev",
+    "sort6_alphadev",
+    "sort7_alphadev",
+    "sort8_alphadev",
+    "varsort3_alphadev",
+    "varsort4_alphadev",
+    "varsort5_alphadev",
+#endif
     NULL, /* Methods from this point support a threshold value. */
     "msort_heap_with_old_ins",
     "msort_heap_with_basic_ins",
@@ -94,6 +105,14 @@ int main(int argc, char** argv)
   {
     return EXIT_FAILURE;
   }
+
+#ifdef ALPHADEV
+  fprintf(stderr,
+          "[WARN]: Compiled with alphadev support, input data values must "
+          "not exceed "
+          "INT_MAX of your platform: %d\n",
+          INT_MAX);
+#endif  // ALPHADEV
 
   // Handle printing
   if (arguments.print_standard_methods || arguments.print_threshold_methods)
@@ -172,6 +191,34 @@ int main(int argc, char** argv)
   fclose(in_file);
 
   arguments.in_file_len = n;
+  // All non-alphadev methods support all input sizes.
+#ifdef ALPHADEV
+  if (arguments.method >= SORT3_ALPHADEV &&
+      arguments.method <= VARSORT5_ALPHADEV)
+  {
+    // Validate that the method can use the size of input data.
+    const int min_input_size[NUM_ALPHADEV_METHODS] = {
+        3, 4, 5, 6, 7, 8, 3, 3, 3};
+    const int max_input_size[NUM_ALPHADEV_METHODS] = {
+        3, 4, 5, 6, 7, 8, 3, 4, 5};
+
+    const int i = arguments.method - SORT3_ALPHADEV;
+
+    const int min = min_input_size[i];
+    const int max = max_input_size[i];
+    if (n < min || n > max)
+    {
+      fprintf(
+          stderr,
+          "Input not within supported input range for method %s (%d - %d)\n",
+          METHODS[arguments.method],
+          min,
+          max);
+      return EXIT_FAILURE;
+    }
+  }
+#endif  // ALPHADEV
+
   sort_t* to_sort_buffer = malloc(sizeof(sort_t) * n);
   if (to_sort_buffer == NULL)
   {

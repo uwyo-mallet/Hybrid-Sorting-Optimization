@@ -2,10 +2,16 @@
 #define PLATFORM_H_
 
 #ifdef _WIN32
-#error "Windows not yet supported."
+#error "Windows not yet supported, and never will be."
 #endif  // _WIN32
 
 #ifdef __unix__
+
+#ifdef __clang__
+#define ALPHADEV
+#include "asm_sort.h"
+#endif  // __clang__
+
 #include <argp.h>
 #include <inttypes.h>
 #include <sys/times.h>

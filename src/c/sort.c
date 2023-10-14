@@ -18,6 +18,15 @@ int __attribute__((noinline)) sort_t_compare(const void *a, const void *b)
   if (A->val > B->val) return 1;
   return 0;
 }
+#elif defined(ALPHADEV)
+int __attribute__((noinline)) sort_t_compare(const void *a, const void *b)
+{
+  int *A = (int *)a;
+  int *B = (int *)b;
+  if (*A < *B) return -1;
+  if (*A > *B) return 1;
+  return 0;
+}
 #else
 int __attribute__((noinline)) sort_t_compare(const void *a, const void *b)
 {

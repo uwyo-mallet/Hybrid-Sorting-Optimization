@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "platform.h"
+
 #ifdef SORT_LARGE_STRUCTS
 #define PAD_SIZE 4 * 1024
 typedef struct
@@ -12,6 +14,8 @@ typedef struct
   volatile char c[PAD_SIZE];
   int64_t val;
 } sort_t;
+#elif defined(ALPHADEV)
+typedef int sort_t;
 #else
 typedef int64_t sort_t;
 #endif  // SORT_LARGE_STRUCTS
@@ -24,6 +28,17 @@ enum METHOD_TOK
   BASIC_INS,
   FAST_INS,
   SHELL,
+#ifdef ALPHADEV
+  SORT3_ALPHADEV,
+  SORT4_ALPHADEV,
+  SORT5_ALPHADEV,
+  SORT6_ALPHADEV,
+  SORT7_ALPHADEV,
+  SORT8_ALPHADEV,
+  VARSORT3_ALPHADEV,
+  VARSORT4_ALPHADEV,
+  VARSORT5_ALPHADEV,
+#endif
   EMPTY,
   MSORT_HEAP_WITH_OLD_INS,
   MSORT_HEAP_WITH_BASIC_INS,
@@ -34,6 +49,10 @@ enum METHOD_TOK
   QUICKSORT_WITH_INS,
   QUICKSORT_WITH_FAST_INS,
 };
+
+#ifdef ALPHADEV
+#define NUM_ALPHADEV_METHODS 9
+#endif
 
 #define UINT32 0
 #define UINT64 1

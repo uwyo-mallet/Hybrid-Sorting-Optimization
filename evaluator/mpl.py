@@ -54,7 +54,7 @@ def get_avg_df(df: pd.DataFrame) -> pd.DataFrame:
         "size",
     ]
     df = df.sort_index(axis=1)
-    df = df.pivot_table(index=pivot_columns, aggfunc=[np.mean, np.std])
+    df = df.pivot_table(index=pivot_columns, aggfunc=["mean", "std"])
 
     df = df.reset_index()
     df = df.sort_values(by=["size", "threshold"])
@@ -155,6 +155,8 @@ class Result:
     ):
         fig, axes = plt.subplots(nrows=len(dfs), figsize=(10, 16))
         index = 0
+        baseline_colors = ["tab:green", "tab:blue", "tab:pink", "tab:red"]
+        color_index = 0
         for type_, sub_df in dfs.items():
             for method, df in sub_df.items():
                 yerr = list(df[("std", col)])
@@ -177,19 +179,21 @@ class Result:
                     continue
                 y = df.iloc[0][("mean", col)]
                 y_std = df.iloc[0][("std", col)]
+                color = baseline_colors[color_index]
+                color_index += 1
                 axes[index].plot(
                     [0, max_threshold],
                     [y, y],
                     "--",
                     label=method,
-                    color="tab:green",
+                    color=color,
                 )
                 axes[index].fill_between(
                     [0, max_threshold],
                     y - y_std,
                     y + y_std,
                     alpha=0.2,
-                    color="tab:green",
+                    color=color,
                 )
 
             axes[index].legend(loc="upper right")
