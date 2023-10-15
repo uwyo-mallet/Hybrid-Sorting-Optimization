@@ -11,6 +11,7 @@ from typing import Optional
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+# import modin.pandas as pd
 import numpy as np
 import pandas as pd
 import scienceplots
@@ -49,7 +50,7 @@ def get_avg_df(df: pd.DataFrame) -> pd.DataFrame:
     pivot_columns = [
         "method",
         "description",
-        "run_type",
+        # "run_type",
         "threshold",
         "size",
     ]
@@ -94,10 +95,37 @@ class Result:
         if not csvs:
             raise FileNotFoundError(f"No CSV files found in '{self.path}'")
         in_csv = Path(csvs[0])
-        self.df = pd.read_csv(in_csv)
-
-        # Drop unnecessary columns
-        self.df = self.df.drop(["input", "id"], axis=1)
+        dtype = {
+            "method": "category",
+            "size": int,
+            "threshold": int,
+            "wall_nsecs": int,
+            "user_nsecs": int,
+            "system_nsecs": int,
+            "hw_cpu_cycles": int,
+            "hw_instructions": int,
+            "hw_cache_references": int,
+            "hw_cache_misses": int,
+            "hw_branch_instructions": int,
+            "hw_branch_misses": int,
+            "hw_bus_cycles": int,
+            "sw_cpu_clock": int,
+            "sw_task_clock": int,
+            "sw_page_faults": int,
+            "sw_context_switches": int,
+            "sw_cpu_migrations": int,
+            "description": "category",
+        }
+        self.df = pd.read_csv(
+            in_csv,
+            engine="c",
+            dtype=dtype,
+            usecols=dtype.keys(),
+        )
+        # fcols = self.df.select_dtypes("float").columns
+        # icols = self.df.select_dtypes("float").columns
+        # self.df[fcols] = self.df[fcols].apply(pd.to_numeric, downcast="float")
+        # self.df[icols] = self.df[fcols].apply(pd.to_numeric, downcast="integer")
 
         # Convert from nanoseconds to seconds
         time_columns = [i for i in list(self.df.columns) if i.endswith("_nsecs")]
@@ -155,8 +183,6 @@ class Result:
     ):
         fig, axes = plt.subplots(nrows=len(dfs), figsize=(10, 16))
         index = 0
-        baseline_colors = ["tab:green", "tab:blue", "tab:pink", "tab:red"]
-        color_index = 0
         for type_, sub_df in dfs.items():
             for method, df in sub_df.items():
                 yerr = list(df[("std", col)])
@@ -177,17 +203,17 @@ class Result:
                     msg = "Baseline df has no entries"
                     logging.error(msg)
                     continue
+
                 y = df.iloc[0][("mean", col)]
                 y_std = df.iloc[0][("std", col)]
-                color = baseline_colors[color_index]
-                color_index += 1
-                axes[index].plot(
+                plot = axes[index].plot(
                     [0, max_threshold],
                     [y, y],
                     "--",
                     label=method,
-                    color=color,
                 )
+                # Use same color for error.
+                color = plot[0].get_color()
                 axes[index].fill_between(
                     [0, max_threshold],
                     y - y_std,
