@@ -21,7 +21,8 @@ pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
 
-plt.style.use(["science", "ieee"])
+plt.style.use(["science", "no-latex"])
+# plt.style.use(["science", "ieee"])
 plt.style.use("seaborn-v0_8-paper")
 mpl.rcParams["font.size"] = 14
 mpl.rcParams["figure.titlesize"] = 14
@@ -264,6 +265,10 @@ class Result:
         max_threshold = threshold_data["threshold"].max()
 
         sizes = threshold_data["size"].unique()
+        if not len(sizes):
+            # No supported plots createable
+            return
+
         if len(sizes) > 1:
             if interactive:
                 size = self._prompt_for_thing("size", list(sizes))
@@ -325,6 +330,10 @@ class Result:
         max_threshold = df["threshold"].max()
 
         sizes = df["size"].unique()
+        if not len(sizes):
+            # No supported plots createable
+            return
+
         if len(sizes) > 1:
             if interactive:
                 size = self._prompt_for_thing("size", list(sizes))

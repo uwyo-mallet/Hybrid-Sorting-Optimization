@@ -1,0 +1,10 @@
+version: "3"
+services:
+  db:
+    build: .
+    volumes:
+      - ../results/:/results/
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
