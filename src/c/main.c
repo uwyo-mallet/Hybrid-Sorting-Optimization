@@ -27,15 +27,15 @@ static const char args_doc[] = "INFILE";
 
 // clang-format off
 static struct argp_option options[] = {
-    {"chunk",        'c',      "CHUNK",  0, "Chunk N times together to a single value (Avg)"   },
-    {"output",       'o',      "FILE",   0, "Output to FILE instead of STDOUT"                 },
-    {"method",       'm',      "METHOD", 0, "Sorting method to use."                           },
-    {"runs",         'r',      "N",      0, "Number of times to repeatedly sort the same data."},
-    {"threshold",    't',      "THRESH", 0, "Threshold to switch sorting methods."             },
-    {"cols",         COLS_OPT, "COLS",   0, "Columns to pass through to CSV."                  },
-    {"vals",         VALS_OPT, "VALS",   0, "Values to pass through to CSV."                   },
-    {"show-methods", METH_OPT, "TYPE",   OPTION_ARG_OPTIONAL, "Print supported methods"        },
-    {"dump-sorted",  DUMP_OPT, "TYPE",   OPTION_ARG_OPTIONAL, "Dump the resulting sorted data" },
+    {"output-chunks", 'c',      "CHUNK",  0, "Chunk N times together to a single value (Avg)"   },
+    {"output",        'o',      "FILE",   0, "Output to FILE instead of STDOUT"                 },
+    {"method",        'm',      "METHOD", 0, "Sorting method to use."                           },
+    {"runs",          'r',      "N",      0, "Number of times to repeatedly sort the same data."},
+    {"threshold",     't',      "THRESH", 0, "Threshold to switch sorting methods."             },
+    {"cols",          COLS_OPT, "COLS",   0, "Columns to pass through to CSV."                  },
+    {"vals",          VALS_OPT, "VALS",   0, "Values to pass through to CSV."                   },
+    {"show-methods",  METH_OPT, "TYPE",   OPTION_ARG_OPTIONAL, "Print supported methods"        },
+    {"dump-sorted",   DUMP_OPT, "TYPE",   OPTION_ARG_OPTIONAL, "Dump the resulting sorted data" },
     {0},
 };
 // clang-format on

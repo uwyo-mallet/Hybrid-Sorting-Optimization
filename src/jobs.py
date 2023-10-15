@@ -17,6 +17,7 @@ Usage:
 Options:
     -h, --help               Show this help.
     -j, --jobs=N             Do N jobs in parallel.
+    -c, --output-chunks=N    Preaverage N chunks within HSO itself.
     -m, --methods=METHODS    Comma seperated list of methods to use for sorters.
     -o, --output=FILE        Output CSV to save results.
     -p, --progress           Enable a progress bar.
@@ -100,6 +101,7 @@ class Job:
         runs,
         output,
         threshold,
+        output_chunks=0,
         base=False,
         callgrind=False,
         cachegrind=False,
@@ -138,6 +140,7 @@ class Job:
         self.runs = runs
         self.output = output
         self.threshold = threshold
+        self.output_chunks = output_chunks
         self.base = base
 
         self.callgrind = None
@@ -187,6 +190,8 @@ class Job:
             str(self.output),
             "--runs",
             str(self.runs),
+            "--output-chunks",
+            str(self.output_chunks),
         ]
         if self.threshold is not None:
             base_command.append("--threshold")
@@ -373,6 +378,9 @@ def parse_args(args):
         if parsed["jobs"] <= 0:
             raise ValueError("Jobs must be >= 1")
 
+    # Chuncked output
+    parsed["output_chunks"] = args.get("--output-chunks", 0)
+
     # Methods
     try:
         methods = args.get("--methods").rsplit(",")
@@ -387,7 +395,7 @@ def parse_args(args):
     parsed["progress"] = args.get("--progress")
 
     # Num runs
-    parsed["runs"] = args.get("--runs") or 1
+    parsed["runs"] = args.get("--runs", 1)
     parsed["runs"] = int(parsed["runs"])
     if parsed["runs"] <= 0:
         raise ValueError("Runs must be >= 1")
@@ -438,6 +446,7 @@ class Scheduler:
         data_dir: Path,
         exec: Path,
         jobs: int,
+        output_chunks: int,
         methods: list[str],
         output: Path,
         runs: int,
@@ -470,6 +479,7 @@ class Scheduler:
         self.data_dir = data_dir
         self.exec = exec
         self.jobs = jobs
+        self.output_chunks = output_chunks
         self.methods = methods
         self.output = output
         self.runs = runs
@@ -524,6 +534,7 @@ class Scheduler:
                 "runs": self.runs,
                 "output": self.output,
                 "threshold": 1,
+                "output_chunks": self.output_chunks,
                 "base": self.base,
                 "callgrind": self.callgrind,
                 "cachegrind": self.cachegrind,
@@ -642,6 +653,7 @@ class Scheduler:
 
 if __name__ == "__main__":
     args = parse_args(docopt(__doc__, version=VERSION))
+
     s = Scheduler(**args)
     if args["slurm"]:
         s.gen_slurm()
