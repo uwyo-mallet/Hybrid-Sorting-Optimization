@@ -63,8 +63,8 @@ static struct argp argp = {options, parse_opt, args_doc, doc};
 // Helper methods
 ssize_t is_method(char* m, bool* is_threshold_method);
 bool is_sorted(sort_t* data, const size_t n);
-int write_results(const struct arguments* args, const struct times* results,
-                  const size_t num_results);
+int write_results(const struct arguments* args, struct times* results,
+                  size_t num_results);
 
 // Not being able to keep this with the methods enum is a little unfortunate...
 const char* METHODS[] = {
@@ -421,8 +421,8 @@ ssize_t is_method(char* m, bool* is_threshold_method)
   return -1;
 }
 
-int write_results(const struct arguments* args, const struct times* results,
-                  const size_t num_results)
+int write_results(const struct arguments* args, struct times* results,
+                  size_t num_results)
 {
   FILE* out_file;
   bool write_header = true;
@@ -471,20 +471,65 @@ int write_results(const struct arguments* args, const struct times* results,
     fputc('\n', out_file);
   }
 
-  /* if (args->output_chunk_size > 0) */
-  /* { */
-  /*   struct times tmp = {0}; */
-  /*   const size_t remaining = num_results; */
-  /*   size_t chunk = 0; */
-  /*   for (size_t i = 0; i < chunk * args->output_chunk_size; ++i) */
-  /*   { */
-  /*     memset(&tmp, 0, sizeof(struct times)); */
-  /*     if (remaining < args->output_chunk_size) */
-  /*     { */
-  /*       break; */
-  /*     } */
-  /*   } */
-  /* } */
+  // Compute the average of args->output_chunk_size results and save it back in
+  // the results array. This needs to be done with considerable care!
+  if (args->output_chunk_size > 0)
+  {
+    struct times tmp = {0};
+
+    const size_t num_chunks = num_results / args->output_chunk_size;
+    const size_t excess = num_results % args->output_chunk_size;
+
+    size_t chunk;
+    for (chunk = 0; chunk < num_chunks; ++chunk)
+    {
+      memset(&tmp, 0, sizeof(struct times));
+      for (size_t i = chunk; i < chunk + args->output_chunk_size; ++i)
+      {
+        // Sum Perf counters.
+        for (size_t j = 0; j < ARRAY_SIZE(tmp.perf.counters); ++j)
+        {
+          tmp.perf.counters[j] += results[i].perf.counters[j];
+        }
+        tmp.user += results[i].user;
+        tmp.system += results[i].system;
+        tmp.wall_nsecs += results[i].wall_nsecs;
+      }
+
+      // Compute average
+      for (size_t j = 0; j < ARRAY_SIZE(tmp.perf.counters); ++j)
+      {
+        tmp.perf.counters[j] /= args->output_chunk_size;
+      }
+      tmp.user /= args->output_chunk_size;
+      tmp.system /= args->output_chunk_size;
+      tmp.wall_nsecs /= args->output_chunk_size;
+
+      memcpy(&results[chunk], &tmp, sizeof(struct times));
+    }
+    num_results = num_chunks;
+
+    if (excess)
+    {
+      memset(&tmp, 0, sizeof(struct times));
+      for (size_t i = chunk; i < chunk + excess; ++i)
+      {
+        // Sum Perf counters.
+        for (size_t j = 0; j < ARRAY_SIZE(tmp.perf.counters); ++j)
+        {
+          tmp.perf.counters[j] += results[i].perf.counters[j];
+        }
+        tmp.user += results[i].user;
+        tmp.system += results[i].system;
+        tmp.wall_nsecs += results[i].wall_nsecs;
+      }
+      tmp.user /= excess;
+      tmp.system /= excess;
+      tmp.wall_nsecs /= excess;
+      memcpy(&results[chunk], &tmp, sizeof(struct times));
+      num_results += 1;
+    }
+  }
 
   for (size_t i = 0; i < num_results; ++i)
   {

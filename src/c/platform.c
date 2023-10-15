@@ -11,7 +11,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#define ARRAY_SIZE(x) ((sizeof x) / (sizeof *x))
 
 static long raw_perf_event_open(struct perf_event_attr* hw_event, pid_t pid,
                                 int cpu, int group_fd, unsigned long flags)
