@@ -7,6 +7,8 @@
 #include <limits.h>
 #include <string.h>
 
+#include "platform.h"
+
 // Don't inline comparators, since they cannot possibly be inline in the std
 // library.
 #ifdef SORT_LARGE_STRUCTS
