@@ -27,6 +27,7 @@ static const char args_doc[] = "INFILE";
 
 // clang-format off
 static struct argp_option options[] = {
+    {"chunk",        'c',      "CHUNK",  0, "Chunk N times together to a single value (Avg)"   },
     {"output",       'o',      "FILE",   0, "Output to FILE instead of STDOUT"                 },
     {"method",       'm',      "METHOD", 0, "Sorting method to use."                           },
     {"runs",         'r',      "N",      0, "Number of times to repeatedly sort the same data."},
@@ -48,6 +49,7 @@ struct arguments
   int64_t threshold;
   char* cols;
   char* vals;
+  int64_t output_chunk_size;
 
   size_t in_file_len;
   bool is_threshold_method;
@@ -316,6 +318,11 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state)
 
   switch (key)
   {
+    case 'c':
+      args->output_chunk_size = strtoll(arg, NULL, 10);
+      fprintf(stderr,
+              "[WARN]: No error checking for args->output_chunk_size\n");
+      break;
     case 'o':
       args->out_file = arg;
       break;
@@ -464,6 +471,21 @@ int write_results(const struct arguments* args, const struct times* results,
     fputc('\n', out_file);
   }
 
+  /* if (args->output_chunk_size > 0) */
+  /* { */
+  /*   struct times tmp = {0}; */
+  /*   const size_t remaining = num_results; */
+  /*   size_t chunk = 0; */
+  /*   for (size_t i = 0; i < chunk * args->output_chunk_size; ++i) */
+  /*   { */
+  /*     memset(&tmp, 0, sizeof(struct times)); */
+  /*     if (remaining < args->output_chunk_size) */
+  /*     { */
+  /*       break; */
+  /*     } */
+  /*   } */
+  /* } */
+
   for (size_t i = 0; i < num_results; ++i)
   {
     const struct times r = results[i];
@@ -496,18 +518,18 @@ int write_results(const struct arguments* args, const struct times* results,
             wall,
             r.user,
             r.system,
-            r.perf.count_hw_cpu_cycles,
-            r.perf.count_hw_instructions,
-            r.perf.count_hw_cache_references,
-            r.perf.count_hw_cache_misses,
-            r.perf.count_hw_branch_instructions,
-            r.perf.count_hw_branch_misses,
-            r.perf.count_hw_bus_cycles,
-            r.perf.count_sw_cpu_clock,
-            r.perf.count_sw_task_clock,
-            r.perf.count_sw_page_faults,
-            r.perf.count_sw_context_switches,
-            r.perf.count_sw_cpu_migrations);
+            r.perf.counters[0],
+            r.perf.counters[1],
+            r.perf.counters[2],
+            r.perf.counters[3],
+            r.perf.counters[4],
+            r.perf.counters[5],
+            r.perf.counters[6],
+            r.perf.counters[7],
+            r.perf.counters[8],
+            r.perf.counters[9],
+            r.perf.counters[10],
+            r.perf.counters[11]);
     // clang-format on
 
     if (args->vals != NULL)

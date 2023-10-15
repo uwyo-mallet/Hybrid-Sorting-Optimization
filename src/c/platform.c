@@ -11,6 +11,8 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
 static long raw_perf_event_open(struct perf_event_attr* hw_event, pid_t pid,
                                 int cpu, int group_fd, unsigned long flags)
 {
@@ -35,7 +37,7 @@ static void init_perf_event_attr(struct perf_event_attr* pe)
   pe->exclude_idle = 1;
 }
 
-void perf_event_open(struct perf_fds* fds)
+void perf_event_open(struct perf_fds* perf)
 {
   // All the performance counter fds to create
   /* HW Counters */
@@ -97,133 +99,55 @@ void perf_event_open(struct perf_fds* fds)
   count_sw_context_switches.config = PERF_COUNT_SW_CONTEXT_SWITCHES;
   count_sw_cpu_migrations.type = PERF_COUNT_SW_CPU_MIGRATIONS;
 
-  // clang-format off
-
-  fds->count_hw_cpu_cycles = raw_perf_event_open_default(&count_hw_cpu_cycles);
-  fds->count_hw_instructions = raw_perf_event_open_default(&count_hw_instructions);
-  fds->count_hw_cache_references = raw_perf_event_open_default(&count_hw_cache_references);
-  fds->count_hw_cache_misses = raw_perf_event_open_default(&count_hw_cache_misses);
-  fds->count_hw_branch_instructions = raw_perf_event_open_default(&count_hw_branch_instructions);
-  fds->count_hw_branch_misses = raw_perf_event_open_default(&count_hw_branch_misses);
-  fds->count_hw_bus_cycles = raw_perf_event_open_default(&count_hw_bus_cycles);
-
-  fds->count_sw_cpu_clock = raw_perf_event_open_default(&count_sw_cpu_clock);
-  fds->count_sw_task_clock = raw_perf_event_open_default(&count_sw_task_clock);
-  fds->count_sw_page_faults = raw_perf_event_open_default(&count_sw_page_faults);
-  fds->count_sw_context_switches = raw_perf_event_open_default(&count_sw_context_switches);
-  fds->count_sw_cpu_migrations = raw_perf_event_open_default(&count_sw_cpu_migrations);
-  // clang-format on
+  perf->fds[0] = raw_perf_event_open_default(&count_hw_cpu_cycles);
+  perf->fds[1] = raw_perf_event_open_default(&count_hw_instructions);
+  perf->fds[2] = raw_perf_event_open_default(&count_hw_cache_references);
+  perf->fds[3] = raw_perf_event_open_default(&count_hw_cache_misses);
+  perf->fds[4] = raw_perf_event_open_default(&count_hw_branch_instructions);
+  perf->fds[5] = raw_perf_event_open_default(&count_hw_branch_misses);
+  perf->fds[6] = raw_perf_event_open_default(&count_hw_bus_cycles);
+  perf->fds[7] = raw_perf_event_open_default(&count_sw_cpu_clock);
+  perf->fds[8] = raw_perf_event_open_default(&count_sw_task_clock);
+  perf->fds[9] = raw_perf_event_open_default(&count_sw_page_faults);
+  perf->fds[10] = raw_perf_event_open_default(&count_sw_context_switches);
+  perf->fds[11] = raw_perf_event_open_default(&count_sw_cpu_migrations);
 }
 
-void perf_event_close(struct perf_fds* fds)
+void perf_event_close(struct perf_fds* perf)
 {
-  close(fds->count_hw_cpu_cycles);
-  close(fds->count_hw_instructions);
-  close(fds->count_hw_cache_references);
-  close(fds->count_hw_cache_misses);
-  close(fds->count_hw_branch_instructions);
-  close(fds->count_hw_branch_misses);
-  close(fds->count_hw_bus_cycles);
-
-  close(fds->count_sw_cpu_clock);
-  close(fds->count_sw_task_clock);
-  close(fds->count_sw_page_faults);
-  close(fds->count_sw_context_switches);
-  close(fds->count_sw_cpu_migrations);
+  for (size_t i = 0; i < ARRAY_SIZE(perf->fds); ++i)
+  {
+    close(perf->fds[i]);
+  }
 }
 
-void perf_start(struct perf_fds* fds)
-{
-  ioctl(fds->count_hw_cpu_cycles, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_hw_instructions, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_hw_cache_references, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_hw_cache_misses, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_hw_branch_instructions, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_hw_branch_misses, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_hw_bus_cycles, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_sw_cpu_clock, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_sw_task_clock, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_sw_page_faults, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_sw_context_switches, PERF_EVENT_IOC_RESET, 0);
-  ioctl(fds->count_sw_cpu_migrations, PERF_EVENT_IOC_RESET, 0);
+void perf_start(struct perf_fds* perf)
 
-  ioctl(fds->count_hw_cpu_cycles, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_hw_instructions, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_hw_cache_references, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_hw_cache_misses, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_hw_branch_instructions, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_hw_branch_misses, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_hw_bus_cycles, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_sw_cpu_clock, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_sw_task_clock, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_sw_page_faults, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_sw_context_switches, PERF_EVENT_IOC_ENABLE, 0);
-  ioctl(fds->count_sw_cpu_migrations, PERF_EVENT_IOC_ENABLE, 0);
+{
+  for (size_t i = 0; i < ARRAY_SIZE(perf->fds); ++i)
+  {
+    ioctl(perf->fds[i], PERF_EVENT_IOC_RESET, 0);
+  }
+  for (size_t i = 0; i < ARRAY_SIZE(perf->fds); ++i)
+  {
+    ioctl(perf->fds[i], PERF_EVENT_IOC_ENABLE, 0);
+  }
 }
 
-void perf_stop(struct perf_fds* fds)
+void perf_stop(struct perf_fds* perf)
 {
-  ioctl(fds->count_hw_cpu_cycles, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_hw_instructions, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_hw_cache_references, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_hw_cache_misses, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_hw_branch_instructions, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_hw_branch_misses, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_hw_bus_cycles, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_sw_cpu_clock, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_sw_task_clock, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_sw_page_faults, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_sw_context_switches, PERF_EVENT_IOC_DISABLE, 0);
-  ioctl(fds->count_sw_cpu_migrations, PERF_EVENT_IOC_DISABLE, 0);
+  for (size_t i = 0; i < ARRAY_SIZE(perf->fds); ++i)
+  {
+    ioctl(perf->fds[i], PERF_EVENT_IOC_DISABLE, 0);
+  }
 }
 
-void perf_dump(struct perf_data* data, struct perf_fds* fds)
+void perf_dump(struct perf_data* data, struct perf_fds* perf)
 {
-  // clang-format off
-  read(fds->count_hw_cpu_cycles,
-       &data->count_hw_cpu_cycles,
-       sizeof(uint64_t));
-
-  read(fds->count_hw_instructions,
-       &data->count_hw_instructions,
-       sizeof(uint64_t));
-
-  read(fds->count_hw_cache_references,
-       &data->count_hw_cache_references,
-       sizeof(uint64_t));
-
-  read(fds->count_hw_cache_misses,
-       &data->count_hw_cache_misses,
-       sizeof(uint64_t));
-
-  read(fds->count_hw_branch_instructions,
-       &data->count_hw_branch_instructions,
-       sizeof(uint64_t));
-
-  read(fds->count_hw_branch_misses,
-       &data->count_hw_branch_misses,
-       sizeof(uint64_t));
-
-  read(fds->count_sw_cpu_clock,
-       &data->count_sw_cpu_clock,
-       sizeof(uint64_t));
-
-  read(fds->count_sw_task_clock,
-       &data->count_sw_task_clock,
-       sizeof(uint64_t));
-
-  read(fds->count_sw_page_faults,
-       &data->count_sw_page_faults,
-       sizeof(uint64_t));
-
-  read(fds->count_sw_context_switches,
-       &data->count_sw_context_switches,
-       sizeof(uint64_t));
-
-  read(fds->count_sw_cpu_migrations,
-       &data->count_sw_cpu_migrations,
-       sizeof(uint64_t));
-  // clang-format on
+  for (size_t i = 0; i < ARRAY_SIZE(perf->fds); ++i)
+  {
+    read(perf->fds[i], &data->counters[i], sizeof(uint64_t));
+  }
 }
 
 struct times get_times(int start, struct perf_fds* fds)

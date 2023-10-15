@@ -20,40 +20,27 @@
 
 struct perf_data
 {
-  /* HW Counters */
-  uint64_t count_hw_cpu_cycles;
-  uint64_t count_hw_instructions;
-  uint64_t count_hw_cache_references;
-  uint64_t count_hw_cache_misses;
-  uint64_t count_hw_branch_instructions;
-  uint64_t count_hw_branch_misses;
-  uint64_t count_hw_bus_cycles;
-
-  /* SW Counters */
-  uint64_t count_sw_cpu_clock;
-  uint64_t count_sw_task_clock;
-  uint64_t count_sw_page_faults;
-  uint64_t count_sw_context_switches;
-  uint64_t count_sw_cpu_migrations;
+  /*
+   * Fields:
+   *  count_hw_cpu_cycles
+   *  count_hw_instructions
+   *  count_hw_cache_references
+   *  count_hw_cache_misses
+   *  count_hw_branch_instructions
+   *  count_hw_branch_misses
+   *  count_hw_bus_cycles
+   *  count_sw_cpu_clock
+   *  count_sw_task_clock
+   *  count_sw_page_faults
+   *  count_sw_context_switches
+   *  count_sw_cpu_migrations
+   */
+  uint64_t counters[12];
 };
 
 struct perf_fds
 {
-  /* HW Counters */
-  int count_hw_cpu_cycles;
-  int count_hw_instructions;
-  int count_hw_cache_references;
-  int count_hw_cache_misses;
-  int count_hw_branch_instructions;
-  int count_hw_branch_misses;
-  int count_hw_bus_cycles;
-
-  /* SW Counters */
-  int count_sw_cpu_clock;
-  int count_sw_task_clock;
-  int count_sw_page_faults;
-  int count_sw_context_switches;
-  int count_sw_cpu_migrations;
+  int fds[12];
 };
 
 struct times
