@@ -12,6 +12,12 @@
 #include "sort.h"
 
 #define ARRAY_SIZE(x) ((sizeof x) / (sizeof *x))
+#define MIN(a, b)           \
+  ({                        \
+    __typeof__(a) _a = (a); \
+    __typeof__(b) _b = (b); \
+    _a < _b ? _a : _b;      \
+  })
 
 // Argument Parsing
 const char* argp_program_version = "2.0.0";
@@ -477,51 +483,36 @@ int write_results(const struct arguments* args, struct times* results,
   {
     struct times tmp = {0};
 
-    const size_t num_chunks = num_results / args->output_chunk_size;
+    size_t num_chunks = num_results / args->output_chunk_size;
     const size_t excess = num_results % args->output_chunk_size;
-
-    size_t chunk;
-    size_t copy_i = 0;
-    for (chunk = 0; chunk < num_chunks * args->output_chunk_size;
-         chunk += args->output_chunk_size)
-    {
-      memset(&tmp, 0, sizeof(struct times));
-      for (size_t i = chunk; i < chunk + args->output_chunk_size; ++i)
-      {
-        // Sum Perf counters.
-        // clang-format off
-        for (size_t j = 0; j < ARRAY_SIZE(tmp.perf.counters); ++j)
-        {
-          tmp.perf.counters[j] += ((float)results[i].perf.counters[j]) / args->output_chunk_size;
-        }
-        tmp.user += ((float)results[i].user) / args->output_chunk_size;
-        tmp.system += ((float)results[i].system) / args->output_chunk_size;
-        tmp.wall_secs += ((float)results[i].wall_secs) / args->output_chunk_size;
-        tmp.wall_nsecs += ((float)results[i].wall_nsecs) / args->output_chunk_size;
-        // clang-format on
-      }
-      memcpy(&results[copy_i], &tmp, sizeof(struct times));
-      copy_i++;
-    }
-    num_results = num_chunks;
 
     if (excess)
     {
+      num_chunks += 1;
+    }
+
+    for (size_t chunk = 0; chunk < num_chunks; ++chunk)
+    {
       memset(&tmp, 0, sizeof(struct times));
-      for (size_t i = chunk; i < chunk + excess; ++i)
+      const size_t start = chunk * args->output_chunk_size;
+      const size_t remaining = num_results - start;
+      const size_t end = start + MIN(remaining, args->output_chunk_size) - 1;
+      const size_t count = MIN(remaining, args->output_chunk_size);
+
+      for (size_t i = start; i < end; ++i)
       {
-        // Sum Perf counters.
+        const struct times result = results[i];
         for (size_t j = 0; j < ARRAY_SIZE(tmp.perf.counters); ++j)
         {
-          tmp.perf.counters[j] += results[i].perf.counters[j];
+          tmp.perf.counters[j] += ((float)result.perf.counters[j]) / count;
         }
-        tmp.user += ((float)results[i].user) / excess;
-        tmp.system += ((float)results[i].system) / excess;
-        tmp.wall_secs += ((float)results[i].wall_secs) / excess;
-        tmp.wall_nsecs += ((float)results[i].wall_nsecs) / excess;
+        tmp.system += ((float)result.system) / count;
+        tmp.user += ((float)result.user) / count;
+        tmp.wall_nsecs += ((float)result.wall_nsecs) / count;
+        tmp.wall_secs += ((float)result.wall_secs) / count;
       }
-      memcpy(&results[copy_i], &tmp, sizeof(struct times));
-      num_results += 1;
+
+      memcpy(&results[chunk], &tmp, sizeof(struct times));
     }
   }
 
