@@ -21,8 +21,8 @@ pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
 
-plt.style.use(["science", "no-latex"])
-# plt.style.use(["science", "ieee"])
+# plt.style.use(["science", "no-latex"])
+plt.style.use(["science", "ieee"])
 plt.style.use("seaborn-v0_8-paper")
 mpl.rcParams["font.size"] = 14
 mpl.rcParams["figure.titlesize"] = 14
@@ -223,7 +223,7 @@ class Result:
                     color=color,
                 )
 
-            axes[index].legend(loc="upper right")
+            axes[index].legend(bbox_to_anchor=(1.04, 0.5), loc="center left")
             axes[index].set_ylabel(col)
             axes[index].xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
             index += 1
