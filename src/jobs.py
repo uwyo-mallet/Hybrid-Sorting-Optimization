@@ -379,7 +379,7 @@ def parse_args(args):
             raise ValueError("Jobs must be >= 1")
 
     # Chuncked output
-    parsed["output_chunks"] = int(args.get("--output-chunks", 0))
+    parsed["output_chunks"] = int(args.get("--output-chunks") or 0)
 
     # Methods
     try:
