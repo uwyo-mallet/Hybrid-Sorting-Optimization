@@ -163,7 +163,7 @@ struct times get_times(int start, struct perf_fds* fds)
   struct tms systimes;
   times(&systimes);
 
-  clock_gettime(CLOCK_MONOTONIC_RAW, &wall_buf);
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &wall_buf);
 
   result.user = systimes.tms_utime;
   result.system = systimes.tms_stime;
@@ -182,11 +182,24 @@ struct times get_times(int start, struct perf_fds* fds)
 struct times elapsed(struct times* start, struct times* end,
                      struct perf_fds* perf)
 {
+  struct timespec tmp;
+
+  if (end->wall_nsecs - start->wall_nsecs < 0)
+  {
+    tmp.tv_sec = end->wall_secs - start->wall_secs - 1;
+    tmp.tv_nsec = 1e9 + end->wall_nsecs - start->wall_nsecs;
+  }
+  else
+  {
+    tmp.tv_sec = end->wall_secs - start->wall_secs;
+    tmp.tv_nsec = end->wall_nsecs - start->wall_nsecs;
+  }
+
   struct times result = {
       .user = end->user - start->user,
       .system = end->system - start->system,
-      .wall_secs = end->wall_secs - start->wall_secs,
-      .wall_nsecs = end->wall_nsecs - start->wall_nsecs,
+      .wall_secs = tmp.tv_sec,
+      .wall_nsecs = tmp.tv_nsec,
       .perf = {0},
   };
 

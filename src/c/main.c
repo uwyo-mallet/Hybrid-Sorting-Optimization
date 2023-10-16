@@ -471,8 +471,8 @@ int write_results(const struct arguments* args, struct times* results,
     fputc('\n', out_file);
   }
 
-  // Compute the average of args->output_chunk_size results and save it back in
-  // the results array. This needs to be done with considerable care!
+  // Compute the average of args->output_chunk_size results and save it back
+  // in the results array. This needs to be done with considerable care!
   if (args->output_chunk_size > 0)
   {
     struct times tmp = {0};
@@ -481,31 +481,27 @@ int write_results(const struct arguments* args, struct times* results,
     const size_t excess = num_results % args->output_chunk_size;
 
     size_t chunk;
-    for (chunk = 0; chunk < num_chunks; ++chunk)
+    size_t copy_i = 0;
+    for (chunk = 0; chunk < num_chunks * args->output_chunk_size;
+         chunk += args->output_chunk_size)
     {
       memset(&tmp, 0, sizeof(struct times));
       for (size_t i = chunk; i < chunk + args->output_chunk_size; ++i)
       {
         // Sum Perf counters.
+        // clang-format off
         for (size_t j = 0; j < ARRAY_SIZE(tmp.perf.counters); ++j)
         {
-          tmp.perf.counters[j] += results[i].perf.counters[j];
+          tmp.perf.counters[j] += ((float)results[i].perf.counters[j]) / args->output_chunk_size;
         }
-        tmp.user += results[i].user;
-        tmp.system += results[i].system;
-        tmp.wall_nsecs += results[i].wall_nsecs;
+        tmp.user += ((float)results[i].user) / args->output_chunk_size;
+        tmp.system += ((float)results[i].system) / args->output_chunk_size;
+        tmp.wall_secs += ((float)results[i].wall_secs) / args->output_chunk_size;
+        tmp.wall_nsecs += ((float)results[i].wall_nsecs) / args->output_chunk_size;
+        // clang-format on
       }
-
-      // Compute average
-      for (size_t j = 0; j < ARRAY_SIZE(tmp.perf.counters); ++j)
-      {
-        tmp.perf.counters[j] /= args->output_chunk_size;
-      }
-      tmp.user /= args->output_chunk_size;
-      tmp.system /= args->output_chunk_size;
-      tmp.wall_nsecs /= args->output_chunk_size;
-
-      memcpy(&results[chunk], &tmp, sizeof(struct times));
+      memcpy(&results[copy_i], &tmp, sizeof(struct times));
+      copy_i++;
     }
     num_results = num_chunks;
 
@@ -519,14 +515,12 @@ int write_results(const struct arguments* args, struct times* results,
         {
           tmp.perf.counters[j] += results[i].perf.counters[j];
         }
-        tmp.user += results[i].user;
-        tmp.system += results[i].system;
-        tmp.wall_nsecs += results[i].wall_nsecs;
+        tmp.user += ((float)results[i].user) / excess;
+        tmp.system += ((float)results[i].system) / excess;
+        tmp.wall_secs += ((float)results[i].wall_secs) / excess;
+        tmp.wall_nsecs += ((float)results[i].wall_nsecs) / excess;
       }
-      tmp.user /= excess;
-      tmp.system /= excess;
-      tmp.wall_nsecs /= excess;
-      memcpy(&results[chunk], &tmp, sizeof(struct times));
+      memcpy(&results[copy_i], &tmp, sizeof(struct times));
       num_results += 1;
     }
   }
@@ -534,7 +528,7 @@ int write_results(const struct arguments* args, struct times* results,
   for (size_t i = 0; i < num_results; ++i)
   {
     const struct times r = results[i];
-    const intmax_t wall = (r.wall_secs * 1000000000) + r.wall_nsecs;
+    const intmax_t wall = (r.wall_secs * 1e9) + r.wall_nsecs;
     // clang-format off
     fprintf(out_file,
             "%s,"
