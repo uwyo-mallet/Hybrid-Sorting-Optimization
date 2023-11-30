@@ -18,6 +18,18 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif  // _GNU_SOURCE
+
+#define ARRAY_SIZE(x) ((sizeof x) / (sizeof *x))
+#define MIN(a, b)           \
+  ({                        \
+    __typeof__(a) _a = (a); \
+    __typeof__(b) _b = (b); \
+    _a < _b ? _a : _b;      \
+  })
+
 struct perf_data
 {
   /*

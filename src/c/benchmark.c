@@ -4,6 +4,7 @@
 
 #include "platform.h"
 #include "sort.h"
+#include "sort_cxx.h"
 
 struct times measure_sort_time(int method, sort_t* data, const size_t n,
                                const int threshold, struct perf_fds* perf)
@@ -36,6 +37,10 @@ struct times measure_sort_time(int method, sort_t* data, const size_t n,
     case SHELL:
       start = START_TIME();
       shell_sort(data, n, sizeof(sort_t), sort_t_compare);
+      break;
+    case CXX_STD:
+      start = START_TIME();
+      cxx_std_sort(data, n, sizeof(sort_t), sort_t_compare);
       break;
     /* Threshold Methods ---------------------------------------------------- */
     case MSORT_HEAP_WITH_OLD_INS:

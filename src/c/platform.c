@@ -11,8 +11,6 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#define ARRAY_SIZE(x) ((sizeof x) / (sizeof *x))
-
 static long raw_perf_event_open(struct perf_event_attr* hw_event, pid_t pid,
                                 int cpu, int group_fd, unsigned long flags)
 {
@@ -200,7 +198,7 @@ struct times elapsed(struct times* start, struct times* end,
       .system = end->system - start->system,
       .wall_secs = tmp.tv_sec,
       .wall_nsecs = tmp.tv_nsec,
-      .perf = {0},
+      .perf = {{0}},
   };
 
   perf_dump(&result.perf, perf);

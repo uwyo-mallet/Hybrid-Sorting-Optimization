@@ -11,14 +11,6 @@
 #include "platform.h"
 #include "sort.h"
 
-#define ARRAY_SIZE(x) ((sizeof x) / (sizeof *x))
-#define MIN(a, b)           \
-  ({                        \
-    __typeof__(a) _a = (a); \
-    __typeof__(b) _b = (b); \
-    _a < _b ? _a : _b;      \
-  })
-
 // Argument Parsing
 const char* argp_program_version = "2.0.0";
 const char* argp_program_bug_address = "<jarulsam@uwyo.edu>";
@@ -79,6 +71,7 @@ const char* METHODS[] = {
     "basic_ins",
     "fast_ins",
     "shell",
+    "cxx_std",
 #ifdef ALPHADEV
     "sort3_alphadev",
     "sort4_alphadev",

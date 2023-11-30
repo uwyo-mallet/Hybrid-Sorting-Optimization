@@ -4,19 +4,22 @@
 
 all: HSO-c
 
-WARNFLAGS = -Wall -Wextra -pedantic -Wno-missing-field-initializers
+WARNFLAGS = -Wall -Wextra -Wno-sign-compare -Wno-missing-field-initializers
 
-CFLAGS += -O3
-CFLAGS += $(WARNFLAGS)
+CFLAGS += $(WARNFLAGS) -O3
 # CFLAGS += -DSORT_LARGE_STRUCTS
 
-CXXFLAGS += $(CFLAGS)
+CXXFLAGS += $(WARNFLAGS) -O3 -fpic -shared
+
+# CFLAGS += -g3 -fsanitize=address,undefined
+# CXXFLAGS += -g3 -fsanitize=address,undefined
+
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
 
-OBJS = benchmark.o platform.o sort.o msort_opt.o data.o
+OBJS = benchmark.o platform.o sort.o msort_opt.o data.o sort_cxx.o
 
 HSO-c: $(OBJS) main.o
-	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) -lz
+	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) -lz -lstdc++
 
 alphadev: $(OBJS) main.o asm_sort.c asm_sort.h
 	$(CC) $(CFLAGS) -Wno-language-extension-token asm_sort.c -c
@@ -40,7 +43,10 @@ data.o: data.c data.h
 msort_opt.o: msort_opt.c sort.h
 	$(CC) $(CFLAGS) msort_opt.c -c
 
-debug: CFLAGS = -Og -g3 --coverage $(WARNFLAGS) -fsanitize=address
+sort_cxx.o: sort_cxx.cpp sort_cxx.h
+	$(CXX) $(CXXFLAGS) sort_cxx.cpp -c
+
+debug: CFLAGS = -Og -g3 --coverage $(WARNFLAGS)
 debug: $(OBJS) HSO-c
 
 tests: CFLAGS = -Og -g3 --coverage $(WARNFLAGS)
@@ -48,9 +54,9 @@ tests: CXXFLAGS += --coverage
 tests: tests.cpp tests.hpp
 	$(MAKE) -f $(THIS_FILE) clean
 	$(MAKE) -f $(THIS_FILE) debug
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) $(TESTFLAGS) -o tests tests.cpp $(OBJS) \
+	$(CXX) $(CFLAGS) $(DEBUGFLAGS) $(TESTFLAGS) -o tests tests.cpp $(OBJS) \
         -Wl,-Bstatic -lboost_unit_test_framework \
-        -Wl,-Bdynamic
+        -Wl,-Bdynamic -lz
 
 check: tests
 	./tests || true

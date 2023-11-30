@@ -16,8 +16,10 @@ extern "C"
 #include "sort.h"
 }
 
-#define THRESHOLD_TEST_MIN 1
-#define THRESHOLD_TEST_MAX 17
+#include "sort_cxx.h"
+
+#define THRESHOLD_TEST_MIN 1u
+#define THRESHOLD_TEST_MAX 17u
 
 namespace bdata = boost::unit_test::data;
 
@@ -39,11 +41,13 @@ int compare<LargeStruct>(void* a, void* b)
 static const char* sortFnNames[] = {"msort_heap",
                                     "basic_ins_sort",
                                     "fast_ins_sort",
-                                    "shell_sort"};
+                                    "shell_sort",
+                                    "cxx_std"};
 static const sort_fn_t sortFns[] = {msort_heap,
                                     basic_ins_sort,
                                     fast_ins_sort,
-                                    shell_sort};
+                                    shell_sort,
+                                    cxx_std_sort};
 
 static const char* thresholdSortFnNames[] = {"msort_heap_with_old_ins",
                                              "msort_heap_with_basic_ins",
