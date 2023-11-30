@@ -11,3 +11,4 @@ testing sorting implementations are as follows.
 
 - gcc (tested with versions > 12.0)
 - zlib (>=1.1.2)
+- boost (>= 1.74, only required for unit tests).

@@ -6,26 +6,13 @@ well in most scenarios. However, combining these algorithms with some other
 secondary algorithm, such as insertion sort, for small lists can offer a
 sizeable performance gain as the repeated overhead of partitioning arrays or
 recursive calls is avoided. The threshold at which to switch between these
-algorithms is often hard-coded by some developer. This project evaluates various
-candidate implementations for standard libraries at many different threshold
-values. Specifically, `qsort()` from GNU's libc is evaluated extensively.
+algorithms is often hard-coded by some developer.
 
-<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
-**Table of Contents**
-
-- [Hybrid Sorting Optimization](#hybrid-sorting-optimization)
-- [TODO](#todo)
-- [Setup](#setup)
-- [Methods](#methods)
-- [Sources](#sources)
-
-<!-- markdown-toc end -->
-
-## TODO
-
-- [ ] Create grafana / postgres visualizer.
-- [ ] Alphadev methods
-- [ ] paper
+This project evaluates various candidate implementations for standard libraries
+at many different threshold values. Specifically, `qsort()` from GNU's libc is
+evaluated extensively. Along with this evaluation, this research has found a
+new, faster sorting algorithm by intelligently combining Mergesort with sorting
+networks and insertion sort.
 
 ## Setup
 
@@ -34,9 +21,21 @@ subdirectory within [`src/`](./src/).
 
 ## Methods
 
-TODO
+The following methods are evaluated:
 
-
+- `qsort` (from the C standard library)
+- `std::sort` (from the C++ standard library)
+- Mergesort
+- A basic insertion sort.
+- A highly optimized insertion sort.
+- Shell Sort
+- Mergesort w/ basic insertion sort.
+- Mergesort w/ optimized insertion sort.
+- Mergesort w/ shell sort.
+- Mergesort w/ sorting network.
+- Mergesort w/ optimized insertion sort & sorting network.
+- Quicksort w/ basic insertion sort.
+- Quicksort w/ optimized insertion sort.
 
 ## Sources
 
