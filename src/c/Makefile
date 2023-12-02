@@ -21,6 +21,12 @@ OBJS = benchmark.o platform.o sort.o msort_opt.o data.o sort_cxx.o
 HSO-c: $(OBJS) main.o
 	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) -lz -lstdc++
 
+static: $(OBJS) main.o
+	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) -lz -lstdc++ -static
+
+libc++: $(OBJS) main.o
+	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) -lz -lc++abi -static
+
 alphadev: $(OBJS) main.o asm_sort.c asm_sort.h
 	$(CC) $(CFLAGS) -Wno-language-extension-token asm_sort.c -c
 	$(CC) $(CFLAGS) -o HSO-c main.o $(OBJS) asm_sort.o -lz
@@ -88,6 +94,7 @@ glibc: check-glibc-var
         benchmark.c \
         sort.c \
         msort_opt.c -lz
+
 
 clean:
 	rm -f HSO-c tests $(OBJS) main.o *.gcda *.gcno test-coverage.info asm_sort.o
